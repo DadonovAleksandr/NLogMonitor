@@ -1,29 +1,38 @@
-# NLogMonitor - План разработки Web-приложения
+# NLogMonitor - План разработки
 
 ## Содержание
 1. [Обзор проекта](#обзор-проекта)
 2. [Архитектура системы](#архитектура-системы)
 3. [Технологический стек](#технологический-стек)
 4. [Структура проекта](#структура-проекта)
-5. [Примеры кода](#примеры-кода)
-6. [Фазы разработки](#фазы-разработки)
-7. [Сравнение альтернатив](#сравнение-альтернатив)
-8. [Чек-листы](#чек-листы)
+5. [План разработки](#план-разработки)
+6. [Docker конфигурация](#docker-конфигурация)
 
 ---
 
 ## Обзор проекта
 
-**NLogMonitor** — web-приложение для просмотра и анализа NLog-логов с возможностью загрузки файлов, фильтрации, поиска и экспорта.
+**NLogMonitor** — кроссплатформенное приложение для просмотра и анализа NLog-логов. Работает в двух режимах:
+- **Web-приложение** (Docker) — для разработки и серверного использования
+- **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
 ### Ключевые возможности
-- Загрузка лог-файлов через браузер
+- Открытие лог-файла через нативный диалог или drag-and-drop
+- Открытие директории логов (автоматический выбор последнего по имени .log файла)
+- Мониторинг изменений файла в реальном времени (FileSystemWatcher + SignalR)
 - Парсинг стандартного формата NLog
 - Фильтрация по уровню логирования (Trace, Debug, Info, Warn, Error, Fatal)
 - Полнотекстовый поиск по сообщениям
 - Пагинация и виртуализация для больших файлов
 - Экспорт в JSON/CSV
-- Адаптивный интерфейс
+- Список недавних файлов/директорий
+- Client-side logging (сбор ошибок с фронтенда)
+
+### Формат имени лог-файла
+```
+fileName="${var:logDirectory}/${shortdate}.log"
+```
+При открытии директории выбирается файл с **последним именем** (сортировка по имени в обратном порядке), например: `2024-01-15.log` будет выбран вместо `2024-01-14.log`.
 
 ---
 
@@ -32,169 +41,69 @@
 ### Высокоуровневая архитектура
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              БРАУЗЕР                                     │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                     React/Vue SPA                                  │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────┐│  │
-│  │  │  LogTable   │  │  Filters    │  │  Search     │  │  Export   ││  │
-│  │  │  Component  │  │  Panel      │  │  Bar        │  │  Button   ││  │
-│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └─────┬─────┘│  │
-│  │         │                │                │               │       │  │
-│  │  ┌──────┴────────────────┴────────────────┴───────────────┴─────┐│  │
-│  │  │                    State Management                           ││  │
-│  │  │              (Zustand / Redux / Pinia)                        ││  │
-│  │  └───────────────────────────┬───────────────────────────────────┘│  │
-│  └──────────────────────────────┼────────────────────────────────────┘  │
-│                                 │ HTTP/REST                              │
-└─────────────────────────────────┼────────────────────────────────────────┘
-                                  │
-┌─────────────────────────────────┼────────────────────────────────────────┐
-│                      ASP.NET Core Web API                                │
-│  ┌──────────────────────────────┴───────────────────────────────────┐   │
-│  │                     API Controllers                               │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │   │
-│  │  │  /api/logs  │  │ /api/upload │  │ /api/export │               │   │
-│  │  │   GET/POST  │  │    POST     │  │    GET      │               │   │
-│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘               │   │
-│  └─────────┼────────────────┼────────────────┼───────────────────────┘   │
-│            │                │                │                           │
-│  ┌─────────┴────────────────┴────────────────┴───────────────────────┐   │
-│  │                    Application Services                            │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │   │
-│  │  │ LogParser   │  │ LogFilter   │  │ LogExporter │               │   │
-│  │  │  Service    │  │  Service    │  │  Service    │               │   │
-│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘               │   │
-│  └─────────┼────────────────┼────────────────┼───────────────────────┘   │
-│            │                │                │                           │
-│  ┌─────────┴────────────────┴────────────────┴───────────────────────┐   │
-│  │                         Domain                                     │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │   │
-│  │  │  LogEntry   │  │  LogLevel   │  │ LogSession  │               │   │
-│  │  │   Entity    │  │    Enum     │  │   Entity    │               │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘               │   │
-│  └───────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌───────────────────────────────────────────────────────────────────┐   │
-│  │                     Infrastructure                                 │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │   │
-│  │  │ FileStorage │  │ TempStorage │  │  Caching    │               │   │
-│  │  │  (Upload)   │  │  (Session)  │  │ (In-Memory) │               │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘               │   │
-│  └───────────────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    РЕЖИМ РАБОТЫ: Web (Docker) / Desktop (Photino)            │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                     Vue 3 SPA (WebView / Browser)                       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────────┐  │  │
+│  │  │  LogTable   │  │  Filters    │  │  Search     │  │ FileSelector  │  │  │
+│  │  │  Component  │  │  Panel      │  │  Bar        │  │   Component   │  │  │
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └───────┬───────┘  │  │
+│  │         │                │                │                 │          │  │
+│  │  ┌──────┴────────────────┴────────────────┴─────────────────┴────────┐ │  │
+│  │  │                    State Management (Pinia)                        │ │  │
+│  │  └───────────────────────────┬────────────────────────────────────────┘ │  │
+│  └──────────────────────────────┼──────────────────────────────────────────┘  │
+│                                 │ HTTP/REST + SignalR                         │
+├─────────────────────────────────┼─────────────────────────────────────────────┤
+│                      ASP.NET Core Web API (Embedded/Docker)                   │
+│  ┌──────────────────────────────┴────────────────────────────────────────┐   │
+│  │                     API Controllers                                    │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  │   │
+│  │  │  /api/logs  │  │ /api/files  │  │ /api/export │  │/api/client-  │  │   │
+│  │  │   GET       │  │ open/watch  │  │    GET      │  │    logs      │  │   │
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬───────┘  │   │
+│  └─────────┼────────────────┼────────────────┼────────────────┼───────────┘   │
+│            │                │                │                │               │
+│  ┌─────────┴────────────────┴────────────────┴────────────────┴───────────┐   │
+│  │                    Application Services                                 │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────────┐  │   │
+│  │  │ LogParser   │  │ FileWatcher │  │ LogExporter │  │ RecentFiles   │  │   │
+│  │  │  Service    │  │  Service    │  │  Service    │  │   Service     │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └───────────────┘  │   │
+│  └────────────────────────────────────────────────────────────────────────┘   │
+│                                                                               │
+│  ┌────────────────────────────────────────────────────────────────────────┐   │
+│  │                     Infrastructure                                      │   │
+│  │  ┌─────────────┐  ┌───────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │ InMemory    │  │ FileSystem    │  │  JSON File  │  │ NLog        │  │   │
+│  │  │ Session     │  │   Watcher     │  │ (Recent)    │  │ Parser      │  │   │
+│  │  └─────────────┘  └───────────────┘  └─────────────┘  └─────────────┘  │   │
+│  └────────────────────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Слоистая архитектура (Clean Architecture)
+### Clean Architecture (слои)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                                                                          │
-│    ┌─────────────────────────────────────────────────────────────────┐   │
-│    │                      Presentation Layer                          │   │
-│    │                                                                  │   │
-│    │   ┌────────────────────┐    ┌────────────────────┐              │   │
-│    │   │   React/Vue SPA    │    │  ASP.NET API       │              │   │
-│    │   │   (Frontend)       │    │  Controllers       │              │   │
-│    │   └────────────────────┘    └────────────────────┘              │   │
-│    │                                                                  │   │
-│    └──────────────────────────────┬──────────────────────────────────┘   │
-│                                   │                                      │
-│    ┌──────────────────────────────▼──────────────────────────────────┐   │
-│    │                      Application Layer                           │   │
-│    │                                                                  │   │
-│    │   ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │   │
-│    │   │  ILogParser    │  │  ILogFilter    │  │  ILogExporter  │    │   │
-│    │   │  Interface     │  │  Interface     │  │  Interface     │    │   │
-│    │   └────────────────┘  └────────────────┘  └────────────────┘    │   │
-│    │                                                                  │   │
-│    │   ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │   │
-│    │   │  DTOs:         │  │  Commands:     │  │  Queries:      │    │   │
-│    │   │  LogEntryDto   │  │  UploadLog     │  │  GetLogs       │    │   │
-│    │   │  FilterDto     │  │  ExportLogs    │  │  SearchLogs    │    │   │
-│    │   └────────────────┘  └────────────────┘  └────────────────┘    │   │
-│    │                                                                  │   │
-│    └──────────────────────────────┬──────────────────────────────────┘   │
-│                                   │                                      │
-│    ┌──────────────────────────────▼──────────────────────────────────┐   │
-│    │                        Domain Layer                              │   │
-│    │                                                                  │   │
-│    │   ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │   │
-│    │   │   LogEntry     │  │   LogLevel     │  │  LogSession    │    │   │
-│    │   │                │  │                │  │                │    │   │
-│    │   │  - DateTime    │  │  - Trace       │  │  - Id          │    │   │
-│    │   │  - Level       │  │  - Debug       │  │  - FileName    │    │   │
-│    │   │  - Message     │  │  - Info        │  │  - CreatedAt   │    │   │
-│    │   │  - Logger      │  │  - Warn        │  │  - Entries[]   │    │   │
-│    │   │  - ProcessId   │  │  - Error       │  │                │    │   │
-│    │   │  - ThreadId    │  │  - Fatal       │  │                │    │   │
-│    │   └────────────────┘  └────────────────┘  └────────────────┘    │   │
-│    │                                                                  │   │
-│    └──────────────────────────────┬──────────────────────────────────┘   │
-│                                   │                                      │
-│    ┌──────────────────────────────▼──────────────────────────────────┐   │
-│    │                    Infrastructure Layer                          │   │
-│    │                                                                  │   │
-│    │   ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │   │
-│    │   │  NLogParser    │  │  FileStorage   │  │  MemoryCache   │    │   │
-│    │   │  (Regex-based) │  │  Service       │  │  Service       │    │   │
-│    │   └────────────────┘  └────────────────┘  └────────────────┘    │   │
-│    │                                                                  │   │
-│    │   ┌────────────────┐  ┌────────────────┐                        │   │
-│    │   │  JsonExporter  │  │  CsvExporter   │                        │   │
-│    │   │                │  │                │                        │   │
-│    │   └────────────────┘  └────────────────┘                        │   │
-│    │                                                                  │   │
-│    └─────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-### Поток данных (Data Flow)
-
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  User    │    │ Frontend │    │  API     │    │ Services │    │  Storage │
-│  Browser │    │  React   │    │ ASP.NET  │    │  Layer   │    │  Temp    │
-└────┬─────┘    └────┬─────┘    └────┬─────┘    └────┬─────┘    └────┬─────┘
-     │               │               │               │               │
-     │  1. Select    │               │               │               │
-     │     File      │               │               │               │
-     │───────────────>               │               │               │
-     │               │               │               │               │
-     │               │ 2. POST       │               │               │
-     │               │    /api/upload│               │               │
-     │               │───────────────>               │               │
-     │               │               │               │               │
-     │               │               │ 3. Stream     │               │
-     │               │               │    to Parser  │               │
-     │               │               │───────────────>               │
-     │               │               │               │               │
-     │               │               │               │ 4. Parse &    │
-     │               │               │               │    Store      │
-     │               │               │               │───────────────>
-     │               │               │               │               │
-     │               │               │               │ 5. SessionId  │
-     │               │               │<──────────────────────────────│
-     │               │               │               │               │
-     │               │ 6. SessionId  │               │               │
-     │               │<───────────────               │               │
-     │               │               │               │               │
-     │               │ 7. GET        │               │               │
-     │               │    /api/logs  │               │               │
-     │               │───────────────>               │               │
-     │               │               │               │               │
-     │               │               │ 8. Filter &   │               │
-     │               │               │    Paginate   │               │
-     │               │               │───────────────>               │
-     │               │               │               │               │
-     │               │ 9. LogEntries │               │               │
-     │               │<───────────────               │               │
-     │               │               │               │               │
-     │ 10. Display   │               │               │               │
-     │     Table     │               │               │               │
-     │<───────────────               │               │               │
-     │               │               │               │               │
+┌─────────────────────────────────────────────────────────────────┐
+│                      Presentation Layer                          │
+│   Vue 3 SPA (client/)  │  ASP.NET API Controllers               │
+├─────────────────────────────────────────────────────────────────┤
+│                      Application Layer                           │
+│   Interfaces (ILogParser, ISessionStorage, IFileWatcher...)     │
+│   DTOs (LogEntryDto, FilterOptionsDto, PagedResultDto...)       │
+│   Services (LogService, ExportService, RecentLogsService)       │
+├─────────────────────────────────────────────────────────────────┤
+│                        Domain Layer                              │
+│   Entities: LogEntry, LogSession, LogLevel, RecentLogEntry      │
+├─────────────────────────────────────────────────────────────────┤
+│                    Infrastructure Layer                          │
+│   NLogParser, InMemorySessionStorage, FileWatcherService        │
+│   JsonExporter, CsvExporter, RecentLogsFileRepository           │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -205,24 +114,42 @@
 | Компонент | Технология | Версия |
 |-----------|------------|--------|
 | Framework | ASP.NET Core | 9.0 |
-| API Style | Minimal API + Controllers | - |
+| API Style | Controllers + Minimal API | - |
 | DI Container | Microsoft.Extensions.DI | Built-in |
 | Validation | FluentValidation | 11.x |
 | Logging | NLog | 5.x |
 | API Docs | Swagger/OpenAPI | Swashbuckle |
-| Caching | IMemoryCache | Built-in |
+| Real-time | SignalR | Built-in |
+| Rate Limiting | AspNetCoreRateLimit | 5.x |
 
-### Frontend (React - рекомендуется)
+### Frontend (Vue 3)
 | Компонент | Технология | Версия |
 |-----------|------------|--------|
-| Framework | React | 18.x |
+| Framework | Vue | 3.x |
 | Language | TypeScript | 5.x |
 | Build Tool | Vite | 5.x |
-| State | Zustand | 4.x |
-| UI Library | shadcn/ui | latest |
+| State | Pinia | 2.x |
+| UI Library | shadcn-vue | latest |
 | HTTP Client | Axios | 1.x |
-| Table | TanStack Table | 8.x |
-| Icons | Lucide React | latest |
+| Table | TanStack Table Vue | 8.x |
+| Icons | Lucide Vue | latest |
+| Real-time | @microsoft/signalr | 8.x |
+
+### Desktop (Photino)
+| Компонент | Технология | Версия |
+|-----------|------------|--------|
+| Framework | Photino.NET | 3.x |
+| WebView | Platform native | Edge/WebKit/GTK |
+| File Dialogs | System.Windows.Forms | .NET 9 |
+| IPC | JS ↔ .NET Bridge | Photino built-in |
+
+### Инфраструктура
+| Компонент | Технология |
+|-----------|------------|
+| Контейнеризация | Docker + docker-compose |
+| Web Server | Nginx (reverse proxy) |
+| Хранение сессий | In-Memory |
+| Хранение недавних | JSON файл |
 
 ---
 
@@ -235,80 +162,100 @@ NLogMonitor/
 │   │   ├── Entities/
 │   │   │   ├── LogEntry.cs
 │   │   │   ├── LogSession.cs
-│   │   │   └── LogLevel.cs
+│   │   │   ├── LogLevel.cs
+│   │   │   └── RecentLogEntry.cs
 │   │   └── NLogMonitor.Domain.csproj
 │   │
 │   ├── NLogMonitor.Application/      # Application Layer
 │   │   ├── Interfaces/
 │   │   │   ├── ILogParser.cs
-│   │   │   ├── ILogFilter.cs
+│   │   │   ├── ILogService.cs
+│   │   │   ├── ISessionStorage.cs
+│   │   │   ├── IFileWatcherService.cs
 │   │   │   ├── ILogExporter.cs
-│   │   │   └── ISessionStorage.cs
+│   │   │   └── IRecentLogsRepository.cs
 │   │   ├── DTOs/
 │   │   │   ├── LogEntryDto.cs
 │   │   │   ├── FilterOptionsDto.cs
 │   │   │   ├── PagedResultDto.cs
-│   │   │   └── UploadResultDto.cs
+│   │   │   ├── OpenFileResultDto.cs
+│   │   │   ├── RecentLogDto.cs
+│   │   │   └── ClientLogDto.cs
 │   │   ├── Services/
 │   │   │   ├── LogService.cs
-│   │   │   └── ExportService.cs
+│   │   │   ├── ExportService.cs
+│   │   │   └── RecentLogsService.cs
 │   │   └── NLogMonitor.Application.csproj
 │   │
 │   ├── NLogMonitor.Infrastructure/   # Infrastructure Layer
 │   │   ├── Parsing/
-│   │   │   ├── NLogParser.cs
-│   │   │   └── LogPatternRegistry.cs
+│   │   │   └── NLogParser.cs
 │   │   ├── Storage/
 │   │   │   ├── InMemorySessionStorage.cs
-│   │   │   └── TempFileStorage.cs
+│   │   │   └── RecentLogsFileRepository.cs
+│   │   ├── FileSystem/
+│   │   │   ├── FileWatcherService.cs
+│   │   │   └── DirectoryScanner.cs
 │   │   ├── Export/
 │   │   │   ├── JsonExporter.cs
 │   │   │   └── CsvExporter.cs
-│   │   ├── Caching/
-│   │   │   └── LogCacheService.cs
 │   │   └── NLogMonitor.Infrastructure.csproj
 │   │
-│   └── NLogMonitor.Api/              # Presentation Layer (API)
-│       ├── Controllers/
-│       │   ├── LogsController.cs
-│       │   ├── UploadController.cs
-│       │   └── ExportController.cs
-│       ├── Middleware/
-│       │   └── ExceptionHandlingMiddleware.cs
+│   ├── NLogMonitor.Api/              # Presentation Layer (API)
+│   │   ├── Controllers/
+│   │   │   ├── LogsController.cs
+│   │   │   ├── FilesController.cs
+│   │   │   ├── UploadController.cs
+│   │   │   ├── ExportController.cs
+│   │   │   ├── RecentController.cs
+│   │   │   └── ClientLogsController.cs
+│   │   ├── Hubs/
+│   │   │   └── LogWatcherHub.cs
+│   │   ├── Middleware/
+│   │   │   └── ExceptionHandlingMiddleware.cs
+│   │   ├── Program.cs
+│   │   ├── appsettings.json
+│   │   ├── Dockerfile
+│   │   └── NLogMonitor.Api.csproj
+│   │
+│   └── NLogMonitor.Desktop/          # Photino Desktop Shell
 │       ├── Program.cs
-│       ├── appsettings.json
-│       └── NLogMonitor.Api.csproj
+│       ├── Services/
+│       │   └── NativeDialogService.cs
+│       ├── wwwroot/                   # Vue build output
+│       └── NLogMonitor.Desktop.csproj
 │
-├── client/                            # Frontend (React)
+├── client/                            # Frontend (Vue 3)
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ui/                   # shadcn components
+│   │   │   ├── ui/                   # shadcn-vue components
 │   │   │   ├── LogTable/
-│   │   │   │   ├── LogTable.tsx
-│   │   │   │   ├── LogRow.tsx
-│   │   │   │   └── columns.tsx
 │   │   │   ├── FilterPanel/
-│   │   │   │   ├── FilterPanel.tsx
-│   │   │   │   └── LevelFilter.tsx
 │   │   │   ├── SearchBar/
-│   │   │   │   └── SearchBar.tsx
-│   │   │   ├── FileUpload/
-│   │   │   │   └── FileUpload.tsx
+│   │   │   ├── FileSelector/
+│   │   │   ├── RecentFiles/
 │   │   │   └── ExportButton/
-│   │   │       └── ExportButton.tsx
-│   │   ├── store/
-│   │   │   ├── useLogStore.ts
-│   │   │   └── useFilterStore.ts
+│   │   ├── stores/
+│   │   │   ├── logStore.ts
+│   │   │   ├── filterStore.ts
+│   │   │   └── recentStore.ts
 │   │   ├── api/
 │   │   │   ├── client.ts
-│   │   │   └── logs.ts
+│   │   │   ├── logs.ts
+│   │   │   ├── files.ts
+│   │   │   └── signalr.ts
+│   │   ├── services/
+│   │   │   └── logger.ts             # Client-side logger
+│   │   ├── composables/
+│   │   │   ├── useLogs.ts
+│   │   │   ├── useFileWatcher.ts
+│   │   │   └── usePhotinoBridge.ts
 │   │   ├── types/
 │   │   │   └── index.ts
-│   │   ├── hooks/
-│   │   │   ├── useLogs.ts
-│   │   │   └── useDebounce.ts
-│   │   ├── App.tsx
-│   │   └── main.tsx
+│   │   ├── App.vue
+│   │   └── main.ts
+│   ├── Dockerfile
+│   ├── nginx.conf
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── vite.config.ts
@@ -319,1458 +266,470 @@ NLogMonitor/
 │   ├── NLogMonitor.Infrastructure.Tests/
 │   └── NLogMonitor.Api.Tests/
 │
+├── docker-compose.yml
+├── docker-compose.override.yml
 ├── NLogMonitor.sln
-├── README.md
 ├── PLAN.md
+├── CLAUDE.md
+├── README.md
 └── .gitignore
 ```
 
 ---
 
-## Примеры кода
-
-### Domain Layer
-
-#### LogEntry.cs
-```csharp
-namespace NLogMonitor.Domain.Entities;
-
-public class LogEntry
-{
-    public int Id { get; init; }
-    public DateTime Timestamp { get; init; }
-    public LogLevel Level { get; init; }
-    public string Message { get; init; } = string.Empty;
-    public string Logger { get; init; } = string.Empty;
-    public int? ProcessId { get; init; }
-    public int? ThreadId { get; init; }
-    public string? Exception { get; init; }
-
-    public bool MatchesSearch(string? searchText)
-    {
-        if (string.IsNullOrWhiteSpace(searchText))
-            return true;
-
-        return Message.Contains(searchText, StringComparison.OrdinalIgnoreCase)
-            || Logger.Contains(searchText, StringComparison.OrdinalIgnoreCase)
-            || (Exception?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false);
-    }
-}
-```
-
-#### LogLevel.cs
-```csharp
-namespace NLogMonitor.Domain.Entities;
-
-public enum LogLevel
-{
-    Trace = 0,
-    Debug = 1,
-    Info = 2,
-    Warn = 3,
-    Error = 4,
-    Fatal = 5
-}
-```
-
-#### LogSession.cs
-```csharp
-namespace NLogMonitor.Domain.Entities;
-
-public class LogSession
-{
-    public Guid Id { get; init; } = Guid.NewGuid();
-    public string FileName { get; init; } = string.Empty;
-    public long FileSize { get; init; }
-    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
-    public DateTime? ExpiresAt { get; init; }
-    public List<LogEntry> Entries { get; init; } = [];
-    public int TotalCount => Entries.Count;
-
-    public Dictionary<LogLevel, int> GetLevelCounts()
-    {
-        return Entries
-            .GroupBy(e => e.Level)
-            .ToDictionary(g => g.Key, g => g.Count());
-    }
-}
-```
-
-### Application Layer
-
-#### ILogParser.cs
-```csharp
-namespace NLogMonitor.Application.Interfaces;
-
-public interface ILogParser
-{
-    IAsyncEnumerable<LogEntry> ParseAsync(
-        Stream stream,
-        CancellationToken cancellationToken = default);
-
-    bool CanParse(string firstLine);
-}
-```
-
-#### LogEntryDto.cs
-```csharp
-namespace NLogMonitor.Application.DTOs;
-
-public record LogEntryDto(
-    int Id,
-    DateTime Timestamp,
-    string Level,
-    string Message,
-    string Logger,
-    int? ProcessId,
-    int? ThreadId,
-    string? Exception
-);
-
-public record FilterOptionsDto(
-    string? SearchText,
-    LogLevel? MinLevel,
-    LogLevel? MaxLevel,
-    DateTime? FromDate,
-    DateTime? ToDate,
-    string? Logger
-);
-
-public record PagedResultDto<T>(
-    IReadOnlyList<T> Items,
-    int TotalCount,
-    int Page,
-    int PageSize,
-    int TotalPages
-)
-{
-    public bool HasNextPage => Page < TotalPages;
-    public bool HasPreviousPage => Page > 1;
-}
-
-public record UploadResultDto(
-    Guid SessionId,
-    string FileName,
-    int TotalEntries,
-    Dictionary<string, int> LevelCounts
-);
-```
-
-#### LogService.cs
-```csharp
-namespace NLogMonitor.Application.Services;
-
-public class LogService : ILogService
-{
-    private readonly ISessionStorage _sessionStorage;
-    private readonly ILogParser _parser;
-    private readonly ILogger<LogService> _logger;
-
-    public LogService(
-        ISessionStorage sessionStorage,
-        ILogParser parser,
-        ILogger<LogService> logger)
-    {
-        _sessionStorage = sessionStorage;
-        _parser = parser;
-        _logger = logger;
-    }
-
-    public async Task<UploadResultDto> UploadAsync(
-        Stream stream,
-        string fileName,
-        CancellationToken cancellationToken = default)
-    {
-        var session = new LogSession
-        {
-            FileName = fileName,
-            FileSize = stream.Length,
-            ExpiresAt = DateTime.UtcNow.AddHours(1)
-        };
-
-        var entries = new List<LogEntry>();
-        var id = 0;
-
-        await foreach (var entry in _parser.ParseAsync(stream, cancellationToken))
-        {
-            entries.Add(entry with { Id = ++id });
-        }
-
-        session = session with { Entries = entries };
-        await _sessionStorage.SaveAsync(session, cancellationToken);
-
-        _logger.LogInformation(
-            "Uploaded {FileName} with {Count} entries",
-            fileName,
-            entries.Count);
-
-        return new UploadResultDto(
-            session.Id,
-            session.FileName,
-            session.TotalCount,
-            session.GetLevelCounts()
-                .ToDictionary(kv => kv.Key.ToString(), kv => kv.Value)
-        );
-    }
-
-    public async Task<PagedResultDto<LogEntryDto>> GetLogsAsync(
-        Guid sessionId,
-        FilterOptionsDto? filter,
-        int page = 1,
-        int pageSize = 100,
-        CancellationToken cancellationToken = default)
-    {
-        var session = await _sessionStorage.GetAsync(sessionId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Session {sessionId} not found");
-
-        var query = session.Entries.AsEnumerable();
-
-        // Apply filters
-        if (filter is not null)
-        {
-            if (!string.IsNullOrWhiteSpace(filter.SearchText))
-                query = query.Where(e => e.MatchesSearch(filter.SearchText));
-
-            if (filter.MinLevel.HasValue)
-                query = query.Where(e => e.Level >= filter.MinLevel.Value);
-
-            if (filter.MaxLevel.HasValue)
-                query = query.Where(e => e.Level <= filter.MaxLevel.Value);
-
-            if (filter.FromDate.HasValue)
-                query = query.Where(e => e.Timestamp >= filter.FromDate.Value);
-
-            if (filter.ToDate.HasValue)
-                query = query.Where(e => e.Timestamp <= filter.ToDate.Value);
-
-            if (!string.IsNullOrWhiteSpace(filter.Logger))
-                query = query.Where(e =>
-                    e.Logger.Contains(filter.Logger, StringComparison.OrdinalIgnoreCase));
-        }
-
-        var totalCount = query.Count();
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-        var items = query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(e => new LogEntryDto(
-                e.Id,
-                e.Timestamp,
-                e.Level.ToString(),
-                e.Message,
-                e.Logger,
-                e.ProcessId,
-                e.ThreadId,
-                e.Exception
-            ))
-            .ToList();
-
-        return new PagedResultDto<LogEntryDto>(
-            items,
-            totalCount,
-            page,
-            pageSize,
-            totalPages);
-    }
-}
-```
-
-### Infrastructure Layer
-
-#### NLogParser.cs
-```csharp
-namespace NLogMonitor.Infrastructure.Parsing;
-
-public partial class NLogParser : ILogParser
-{
-    // Standard NLog format regex
-    // Format: 2024-01-15 10:30:45.1234|INFO|Message|LoggerName|1234|5678
-    [GeneratedRegex(
-        @"^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{4})\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|\s*([.\w]+)\s*\|\s*(\d+)\s*\|\s*(\d+)?$",
-        RegexOptions.Compiled)]
-    private static partial Regex LogEntryPattern();
-
-    private readonly ILogger<NLogParser> _logger;
-
-    public NLogParser(ILogger<NLogParser> logger)
-    {
-        _logger = logger;
-    }
-
-    public bool CanParse(string firstLine)
-    {
-        return LogEntryPattern().IsMatch(firstLine);
-    }
-
-    public async IAsyncEnumerable<LogEntry> ParseAsync(
-        Stream stream,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        using var reader = new StreamReader(stream, leaveOpen: true);
-        var lineNumber = 0;
-        var multiLineMessage = new StringBuilder();
-        LogEntry? currentEntry = null;
-
-        while (await reader.ReadLineAsync(cancellationToken) is { } line)
-        {
-            lineNumber++;
-
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
-
-            var match = LogEntryPattern().Match(line);
-
-            if (match.Success)
-            {
-                // Yield previous entry if exists
-                if (currentEntry is not null)
-                {
-                    if (multiLineMessage.Length > 0)
-                    {
-                        currentEntry = currentEntry with
-                        {
-                            Message = currentEntry.Message + Environment.NewLine +
-                                      multiLineMessage.ToString()
-                        };
-                        multiLineMessage.Clear();
-                    }
-                    yield return currentEntry;
-                }
-
-                // Parse new entry
-                currentEntry = ParseMatch(match, lineNumber);
-            }
-            else if (currentEntry is not null)
-            {
-                // Multi-line message continuation
-                multiLineMessage.AppendLine(line);
-            }
-            else
-            {
-                _logger.LogWarning("Unparseable line {LineNumber}: {Line}",
-                    lineNumber,
-                    line.Length > 100 ? line[..100] + "..." : line);
-            }
-        }
-
-        // Yield last entry
-        if (currentEntry is not null)
-        {
-            if (multiLineMessage.Length > 0)
-            {
-                currentEntry = currentEntry with
-                {
-                    Message = currentEntry.Message + Environment.NewLine +
-                              multiLineMessage.ToString()
-                };
-            }
-            yield return currentEntry;
-        }
-    }
-
-    private static LogEntry ParseMatch(Match match, int lineNumber)
-    {
-        return new LogEntry
-        {
-            Id = lineNumber,
-            Timestamp = DateTime.Parse(match.Groups[1].Value),
-            Level = Enum.Parse<LogLevel>(match.Groups[2].Value, ignoreCase: true),
-            Message = match.Groups[3].Value.Trim(),
-            Logger = match.Groups[4].Value,
-            ProcessId = int.TryParse(match.Groups[5].Value, out var pid) ? pid : null,
-            ThreadId = int.TryParse(match.Groups[6].Value, out var tid) ? tid : null
-        };
-    }
-}
-```
-
-#### InMemorySessionStorage.cs
-```csharp
-namespace NLogMonitor.Infrastructure.Storage;
-
-public class InMemorySessionStorage : ISessionStorage, IDisposable
-{
-    private readonly ConcurrentDictionary<Guid, LogSession> _sessions = new();
-    private readonly Timer _cleanupTimer;
-    private readonly ILogger<InMemorySessionStorage> _logger;
-
-    public InMemorySessionStorage(ILogger<InMemorySessionStorage> logger)
-    {
-        _logger = logger;
-        _cleanupTimer = new Timer(
-            CleanupExpiredSessions,
-            null,
-            TimeSpan.FromMinutes(5),
-            TimeSpan.FromMinutes(5));
-    }
-
-    public Task SaveAsync(LogSession session, CancellationToken cancellationToken = default)
-    {
-        _sessions[session.Id] = session;
-        _logger.LogDebug("Saved session {SessionId}", session.Id);
-        return Task.CompletedTask;
-    }
-
-    public Task<LogSession?> GetAsync(Guid sessionId, CancellationToken cancellationToken = default)
-    {
-        _sessions.TryGetValue(sessionId, out var session);
-        return Task.FromResult(session);
-    }
-
-    public Task DeleteAsync(Guid sessionId, CancellationToken cancellationToken = default)
-    {
-        _sessions.TryRemove(sessionId, out _);
-        return Task.CompletedTask;
-    }
-
-    private void CleanupExpiredSessions(object? state)
-    {
-        var now = DateTime.UtcNow;
-        var expiredIds = _sessions
-            .Where(kv => kv.Value.ExpiresAt < now)
-            .Select(kv => kv.Key)
-            .ToList();
-
-        foreach (var id in expiredIds)
-        {
-            _sessions.TryRemove(id, out _);
-            _logger.LogInformation("Cleaned up expired session {SessionId}", id);
-        }
-    }
-
-    public void Dispose()
-    {
-        _cleanupTimer.Dispose();
-    }
-}
-```
-
-### API Layer
-
-#### LogsController.cs
-```csharp
-namespace NLogMonitor.Api.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class LogsController : ControllerBase
-{
-    private readonly ILogService _logService;
-
-    public LogsController(ILogService logService)
-    {
-        _logService = logService;
-    }
-
-    [HttpGet("{sessionId:guid}")]
-    [ProducesResponseType(typeof(PagedResultDto<LogEntryDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetLogs(
-        Guid sessionId,
-        [FromQuery] string? search,
-        [FromQuery] LogLevel? minLevel,
-        [FromQuery] LogLevel? maxLevel,
-        [FromQuery] DateTime? fromDate,
-        [FromQuery] DateTime? toDate,
-        [FromQuery] string? logger,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 100,
-        CancellationToken cancellationToken = default)
-    {
-        var filter = new FilterOptionsDto(
-            search, minLevel, maxLevel, fromDate, toDate, logger);
-
-        try
-        {
-            var result = await _logService.GetLogsAsync(
-                sessionId, filter, page, pageSize, cancellationToken);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound($"Session {sessionId} not found");
-        }
-    }
-}
-```
-
-#### UploadController.cs
-```csharp
-namespace NLogMonitor.Api.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class UploadController : ControllerBase
-{
-    private readonly ILogService _logService;
-    private readonly ILogger<UploadController> _logger;
-    private const long MaxFileSize = 100 * 1024 * 1024; // 100 MB
-
-    public UploadController(ILogService logService, ILogger<UploadController> logger)
-    {
-        _logService = logService;
-        _logger = logger;
-    }
-
-    [HttpPost]
-    [RequestSizeLimit(MaxFileSize)]
-    [DisableFormValueModelBinding]
-    [ProducesResponseType(typeof(UploadResultDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Upload(CancellationToken cancellationToken)
-    {
-        if (!Request.HasFormContentType)
-            return BadRequest("Expected multipart/form-data");
-
-        var boundary = HeaderUtilities.RemoveQuotes(
-            MediaTypeHeaderValue.Parse(Request.ContentType).Boundary).Value;
-
-        if (string.IsNullOrWhiteSpace(boundary))
-            return BadRequest("Missing boundary in Content-Type");
-
-        var reader = new MultipartReader(boundary, Request.Body);
-        var section = await reader.ReadNextSectionAsync(cancellationToken);
-
-        while (section != null)
-        {
-            var contentDisposition = section.GetContentDispositionHeader();
-
-            if (contentDisposition?.IsFileDisposition() == true)
-            {
-                var fileName = contentDisposition.FileName.Value ?? "unknown.log";
-
-                _logger.LogInformation("Processing upload: {FileName}", fileName);
-
-                var result = await _logService.UploadAsync(
-                    section.Body,
-                    fileName,
-                    cancellationToken);
-
-                return Ok(result);
-            }
-
-            section = await reader.ReadNextSectionAsync(cancellationToken);
-        }
-
-        return BadRequest("No file found in request");
-    }
-}
-```
-
-#### Program.cs
-```csharp
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Domain & Application
-builder.Services.AddScoped<ILogService, LogService>();
-
-// Infrastructure
-builder.Services.AddSingleton<ILogParser, NLogParser>();
-builder.Services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
-builder.Services.AddScoped<ILogExporter, JsonExporter>();
-builder.Services.AddScoped<ILogExporter, CsvExporter>();
-
-// CORS for frontend
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins("http://localhost:5173") // Vite dev server
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
-// Logging
-builder.Logging.ClearProviders();
-builder.Host.UseNLog();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseCors();
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();
-```
-
-### Frontend (React + TypeScript)
-
-#### types/index.ts
-```typescript
-export enum LogLevel {
-  Trace = 0,
-  Debug = 1,
-  Info = 2,
-  Warn = 3,
-  Error = 4,
-  Fatal = 5,
-}
-
-export interface LogEntry {
-  id: number;
-  timestamp: string;
-  level: string;
-  message: string;
-  logger: string;
-  processId?: number;
-  threadId?: number;
-  exception?: string;
-}
-
-export interface PagedResult<T> {
-  items: T[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
-export interface UploadResult {
-  sessionId: string;
-  fileName: string;
-  totalEntries: number;
-  levelCounts: Record<string, number>;
-}
-
-export interface FilterOptions {
-  searchText?: string;
-  minLevel?: LogLevel;
-  maxLevel?: LogLevel;
-  fromDate?: string;
-  toDate?: string;
-  logger?: string;
-}
-```
-
-#### store/useLogStore.ts
-```typescript
-import { create } from 'zustand';
-import type { LogEntry, PagedResult, FilterOptions, UploadResult } from '@/types';
-
-interface LogState {
-  // State
-  sessionId: string | null;
-  fileName: string | null;
-  logs: LogEntry[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  isLoading: boolean;
-  error: string | null;
-  filter: FilterOptions;
-  levelCounts: Record<string, number>;
-
-  // Actions
-  setSession: (result: UploadResult) => void;
-  setLogs: (result: PagedResult<LogEntry>) => void;
-  setPage: (page: number) => void;
-  setPageSize: (size: number) => void;
-  setFilter: (filter: Partial<FilterOptions>) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  reset: () => void;
-}
-
-const initialState = {
-  sessionId: null,
-  fileName: null,
-  logs: [],
-  totalCount: 0,
-  page: 1,
-  pageSize: 100,
-  totalPages: 0,
-  isLoading: false,
-  error: null,
-  filter: {},
-  levelCounts: {},
-};
-
-export const useLogStore = create<LogState>((set) => ({
-  ...initialState,
-
-  setSession: (result) =>
-    set({
-      sessionId: result.sessionId,
-      fileName: result.fileName,
-      totalCount: result.totalEntries,
-      levelCounts: result.levelCounts,
-      page: 1,
-      error: null,
-    }),
-
-  setLogs: (result) =>
-    set({
-      logs: result.items,
-      totalCount: result.totalCount,
-      page: result.page,
-      totalPages: result.totalPages,
-    }),
-
-  setPage: (page) => set({ page }),
-  setPageSize: (pageSize) => set({ pageSize, page: 1 }),
-  setFilter: (filter) => set((state) => ({
-    filter: { ...state.filter, ...filter },
-    page: 1
-  })),
-  setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
-  reset: () => set(initialState),
-}));
-```
-
-#### api/logs.ts
-```typescript
-import axios from 'axios';
-import type { PagedResult, LogEntry, UploadResult, FilterOptions } from '@/types';
-
-const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-});
-
-export async function uploadFile(file: File): Promise<UploadResult> {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const response = await client.post<UploadResult>('/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-
-  return response.data;
-}
-
-export async function getLogs(
-  sessionId: string,
-  filter: FilterOptions,
-  page: number,
-  pageSize: number
-): Promise<PagedResult<LogEntry>> {
-  const params = new URLSearchParams();
-
-  if (filter.searchText) params.append('search', filter.searchText);
-  if (filter.minLevel !== undefined) params.append('minLevel', filter.minLevel.toString());
-  if (filter.maxLevel !== undefined) params.append('maxLevel', filter.maxLevel.toString());
-  if (filter.fromDate) params.append('fromDate', filter.fromDate);
-  if (filter.toDate) params.append('toDate', filter.toDate);
-  if (filter.logger) params.append('logger', filter.logger);
-
-  params.append('page', page.toString());
-  params.append('pageSize', pageSize.toString());
-
-  const response = await client.get<PagedResult<LogEntry>>(
-    `/logs/${sessionId}?${params.toString()}`
-  );
-
-  return response.data;
-}
-
-export async function exportLogs(
-  sessionId: string,
-  format: 'json' | 'csv',
-  filter?: FilterOptions
-): Promise<Blob> {
-  const params = new URLSearchParams();
-  params.append('format', format);
-
-  if (filter?.searchText) params.append('search', filter.searchText);
-  // ... other filters
-
-  const response = await client.get(`/export/${sessionId}?${params.toString()}`, {
-    responseType: 'blob',
-  });
-
-  return response.data;
-}
-```
-
-#### hooks/useLogs.ts
-```typescript
-import { useEffect } from 'react';
-import { useLogStore } from '@/store/useLogStore';
-import { getLogs } from '@/api/logs';
-import { useDebounce } from './useDebounce';
-
-export function useLogs() {
-  const {
-    sessionId,
-    filter,
-    page,
-    pageSize,
-    setLogs,
-    setLoading,
-    setError,
-  } = useLogStore();
-
-  const debouncedSearch = useDebounce(filter.searchText, 300);
-
-  useEffect(() => {
-    if (!sessionId) return;
-
-    const fetchLogs = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const result = await getLogs(
-          sessionId,
-          { ...filter, searchText: debouncedSearch },
-          page,
-          pageSize
-        );
-        setLogs(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch logs');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLogs();
-  }, [sessionId, debouncedSearch, filter.minLevel, filter.maxLevel, page, pageSize]);
-}
-```
-
-#### components/LogTable/LogTable.tsx
-```tsx
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  type ColumnDef,
-} from '@tanstack/react-table';
-import { useLogStore } from '@/store/useLogStore';
-import { useLogs } from '@/hooks/useLogs';
-import type { LogEntry } from '@/types';
-import { cn } from '@/lib/utils';
-
-const levelColors: Record<string, string> = {
-  Trace: 'text-gray-400',
-  Debug: 'text-gray-500',
-  Info: 'text-blue-600',
-  Warn: 'text-yellow-600',
-  Error: 'text-red-600',
-  Fatal: 'text-red-800 font-bold',
-};
-
-const columns: ColumnDef<LogEntry>[] = [
-  {
-    accessorKey: 'timestamp',
-    header: 'Time',
-    cell: ({ getValue }) => {
-      const date = new Date(getValue<string>());
-      return date.toLocaleTimeString('ru-RU', {
-        hour12: false,
-        fractionalSecondDigits: 3
-      });
-    },
-    size: 120,
-  },
-  {
-    accessorKey: 'level',
-    header: 'Level',
-    cell: ({ getValue }) => {
-      const level = getValue<string>();
-      return (
-        <span className={cn('font-mono text-sm', levelColors[level])}>
-          {level}
-        </span>
-      );
-    },
-    size: 80,
-  },
-  {
-    accessorKey: 'message',
-    header: 'Message',
-    cell: ({ getValue }) => (
-      <span className="font-mono text-sm truncate block max-w-[600px]">
-        {getValue<string>()}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'logger',
-    header: 'Logger',
-    size: 200,
-  },
-];
-
-export function LogTable() {
-  useLogs(); // Fetch logs on mount and filter changes
-
-  const { logs, isLoading, error } = useLogStore();
-
-  const table = useReactTable({
-    data: logs,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  if (error) {
-    return (
-      <div className="p-4 text-red-600 bg-red-50 rounded-lg">
-        Error: {error}
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative overflow-auto border rounded-lg">
-      {isLoading && (
-        <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
-          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
-        </div>
-      )}
-
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 sticky top-0">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-4 py-3 text-left font-medium text-gray-700 border-b"
-                  style={{ width: header.getSize() }}
-                >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50 border-b">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-2">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {logs.length === 0 && !isLoading && (
-        <div className="p-8 text-center text-gray-500">
-          No log entries found
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
-#### components/FileUpload/FileUpload.tsx
-```tsx
-import { useCallback, useState } from 'react';
-import { Upload, FileText, X } from 'lucide-react';
-import { uploadFile } from '@/api/logs';
-import { useLogStore } from '@/store/useLogStore';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-
-export function FileUpload() {
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const { setSession, setLoading, setError, fileName, reset } = useLogStore();
-
-  const handleFile = useCallback(async (file: File) => {
-    if (!file.name.endsWith('.log') && !file.name.endsWith('.txt')) {
-      setError('Please upload a .log or .txt file');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setUploadProgress(0);
-
-    try {
-      const result = await uploadFile(file);
-      setSession(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setLoading(false);
-      setUploadProgress(null);
-    }
-  }, [setSession, setLoading, setError]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  }, [handleFile]);
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
-  }, [handleFile]);
-
-  if (fileName) {
-    return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg">
-        <FileText className="h-5 w-5 text-green-600" />
-        <span className="text-green-800 font-medium">{fileName}</span>
-        <Button variant="ghost" size="sm" onClick={reset}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        'relative border-2 border-dashed rounded-lg p-8 text-center transition-colors',
-        isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-      )}
-      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-      onDragLeave={() => setIsDragging(false)}
-      onDrop={handleDrop}
-    >
-      <input
-        type="file"
-        accept=".log,.txt"
-        onChange={handleChange}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-      />
-
-      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-      <p className="mt-4 text-lg font-medium text-gray-700">
-        Drop log file here or click to browse
-      </p>
-      <p className="mt-1 text-sm text-gray-500">
-        Supports .log and .txt files up to 100MB
-      </p>
-
-      {uploadProgress !== null && (
-        <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-blue-500 h-2 rounded-full transition-all"
-            style={{ width: `${uploadProgress}%` }}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
-#### components/FilterPanel/FilterPanel.tsx
-```tsx
-import { useLogStore } from '@/store/useLogStore';
-import { LogLevel } from '@/types';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-
-const levels = [
-  { value: LogLevel.Trace, label: 'Trace', color: 'bg-gray-200' },
-  { value: LogLevel.Debug, label: 'Debug', color: 'bg-gray-300' },
-  { value: LogLevel.Info, label: 'Info', color: 'bg-blue-200' },
-  { value: LogLevel.Warn, label: 'Warn', color: 'bg-yellow-200' },
-  { value: LogLevel.Error, label: 'Error', color: 'bg-red-200' },
-  { value: LogLevel.Fatal, label: 'Fatal', color: 'bg-red-400' },
-];
-
-export function FilterPanel() {
-  const { filter, setFilter, levelCounts } = useLogStore();
-
-  const handleLevelToggle = (level: LogLevel) => {
-    const currentMin = filter.minLevel ?? LogLevel.Trace;
-
-    if (level === currentMin) {
-      // Reset to show all
-      setFilter({ minLevel: undefined });
-    } else {
-      setFilter({ minLevel: level });
-    }
-  };
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {levels.map(({ value, label, color }) => {
-        const count = levelCounts[label] ?? 0;
-        const isActive = (filter.minLevel ?? LogLevel.Trace) <= value;
-
-        return (
-          <Button
-            key={value}
-            variant="outline"
-            size="sm"
-            onClick={() => handleLevelToggle(value)}
-            className={cn(
-              'gap-2 transition-all',
-              isActive ? color : 'opacity-50'
-            )}
-          >
-            {label}
-            <span className="text-xs bg-white/50 px-1.5 py-0.5 rounded">
-              {count}
-            </span>
-          </Button>
-        );
-      })}
-    </div>
-  );
-}
-```
-
-#### App.tsx
-```tsx
-import { FileUpload } from '@/components/FileUpload/FileUpload';
-import { FilterPanel } from '@/components/FilterPanel/FilterPanel';
-import { SearchBar } from '@/components/SearchBar/SearchBar';
-import { LogTable } from '@/components/LogTable/LogTable';
-import { ExportButton } from '@/components/ExportButton/ExportButton';
-import { Pagination } from '@/components/Pagination/Pagination';
-import { useLogStore } from '@/store/useLogStore';
-
-export default function App() {
-  const { sessionId, totalCount } = useLogStore();
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            NLog Monitor
-          </h1>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {!sessionId ? (
-          <FileUpload />
-        ) : (
-          <>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="flex-1 max-w-md">
-                <SearchBar />
-              </div>
-              <div className="flex gap-2">
-                <FileUpload />
-                <ExportButton />
-              </div>
-            </div>
-
-            <FilterPanel />
-
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-4 py-3 border-b flex justify-between items-center">
-                <span className="text-sm text-gray-600">
-                  {totalCount.toLocaleString()} entries
-                </span>
-                <Pagination />
-              </div>
-              <LogTable />
-            </div>
-          </>
-        )}
-      </main>
-    </div>
-  );
-}
-```
-
----
-
-## Фазы разработки
+## План разработки
 
 ### Фаза 1: Базовая инфраструктура
-**Цель:** Настроить проект и базовую архитектуру
+- [ ] **1.1 Создание solution и проектов**
+  - [ ] Создать NLogMonitor.sln
+  - [ ] Создать NLogMonitor.Domain (classlib)
+  - [ ] Создать NLogMonitor.Application (classlib)
+  - [ ] Создать NLogMonitor.Infrastructure (classlib)
+  - [ ] Создать NLogMonitor.Api (webapi)
+  - [ ] Настроить project references между слоями
 
-1. Создание solution и проектов
-2. Настройка DI и конфигурации
-3. Базовые domain entities
-4. Интерфейсы application layer
-5. Swagger документация
+- [ ] **1.2 Domain Layer**
+  - [ ] Создать LogEntry entity (Id, Timestamp, Level, Message, Logger, ProcessId, ThreadId, Exception)
+  - [ ] Создать LogLevel enum (Trace, Debug, Info, Warn, Error, Fatal)
+  - [ ] Создать LogSession entity (Id, FileName, FilePath, FileSize, CreatedAt, ExpiresAt, Entries)
+  - [ ] Создать RecentLogEntry entity (Path, IsDirectory, OpenedAt)
 
-### Фаза 2: Парсинг и хранение
-**Цель:** Реализовать загрузку и парсинг логов
+- [ ] **1.3 Application Layer - интерфейсы**
+  - [ ] Определить ILogParser interface (ParseAsync, CanParse)
+  - [ ] Определить ISessionStorage interface (SaveAsync, GetAsync, DeleteAsync)
+  - [ ] Определить ILogService interface (OpenFileAsync, GetLogsAsync)
+  - [ ] Определить IFileWatcherService interface (StartWatching, StopWatching)
+  - [ ] Определить ILogExporter interface (ExportAsync)
+  - [ ] Определить IRecentLogsRepository interface (GetAllAsync, AddAsync)
 
-1. NLog parser с поддержкой стандартного формата
-2. Multi-line message handling
-3. In-memory session storage
-4. Session expiration и cleanup
-5. Unit tests для парсера
+- [ ] **1.4 Application Layer - DTOs**
+  - [ ] Создать LogEntryDto
+  - [ ] Создать FilterOptionsDto (SearchText, MinLevel, MaxLevel, FromDate, ToDate, Logger)
+  - [ ] Создать PagedResultDto<T> (Items, TotalCount, Page, PageSize, TotalPages)
+  - [ ] Создать OpenFileResultDto (SessionId, FileName, FilePath, TotalEntries, LevelCounts)
+  - [ ] Создать RecentLogDto
 
-### Фаза 3: API endpoints
-**Цель:** Реализовать REST API
+- [ ] **1.5 Настройка API проекта**
+  - [ ] Настроить DI в Program.cs
+  - [ ] Добавить NuGet пакеты (FluentValidation, NLog, Swashbuckle)
+  - [ ] Настроить Swagger
+  - [ ] Настроить CORS для development
+  - [ ] Настроить NLog
+  - [ ] Настроить appsettings.json
+  - [ ] Первый запуск и проверка Swagger UI
 
-1. Upload controller со streaming
-2. Logs controller с фильтрацией
-3. Export controller (JSON/CSV)
-4. Error handling middleware
-5. API tests
+**Результат фазы:** Запускаемое API с Swagger UI, базовая структура проекта.
 
-### Фаза 4: Frontend базовый
-**Цель:** Создать React приложение
+---
 
-1. Vite + React + TypeScript setup
-2. State management (Zustand)
-3. API client
-4. File upload component
-5. Basic log table
+### Фаза 2: Парсинг и хранение логов
+- [ ] **2.1 NLog Parser**
+  - [ ] Реализовать NLogParser с Regex для стандартного формата
+  - [ ] Добавить поддержку multi-line messages (stack traces)
+  - [ ] Реализовать IAsyncEnumerable для streaming парсинга больших файлов
+  - [ ] Обработка различных форматов дат
+  - [ ] Обработка ошибок парсинга (логирование непарсируемых строк)
+
+- [ ] **2.2 Session Storage**
+  - [ ] Реализовать InMemorySessionStorage с ConcurrentDictionary
+  - [ ] Добавить session expiration logic (TTL 1 час)
+  - [ ] Реализовать cleanup timer для удаления просроченных сессий
+  - [ ] Реализовать IDisposable для корректной остановки таймера
+
+- [ ] **2.3 Directory Scanner**
+  - [ ] Реализовать FindLastLogFileByName (сортировка по имени в обратном порядке)
+  - [ ] Поддержка паттерна `*.log`
+  - [ ] Обработка пустой директории
+
+- [ ] **2.4 Application Service**
+  - [ ] Реализовать LogService.OpenFileAsync (чтение + парсинг + сохранение сессии)
+  - [ ] Реализовать LogService.GetLogsAsync (фильтрация + пагинация)
+
+- [ ] **2.5 Тестирование**
+  - [ ] Unit tests для NLogParser (разные форматы, multi-line, ошибки)
+  - [ ] Unit tests для InMemorySessionStorage
+  - [ ] Тестирование с реальными лог-файлами
+
+**Результат фазы:** Работающий парсер логов с хранением в памяти.
+
+---
+
+### Фаза 3: API Endpoints
+- [ ] **3.1 Files Controller**
+  - [ ] POST /api/files/open — открытие файла по пути
+  - [ ] POST /api/files/open-directory — открытие директории (выбор последнего по имени файла)
+  - [ ] POST /api/files/{sessionId}/stop-watching — остановка мониторинга
+
+- [ ] **3.2 Upload Controller (Web режим)**
+  - [ ] POST /api/upload — загрузка файла через multipart/form-data
+  - [ ] Валидация расширения (.log, .txt)
+  - [ ] Лимит размера файла (100MB)
+
+- [ ] **3.3 Logs Controller**
+  - [ ] GET /api/logs/{sessionId} — получение логов с фильтрацией
+  - [ ] Query параметры: search, minLevel, maxLevel, fromDate, toDate, logger, page, pageSize
+  - [ ] Валидация параметров (FluentValidation)
+
+- [ ] **3.4 Export Controller**
+  - [ ] GET /api/export/{sessionId} — экспорт с query параметром format (json/csv)
+  - [ ] Реализовать JsonExporter
+  - [ ] Реализовать CsvExporter
+  - [ ] Поддержка фильтров при экспорте
+
+- [ ] **3.5 Recent Controller**
+  - [ ] GET /api/recent — список недавних файлов/директорий
+  - [ ] Реализовать RecentLogsFileRepository (JSON файл в AppData)
+  - [ ] Лимит на количество записей (10-20)
+
+- [ ] **3.6 Middleware и обработка ошибок**
+  - [ ] ExceptionHandlingMiddleware (unified error response)
+  - [ ] Логирование ошибок через NLog
+
+- [ ] **3.7 Документация и тестирование**
+  - [ ] XML comments для Swagger
+  - [ ] Integration tests для контроллеров
+  - [ ] Тестирование через Postman/curl
+
+**Результат фазы:** Полнофункциональное REST API для работы с логами.
+
+---
+
+### Фаза 4: Frontend базовый (Vue 3)
+- [ ] **4.1 Инициализация проекта**
+  - [ ] Создать Vite + Vue 3 + TypeScript проект
+  - [ ] Настроить path aliases (@/)
+  - [ ] Установить и настроить Tailwind CSS
+  - [ ] Установить shadcn-vue и инициализировать компоненты
+
+- [ ] **4.2 Типы и API клиент**
+  - [ ] Определить TypeScript types (LogEntry, PagedResult, FilterOptions, etc.)
+  - [ ] Создать axios client с baseURL
+  - [ ] Создать API методы (uploadFile, getLogs, openFile, openDirectory, exportLogs)
+
+- [ ] **4.3 State Management (Pinia)**
+  - [ ] Создать logStore (sessionId, fileName, logs, totalCount, page, pageSize, isLoading, error)
+  - [ ] Создать filterStore (searchText, minLevel, maxLevel, fromDate, toDate, logger)
+  - [ ] Создать recentStore (recentFiles)
+
+- [ ] **4.4 FileSelector компонент**
+  - [ ] Кнопка "Выбрать файл" (input type=file)
+  - [ ] Drag-and-drop зона для загрузки
+  - [ ] Валидация расширения файла
+  - [ ] Loading state при загрузке
+
+- [ ] **4.5 LogTable компонент**
+  - [ ] Базовая таблица с TanStack Table
+  - [ ] Колонки: Time, Level, Message, Logger
+  - [ ] Цветовая индикация уровней логирования
+  - [ ] Отображение состояния "нет данных"
+
+- [ ] **4.6 Интеграция и проверка**
+  - [ ] App.vue с базовой разметкой
+  - [ ] Проверка загрузки файла → отображение логов
+  - [ ] Настройка proxy в vite.config.ts для API
+
+**Результат фазы:** Работающее Vue приложение с загрузкой файла и отображением логов.
+
+---
 
 ### Фаза 5: UI компоненты
-**Цель:** Полный интерфейс
+- [ ] **5.1 FilterPanel компонент**
+  - [ ] Кнопки-фильтры по уровням (Trace, Debug, Info, Warn, Error, Fatal)
+  - [ ] Подсчёт количества записей каждого уровня
+  - [ ] Активное/неактивное состояние фильтров
+  - [ ] Цветовая индикация уровней
 
-1. Filter panel
-2. Search bar с debounce
-3. Pagination
-4. Export functionality
-5. Error handling UI
+- [ ] **5.2 SearchBar компонент**
+  - [ ] Input с placeholder
+  - [ ] Debounce 300ms
+  - [ ] Иконка поиска
+  - [ ] Кнопка очистки
 
-### Фаза 6: Оптимизация
-**Цель:** Производительность и UX
+- [ ] **5.3 Pagination компонент**
+  - [ ] Кнопки Previous/Next
+  - [ ] Выбор размера страницы (50, 100, 200)
+  - [ ] Отображение текущей страницы и общего количества
+  - [ ] Прямой переход на страницу (опционально)
 
-1. Virtual scrolling для больших файлов
-2. Caching на backend
-3. Lazy loading
-4. Loading states
-5. Responsive design
+- [ ] **5.4 ExportButton компонент**
+  - [ ] Dropdown с выбором формата (JSON/CSV)
+  - [ ] Скачивание файла
+  - [ ] Loading state
 
-### Фаза 7: Финализация
-**Цель:** Production-ready
+- [ ] **5.5 RecentFiles компонент**
+  - [ ] Список недавних файлов/директорий
+  - [ ] Иконки для файла/директории
+  - [ ] Клик для повторного открытия
+  - [ ] Отображение в начальном экране (когда файл не загружен)
 
-1. E2E tests
-2. Docker support
-3. CI/CD pipeline
-4. Documentation
-5. Performance testing
+- [ ] **5.6 Улучшение UX**
+  - [ ] Loading spinner для таблицы
+  - [ ] Error toast/alert
+  - [ ] Empty state (нет результатов поиска)
+  - [ ] Responsive design (адаптивная верстка)
 
----
-
-## Сравнение альтернатив
-
-### React vs Vue для Frontend
-
-| Критерий | React | Vue |
-|----------|-------|-----|
-| **Ecosystem** | Богатейший | Хороший |
-| **TypeScript** | Отличный | Отличный |
-| **Learning curve** | Средняя | Низкая |
-| **State management** | Zustand/Redux | Pinia (built-in) |
-| **Component libs** | shadcn/ui, Radix | Vuetify, Quasar |
-| **Table libs** | TanStack Table | TanStack Table |
-| **Performance** | Отличная | Отличная |
-| **Community** | Огромное | Большое |
-| **Job market** | Лидер | Второе место |
-
-**Рекомендация:** React - больше библиотек, лучшая интеграция с TypeScript, shadcn/ui даёт современный UI.
-
-### State Management
-
-| Решение | React | Vue | Размер | Сложность |
-|---------|-------|-----|--------|-----------|
-| **Zustand** | Да | - | 1kb | Низкая |
-| **Redux Toolkit** | Да | - | 10kb | Средняя |
-| **Pinia** | - | Да | 1kb | Низкая |
-| **Jotai** | Да | - | 2kb | Низкая |
-
-**Рекомендация:** Zustand для React - минимальный boilerplate, простой API.
-
-### UI Libraries
-
-| Библиотека | Стиль | Кастомизация | Accessibility |
-|------------|-------|--------------|---------------|
-| **shadcn/ui** | Tailwind | Полная | Отличная |
-| **Radix UI** | Headless | Полная | Отличная |
-| **MUI** | Material | Средняя | Хорошая |
-| **Ant Design** | Ant Design | Средняя | Средняя |
-
-**Рекомендация:** shadcn/ui - копируемые компоненты, Tailwind, полный контроль.
-
-### Backend Storage
-
-| Вариант | Плюсы | Минусы | Для NLogMonitor |
-|---------|-------|--------|-----------------|
-| **In-Memory** | Быстро, просто | Теряется при рестарте | MVP |
-| **Redis** | Быстро, TTL | Доп. зависимость | Масштабирование |
-| **SQLite** | Персистентность | Медленнее | Локальное хранение |
-| **PostgreSQL** | Полнофункциональная БД | Overkill для логов | Enterprise |
-
-**Рекомендация:** In-Memory для MVP с опцией Redis для масштабирования.
-
-### API Style
-
-| Стиль | Плюсы | Минусы |
-|-------|-------|--------|
-| **Minimal API** | Компактный код, быстрый старт | Меньше структуры |
-| **Controllers** | Организованность, атрибуты | Больше кода |
-| **Hybrid** | Лучшее из обоих | Смешанный стиль |
-
-**Рекомендация:** Controllers для основных endpoints, Minimal API для простых.
+**Результат фазы:** Полнофункциональный UI с фильтрацией, поиском, пагинацией и экспортом.
 
 ---
 
-## Чек-листы
+### Фаза 6: Real-time обновления
+- [ ] **6.1 Backend - FileWatcher**
+  - [ ] Реализовать FileWatcherService с FileSystemWatcher
+  - [ ] Debounce событий изменения файла (200ms)
+  - [ ] Отслеживание нескольких сессий одновременно
+  - [ ] Корректная остановка при закрытии сессии
 
-### Фаза 1: Базовая инфраструктура
-- [ ] Создать NLogMonitor.sln
-- [ ] Создать NLogMonitor.Domain проект
-- [ ] Создать NLogMonitor.Application проект
-- [ ] Создать NLogMonitor.Infrastructure проект
-- [ ] Создать NLogMonitor.Api проект
-- [ ] Настроить project references
-- [ ] Добавить NuGet пакеты
-- [ ] Настроить DI в Program.cs
-- [ ] Добавить Swagger
-- [ ] Создать LogEntry entity
-- [ ] Создать LogLevel enum
-- [ ] Создать LogSession entity
-- [ ] Определить ILogParser interface
-- [ ] Определить ISessionStorage interface
-- [ ] Определить ILogService interface
-- [ ] Создать DTOs
-- [ ] Настроить appsettings.json
-- [ ] Настроить NLog
-- [ ] Первый запуск и проверка Swagger
+- [ ] **6.2 Backend - SignalR Hub**
+  - [ ] Создать LogWatcherHub
+  - [ ] Метод JoinSession(sessionId) — подписка на обновления
+  - [ ] Метод LeaveSession(sessionId) — отписка
+  - [ ] Событие NewLogs — отправка новых записей клиентам
+  - [ ] Настройка SignalR в Program.cs
 
-### Фаза 2: Парсинг и хранение
-- [ ] Реализовать NLogParser с Regex
-- [ ] Добавить поддержку multi-line messages
-- [ ] Реализовать IAsyncEnumerable для streaming
-- [ ] Создать InMemorySessionStorage
-- [ ] Добавить session expiration logic
-- [ ] Реализовать cleanup timer
-- [ ] Написать unit tests для парсера
-- [ ] Тестирование с реальными лог-файлами
-- [ ] Обработка различных форматов дат
-- [ ] Обработка ошибок парсинга
+- [ ] **6.3 Frontend - SignalR клиент**
+  - [ ] Установить @microsoft/signalr
+  - [ ] Создать signalr.ts — connection manager
+  - [ ] Создать composable useFileWatcher(sessionId)
+  - [ ] Автоматическое переподключение при разрыве
 
-### Фаза 3: API endpoints
-- [ ] Создать UploadController
-- [ ] Реализовать streaming upload
-- [ ] Добавить size limit (100MB)
-- [ ] Создать LogsController
-- [ ] Реализовать фильтрацию
-- [ ] Реализовать пагинацию
-- [ ] Создать ExportController
-- [ ] Реализовать JSON export
-- [ ] Реализовать CSV export
-- [ ] Добавить exception handling middleware
-- [ ] Настроить CORS
-- [ ] Написать integration tests
-- [ ] Документировать API в Swagger
-- [ ] Тестирование через Postman/curl
+- [ ] **6.4 Интеграция**
+  - [ ] При открытии файла — подписка на обновления
+  - [ ] При получении NewLogs — добавление в store
+  - [ ] Индикатор "Live" в UI
+  - [ ] При закрытии/смене файла — отписка
 
-### Фаза 4: Frontend базовый
-- [ ] Создать Vite + React + TypeScript проект
-- [ ] Настроить путь aliases (@/)
-- [ ] Установить и настроить Tailwind
-- [ ] Установить shadcn/ui
-- [ ] Настроить Zustand store
-- [ ] Создать API client (axios)
-- [ ] Определить TypeScript types
-- [ ] Создать FileUpload компонент
-- [ ] Реализовать drag-and-drop
-- [ ] Создать базовый LogTable
-- [ ] Настроить routing (если нужен)
-- [ ] Проверить работу upload
-- [ ] Проверить отображение логов
+- [ ] **6.5 Тестирование**
+  - [ ] Тест: изменение файла → появление новых записей
+  - [ ] Тест: переподключение при разрыве соединения
+  - [ ] Нагрузочное тестирование (частые изменения файла)
 
-### Фаза 5: UI компоненты
-- [ ] Создать FilterPanel компонент
-- [ ] Реализовать level filters
-- [ ] Создать SearchBar с debounce
-- [ ] Создать Pagination компонент
-- [ ] Создать ExportButton
-- [ ] Добавить loading states
-- [ ] Добавить error handling UI
-- [ ] Реализовать level color coding
-- [ ] Добавить tooltips
-- [ ] Адаптивная верстка
-- [ ] Тёмная тема (опционально)
-
-### Фаза 6: Оптимизация
-- [ ] Добавить virtual scrolling (react-virtual)
-- [ ] Оптимизировать re-renders (React.memo)
-- [ ] Добавить caching на backend
-- [ ] Оптимизировать bundle size
-- [ ] Lazy loading компонентов
-- [ ] Skeleton loaders
-- [ ] Optimistic updates
-- [ ] Performance profiling
-- [ ] Lighthouse audit
-- [ ] Memory leak проверка
-
-### Фаза 7: Финализация
-- [ ] Написать E2E tests (Playwright)
-- [ ] Создать Dockerfile для API
-- [ ] Создать Dockerfile для frontend
-- [ ] docker-compose.yml
-- [ ] GitHub Actions CI/CD
-- [ ] README.md с инструкциями
-- [ ] CHANGELOG.md
-- [ ] Performance testing с большими файлами
-- [ ] Security review
-- [ ] Accessibility audit
-- [ ] Cross-browser testing
-- [ ] Release v1.0.0
-
-### Pre-release Checklist
-- [ ] Все tests проходят
-- [ ] No critical/high security issues
-- [ ] Performance benchmarks OK
-- [ ] Documentation complete
-- [ ] Docker images built
-- [ ] Demo data prepared
-- [ ] Changelog updated
-- [ ] Version bumped
-- [ ] Git tags created
+**Результат фазы:** Автоматическое обновление логов при изменении файла.
 
 ---
 
-## Дополнительные материалы
+### Фаза 7: Docker конфигурация
+- [ ] **7.1 Backend Dockerfile**
+  - [ ] Multi-stage build (build → publish → runtime)
+  - [ ] Оптимизация слоёв для кэширования
+  - [ ] Non-root user для безопасности
+  - [ ] Health check endpoint
 
-### Полезные ссылки
-- [ASP.NET Core Docs](https://docs.microsoft.com/aspnet/core)
-- [React Docs](https://react.dev)
-- [TanStack Table](https://tanstack.com/table)
-- [Zustand](https://github.com/pmndrs/zustand)
-- [shadcn/ui](https://ui.shadcn.com)
-- [Tailwind CSS](https://tailwindcss.com)
+- [ ] **7.2 Frontend Dockerfile**
+  - [ ] Multi-stage build (build → nginx)
+  - [ ] Оптимизированный nginx.conf
+  - [ ] Gzip compression
+  - [ ] SPA routing (try_files)
 
-### NLog формат по умолчанию
+- [ ] **7.3 docker-compose.yml**
+  - [ ] Сервис api (backend)
+  - [ ] Сервис client (frontend + nginx)
+  - [ ] Volumes для логов и данных
+  - [ ] Переменные окружения
+
+- [ ] **7.4 docker-compose.override.yml (development)**
+  - [ ] Hot reload для backend (watch mode)
+  - [ ] Vite dev server для frontend
+  - [ ] Порты для отладки
+
+- [ ] **7.5 Документация**
+  - [ ] Инструкции по запуску в README
+  - [ ] Переменные окружения (.env.example)
+
+**Результат фазы:** Приложение запускается одной командой `docker-compose up`.
+
+---
+
+### Фаза 8: Client-side Logging
+- [ ] **8.1 Backend - ClientLogsController**
+  - [ ] POST /api/client-logs — приём batch логов
+  - [ ] Валидация Level (обязательное поле)
+  - [ ] Нормализация алиасов (warning→warn, fatal/critical→error)
+  - [ ] Rate limiting для защиты от спама
+
+- [ ] **8.2 Backend - логирование**
+  - [ ] Запись в общий лог-файл с префиксом [CLIENT]
+  - [ ] Structured logging с контекстом (userId, version, url)
+  - [ ] Санитизация входных данных
+
+- [ ] **8.3 Frontend - ClientLogger service**
+  - [ ] Методы: trace, debug, info, warn, error, exception
+  - [ ] Буферизация логов (batchSize: 10)
+  - [ ] Автоматический flush по таймеру (5 сек)
+  - [ ] Retry с exponential backoff (maxRetries: 3)
+
+- [ ] **8.4 Frontend - глобальный контекст**
+  - [ ] setGlobalContext({ userId, version, sessionId })
+  - [ ] Автоматическое добавление url, userAgent
+
+- [ ] **8.5 Frontend - error handlers**
+  - [ ] window.onerror — глобальные ошибки JS
+  - [ ] window.onunhandledrejection — необработанные Promise
+  - [ ] Vue Error Boundary (errorCaptured hook)
+
+- [ ] **8.6 Тестирование**
+  - [ ] Unit tests для ClientLogger
+  - [ ] Integration tests для /api/client-logs
+  - [ ] Тест rate limiting
+
+**Результат фазы:** Ошибки с фронтенда автоматически отправляются на сервер.
+
+---
+
+### Фаза 9: Photino Desktop
+- [ ] **9.1 Создание Desktop проекта**
+  - [ ] Создать NLogMonitor.Desktop (console → winexe)
+  - [ ] Добавить Photino.NET NuGet пакет
+  - [ ] Reference на NLogMonitor.Api
+
+- [ ] **9.2 Program.cs - основа**
+  - [ ] Запуск embedded ASP.NET Core в фоновом потоке
+  - [ ] Создание PhotinoWindow
+  - [ ] Загрузка index.html (production) или localhost:5173 (dev)
+  - [ ] RegisterWebMessageReceivedHandler для IPC
+
+- [ ] **9.3 Нативные диалоги**
+  - [ ] ShowOpenFileDialog (OpenFileDialog)
+  - [ ] ShowOpenFolderDialog (FolderBrowserDialog)
+  - [ ] Фильтры файлов (*.log)
+
+- [ ] **9.4 JS ↔ .NET Bridge**
+  - [ ] Message handler для команд (openFile, openFolder, isDesktop)
+  - [ ] JSON сериализация запросов/ответов
+  - [ ] Отправка результата обратно в WebView
+
+- [ ] **9.5 Frontend - usePhotinoBridge composable**
+  - [ ] Определение режима (isDesktop)
+  - [ ] showOpenFileDialog() → Promise<string | null>
+  - [ ] showOpenFolderDialog() → Promise<string | null>
+  - [ ] Fallback на web-версию если не desktop
+
+- [ ] **9.6 FileSelector - режимы работы**
+  - [ ] Web: drag-and-drop + input[type=file]
+  - [ ] Desktop: нативные кнопки "Открыть файл" / "Открыть директорию"
+  - [ ] Переключение на основе isDesktop
+
+- [ ] **9.7 Сборка и публикация**
+  - [ ] npm run build → client/dist
+  - [ ] Копирование dist в wwwroot
+  - [ ] dotnet publish -c Release -r win-x64 --self-contained
+  - [ ] Тестирование собранного приложения
+
+**Результат фазы:** Desktop приложение с нативными диалогами.
+
+---
+
+### Фаза 10: Оптимизация и тестирование
+- [ ] **10.1 Performance - Frontend**
+  - [ ] Virtual scrolling для больших списков (@tanstack/vue-virtual)
+  - [ ] Lazy loading компонентов (defineAsyncComponent)
+  - [ ] Оптимизация bundle size (analyze + tree shaking)
+  - [ ] Memoization для вычисляемых значений
+
+- [ ] **10.2 Performance - Backend**
+  - [ ] IMemoryCache для частых запросов
+  - [ ] Streaming для экспорта больших файлов
+  - [ ] Оптимизация парсера (Span<char>)
+
+- [ ] **10.3 UX улучшения**
+  - [ ] Skeleton loaders
+  - [ ] Smooth animations
+  - [ ] Keyboard shortcuts (Ctrl+F для поиска)
+  - [ ] Dark mode (опционально)
+
+- [ ] **10.4 Тестирование**
+  - [ ] E2E tests (Playwright)
+  - [ ] Performance testing с большими файлами (100MB+, 1M+ записей)
+  - [ ] Cross-browser testing
+  - [ ] Cross-platform testing Desktop (Windows, Linux, macOS)
+
+- [ ] **10.5 Документация**
+  - [ ] README.md с инструкциями
+  - [ ] Changelog
+  - [ ] Примеры использования API
+
+- [ ] **10.6 Финализация**
+  - [ ] Security review
+  - [ ] Code cleanup
+  - [ ] Release v1.0.0
+
+**Результат фазы:** Production-ready приложение.
+
+---
+
+## Docker конфигурация
+
+### docker-compose.yml
+```yaml
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/NLogMonitor.Api/Dockerfile
+    ports:
+      - "5000:8080"
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+```
+
+### Команды запуска
+```bash
+# Production
+docker-compose up -d --build
+
+# Development (с hot reload)
+docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+
+# Только backend
+docker-compose up api
+
+# Просмотр логов
+docker-compose logs -f api
+```
+
+---
+
+## NLog формат
+
+### Поддерживаемый формат по умолчанию
 ```
 ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid}
 ```
-Пример: `2024-01-15 10:30:45.1234|INFO|Application started|MyApp.Program|1234|1`
 
-### Команды для старта
-```bash
-# Backend
-dotnet new sln -n NLogMonitor
-dotnet new classlib -n NLogMonitor.Domain
-dotnet new classlib -n NLogMonitor.Application
-dotnet new classlib -n NLogMonitor.Infrastructure
-dotnet new webapi -n NLogMonitor.Api
-
-# Frontend
-npm create vite@latest client -- --template react-ts
-cd client
-npm install zustand axios @tanstack/react-table lucide-react
-npx shadcn@latest init
+### Пример записи
 ```
+2024-01-15 10:30:45.1234|INFO|Application started|MyApp.Program|1234|1
+2024-01-15 10:30:46.5678|ERROR|Unhandled exception|MyApp.Service|1234|5
+System.NullReferenceException: Object reference not set...
+   at MyApp.Service.Process()
+   at MyApp.Program.Main()
+```
+
+---
+
+## Полезные ссылки
+
+- [Vue 3 Docs](https://vuejs.org/)
+- [Pinia](https://pinia.vuejs.org/)
+- [shadcn-vue](https://www.shadcn-vue.com/)
+- [TanStack Table Vue](https://tanstack.com/table/latest/docs/framework/vue/vue-table)
+- [Photino.NET](https://www.tryphotino.io/)
+- [ASP.NET Core Docs](https://docs.microsoft.com/aspnet/core)
+- [SignalR](https://docs.microsoft.com/aspnet/core/signalr)
+- [Docker Compose](https://docs.docker.com/compose/)
