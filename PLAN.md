@@ -17,7 +17,7 @@
 - **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
 ### Ключевые возможности
-- Открытие лог-файла через нативный диалог или drag-and-drop
+- Открытие лог-файла через нативный диалог (Web: загрузка файла, Desktop: системный диалог выбора)
 - Открытие директории логов (автоматический выбор последнего по имени .log файла)
 - Мониторинг изменений файла в реальном времени (FileSystemWatcher + SignalR)
 - Парсинг стандартного формата NLog
@@ -113,7 +113,7 @@ fileName="${var:logDirectory}/${shortdate}.log"
 ### Backend (ASP.NET Core)
 | Компонент | Технология | Версия |
 |-----------|------------|--------|
-| Framework | ASP.NET Core | 9.0 |
+| Framework | ASP.NET Core | 10.0 |
 | API Style | Controllers + Minimal API | - |
 | DI Container | Microsoft.Extensions.DI | Built-in |
 | Validation | FluentValidation | 11.x |
@@ -140,7 +140,7 @@ fileName="${var:logDirectory}/${shortdate}.log"
 |-----------|------------|--------|
 | Framework | Photino.NET | 3.x |
 | WebView | Platform native | Edge/WebKit/GTK |
-| File Dialogs | System.Windows.Forms | .NET 9 |
+| File Dialogs | System.Windows.Forms | .NET 10 |
 | IPC | JS ↔ .NET Bridge | Photino built-in |
 
 ### Инфраструктура
@@ -281,42 +281,42 @@ NLogMonitor/
 
 ### Фаза 1: Базовая инфраструктура
 - [ ] **1.1 Создание solution и проектов**
-  - [ ] Создать NLogMonitor.sln
-  - [ ] Создать NLogMonitor.Domain (classlib)
-  - [ ] Создать NLogMonitor.Application (classlib)
-  - [ ] Создать NLogMonitor.Infrastructure (classlib)
-  - [ ] Создать NLogMonitor.Api (webapi)
-  - [ ] Настроить project references между слоями
+  - [ ] Создать NLogMonitor.sln — корневой solution файл для всего проекта
+  - [ ] Создать NLogMonitor.Domain (classlib) — слой доменных сущностей без внешних зависимостей
+  - [ ] Создать NLogMonitor.Application (classlib) — слой бизнес-логики, интерфейсов и DTO
+  - [ ] Создать NLogMonitor.Infrastructure (classlib) — реализации интерфейсов, работа с файлами и хранилищем
+  - [ ] Создать NLogMonitor.Api (webapi) — ASP.NET Core Web API проект
+  - [ ] Настроить project references между слоями — Domain ← Application ← Infrastructure ← Api
 
 - [ ] **1.2 Domain Layer**
-  - [ ] Создать LogEntry entity (Id, Timestamp, Level, Message, Logger, ProcessId, ThreadId, Exception)
-  - [ ] Создать LogLevel enum (Trace, Debug, Info, Warn, Error, Fatal)
-  - [ ] Создать LogSession entity (Id, FileName, FilePath, FileSize, CreatedAt, ExpiresAt, Entries)
-  - [ ] Создать RecentLogEntry entity (Path, IsDirectory, OpenedAt)
+  - [ ] Создать LogEntry entity — основная сущность записи лога с полями: Id, Timestamp, Level, Message, Logger, ProcessId, ThreadId, Exception
+  - [ ] Создать LogLevel enum — уровни логирования: Trace, Debug, Info, Warn, Error, Fatal
+  - [ ] Создать LogSession entity — сессия работы с файлом: Id, FileName, FilePath, FileSize, CreatedAt, ExpiresAt, Entries
+  - [ ] Создать RecentLogEntry entity — запись истории открытых файлов: Path, IsDirectory, OpenedAt
 
 - [ ] **1.3 Application Layer - интерфейсы**
-  - [ ] Определить ILogParser interface (ParseAsync, CanParse)
-  - [ ] Определить ISessionStorage interface (SaveAsync, GetAsync, DeleteAsync)
-  - [ ] Определить ILogService interface (OpenFileAsync, GetLogsAsync)
-  - [ ] Определить IFileWatcherService interface (StartWatching, StopWatching)
-  - [ ] Определить ILogExporter interface (ExportAsync)
-  - [ ] Определить IRecentLogsRepository interface (GetAllAsync, AddAsync)
+  - [ ] Определить ILogParser interface — контракт парсинга логов: ParseAsync для потокового чтения, CanParse для проверки формата
+  - [ ] Определить ISessionStorage interface — хранилище сессий в памяти: SaveAsync, GetAsync, DeleteAsync
+  - [ ] Определить ILogService interface — основной сервис: OpenFileAsync для открытия файла, GetLogsAsync для получения с фильтрацией
+  - [ ] Определить IFileWatcherService interface — мониторинг изменений файла: StartWatching, StopWatching
+  - [ ] Определить ILogExporter interface — экспорт логов: ExportAsync в различные форматы
+  - [ ] Определить IRecentLogsRepository interface — работа с историей: GetAllAsync, AddAsync
 
 - [ ] **1.4 Application Layer - DTOs**
-  - [ ] Создать LogEntryDto
-  - [ ] Создать FilterOptionsDto (SearchText, MinLevel, MaxLevel, FromDate, ToDate, Logger)
-  - [ ] Создать PagedResultDto<T> (Items, TotalCount, Page, PageSize, TotalPages)
-  - [ ] Создать OpenFileResultDto (SessionId, FileName, FilePath, TotalEntries, LevelCounts)
-  - [ ] Создать RecentLogDto
+  - [ ] Создать LogEntryDto — DTO для передачи записи лога на фронтенд
+  - [ ] Создать FilterOptionsDto — параметры фильтрации: SearchText, MinLevel, MaxLevel, FromDate, ToDate, Logger
+  - [ ] Создать PagedResultDto<T> — обёртка для пагинации: Items, TotalCount, Page, PageSize, TotalPages
+  - [ ] Создать OpenFileResultDto — результат открытия файла: SessionId, FileName, FilePath, TotalEntries, LevelCounts
+  - [ ] Создать RecentLogDto — DTO для отображения недавних файлов
 
 - [ ] **1.5 Настройка API проекта**
-  - [ ] Настроить DI в Program.cs
-  - [ ] Добавить NuGet пакеты (FluentValidation, NLog, Swashbuckle)
-  - [ ] Настроить Swagger
-  - [ ] Настроить CORS для development
-  - [ ] Настроить NLog
-  - [ ] Настроить appsettings.json
-  - [ ] Первый запуск и проверка Swagger UI
+  - [ ] Настроить DI в Program.cs — регистрация сервисов и интерфейсов через Microsoft.Extensions.DependencyInjection
+  - [ ] Добавить NuGet пакеты — FluentValidation для валидации, NLog для логирования, Swashbuckle для Swagger
+  - [ ] Настроить Swagger — автогенерация документации API на /swagger
+  - [ ] Настроить CORS для development — разрешить запросы с localhost:5173 (Vite dev server)
+  - [ ] Настроить NLog — конфигурация логирования в файл и консоль
+  - [ ] Настроить appsettings.json — параметры приложения: TTL сессии, пути к файлам, лимиты
+  - [ ] Первый запуск и проверка Swagger UI — убедиться что API запускается и Swagger доступен
 
 **Результат фазы:** Запускаемое API с Swagger UI, базовая структура проекта.
 
@@ -324,31 +324,36 @@ NLogMonitor/
 
 ### Фаза 2: Парсинг и хранение логов
 - [ ] **2.1 NLog Parser**
-  - [ ] Реализовать NLogParser с Regex для стандартного формата
-  - [ ] Добавить поддержку multi-line messages (stack traces)
-  - [ ] Реализовать IAsyncEnumerable для streaming парсинга больших файлов
-  - [ ] Обработка различных форматов дат
-  - [ ] Обработка ошибок парсинга (логирование непарсируемых строк)
+  - [ ] Реализовать быстрый парсер для однострочных записей — поиск разделителей `|` с начала строки, без regex для производительности
+  - [ ] Реализовать парсер для многострочных записей — поиск разделителей `|` **с конца** строки (logger, processid, threadid фиксированы в конце)
+  - [ ] Реализовать определение начала новой записи по дате — regex `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4}` для определения границ записей
+  - [ ] Реализовать накопительный буфер для многострочных сообщений — StringBuilder для сбора строк до успешного парсинга
+  - [ ] Реализовать IAsyncEnumerable для streaming парсинга больших файлов — построчное чтение без загрузки всего файла в память
+  - [ ] Использовать Span<char>/ReadOnlySpan<char> для zero-allocation парсинга — минимизация аллокаций памяти
+  - [ ] Добавить fallback на Regex для нестандартных случаев — запасной вариант если быстрый парсер не справился
+  - [ ] Обработка ошибок парсинга — логирование непарсируемых строк без прерывания обработки
 
 - [ ] **2.2 Session Storage**
-  - [ ] Реализовать InMemorySessionStorage с ConcurrentDictionary
-  - [ ] Добавить session expiration logic (TTL 1 час)
-  - [ ] Реализовать cleanup timer для удаления просроченных сессий
-  - [ ] Реализовать IDisposable для корректной остановки таймера
+  - [ ] Реализовать InMemorySessionStorage с ConcurrentDictionary — потокобезопасное хранилище сессий
+  - [ ] Добавить session expiration logic (TTL 1 час) — автоматическое удаление неактивных сессий
+  - [ ] Реализовать cleanup timer для удаления просроченных сессий — фоновая очистка каждые 5 минут
+  - [ ] Реализовать IDisposable для корректной остановки таймера — освобождение ресурсов при завершении приложения
 
 - [ ] **2.3 Directory Scanner**
-  - [ ] Реализовать FindLastLogFileByName (сортировка по имени в обратном порядке)
-  - [ ] Поддержка паттерна `*.log`
-  - [ ] Обработка пустой директории
+  - [ ] Реализовать FindLastLogFileByName — поиск файла с последним именем (сортировка по имени в обратном порядке)
+  - [ ] Поддержка паттерна `*.log` — фильтрация только лог-файлов в директории
+  - [ ] Обработка пустой директории — возврат информативной ошибки при отсутствии файлов
 
 - [ ] **2.4 Application Service**
-  - [ ] Реализовать LogService.OpenFileAsync (чтение + парсинг + сохранение сессии)
-  - [ ] Реализовать LogService.GetLogsAsync (фильтрация + пагинация)
+  - [ ] Реализовать LogService.OpenFileAsync — открытие файла: чтение → парсинг → создание сессии → сохранение
+  - [ ] Реализовать LogService.GetLogsAsync — получение логов с применением фильтров и пагинации
 
 - [ ] **2.5 Тестирование**
-  - [ ] Unit tests для NLogParser (разные форматы, multi-line, ошибки)
-  - [ ] Unit tests для InMemorySessionStorage
-  - [ ] Тестирование с реальными лог-файлами
+  - [ ] Unit tests для однострочного парсера — тесты стандартных записей, записей с пробелами вокруг `|`
+  - [ ] Unit tests для многострочного парсера — тесты stack traces, сообщений с `|` и `\n` внутри
+  - [ ] Unit tests для определения границ записей — проверка корректного разделения записей по дате
+  - [ ] Unit tests для InMemorySessionStorage — тесты CRUD операций и TTL логики
+  - [ ] Тестирование с реальными лог-файлами из nLogViewer — интеграционные тесты на примерах реальных логов
 
 **Результат фазы:** Работающий парсер логов с хранением в памяти.
 
@@ -356,39 +361,39 @@ NLogMonitor/
 
 ### Фаза 3: API Endpoints
 - [ ] **3.1 Files Controller**
-  - [ ] POST /api/files/open — открытие файла по пути
-  - [ ] POST /api/files/open-directory — открытие директории (выбор последнего по имени файла)
-  - [ ] POST /api/files/{sessionId}/stop-watching — остановка мониторинга
+  - [ ] POST /api/files/open — открытие файла по абсолютному пути (для Desktop режима)
+  - [ ] POST /api/files/open-directory — открытие директории с автоматическим выбором последнего по имени .log файла
+  - [ ] POST /api/files/{sessionId}/stop-watching — остановка мониторинга изменений файла для указанной сессии
 
 - [ ] **3.2 Upload Controller (Web режим)**
-  - [ ] POST /api/upload — загрузка файла через multipart/form-data
-  - [ ] Валидация расширения (.log, .txt)
-  - [ ] Лимит размера файла (100MB)
+  - [ ] POST /api/upload — загрузка файла через multipart/form-data для Web-версии
+  - [ ] Валидация расширения (.log, .txt) — проверка допустимых типов файлов
+  - [ ] Лимит размера файла (100MB) — защита от загрузки слишком больших файлов
 
 - [ ] **3.3 Logs Controller**
-  - [ ] GET /api/logs/{sessionId} — получение логов с фильтрацией
-  - [ ] Query параметры: search, minLevel, maxLevel, fromDate, toDate, logger, page, pageSize
-  - [ ] Валидация параметров (FluentValidation)
+  - [ ] GET /api/logs/{sessionId} — получение логов сессии с поддержкой фильтрации и пагинации
+  - [ ] Query параметры — search, minLevel, maxLevel, fromDate, toDate, logger, page, pageSize
+  - [ ] Валидация параметров (FluentValidation) — проверка корректности входных данных
 
 - [ ] **3.4 Export Controller**
-  - [ ] GET /api/export/{sessionId} — экспорт с query параметром format (json/csv)
-  - [ ] Реализовать JsonExporter
-  - [ ] Реализовать CsvExporter
-  - [ ] Поддержка фильтров при экспорте
+  - [ ] GET /api/export/{sessionId} — экспорт логов с query параметром format (json/csv)
+  - [ ] Реализовать JsonExporter — форматирование логов в JSON с поддержкой streaming
+  - [ ] Реализовать CsvExporter — форматирование логов в CSV с корректным экранированием
+  - [ ] Поддержка фильтров при экспорте — применение тех же фильтров что и при просмотре
 
 - [ ] **3.5 Recent Controller**
-  - [ ] GET /api/recent — список недавних файлов/директорий
-  - [ ] Реализовать RecentLogsFileRepository (JSON файл в AppData)
-  - [ ] Лимит на количество записей (10-20)
+  - [ ] GET /api/recent — получение списка недавно открытых файлов и директорий
+  - [ ] Реализовать RecentLogsFileRepository — хранение истории в JSON файле в AppData
+  - [ ] Лимит на количество записей (10-20) — автоматическое удаление старых записей
 
 - [ ] **3.6 Middleware и обработка ошибок**
-  - [ ] ExceptionHandlingMiddleware (unified error response)
-  - [ ] Логирование ошибок через NLog
+  - [ ] ExceptionHandlingMiddleware — единообразный формат ошибок {error, message, details}
+  - [ ] Логирование ошибок через NLog — запись stack trace и контекста в лог-файл
 
 - [ ] **3.7 Документация и тестирование**
-  - [ ] XML comments для Swagger
-  - [ ] Integration tests для контроллеров
-  - [ ] Тестирование через Postman/curl
+  - [ ] XML comments для Swagger — описание эндпоинтов, параметров и моделей
+  - [ ] Integration tests для контроллеров — тесты полного цикла запрос-ответ
+  - [ ] Тестирование через Postman/curl — ручная проверка всех эндпоинтов
 
 **Результат фазы:** Полнофункциональное REST API для работы с логами.
 
@@ -396,37 +401,36 @@ NLogMonitor/
 
 ### Фаза 4: Frontend базовый (Vue 3)
 - [ ] **4.1 Инициализация проекта**
-  - [ ] Создать Vite + Vue 3 + TypeScript проект
-  - [ ] Настроить path aliases (@/)
-  - [ ] Установить и настроить Tailwind CSS
-  - [ ] Установить shadcn-vue и инициализировать компоненты
+  - [ ] Создать Vite + Vue 3 + TypeScript проект — `npm create vite@latest client -- --template vue-ts`
+  - [ ] Настроить path aliases (@/) — удобные импорты вместо относительных путей
+  - [ ] Установить и настроить Tailwind CSS — utility-first CSS фреймворк для стилизации
+  - [ ] Установить shadcn-vue и инициализировать компоненты — готовые UI компоненты на базе Radix
 
 - [ ] **4.2 Типы и API клиент**
-  - [ ] Определить TypeScript types (LogEntry, PagedResult, FilterOptions, etc.)
-  - [ ] Создать axios client с baseURL
-  - [ ] Создать API методы (uploadFile, getLogs, openFile, openDirectory, exportLogs)
+  - [ ] Определить TypeScript types — интерфейсы LogEntry, PagedResult, FilterOptions, OpenFileResult
+  - [ ] Создать axios client с baseURL — настройка базового URL и interceptors
+  - [ ] Создать API методы — uploadFile, getLogs, openFile, openDirectory, exportLogs, getRecent
 
 - [ ] **4.3 State Management (Pinia)**
-  - [ ] Создать logStore (sessionId, fileName, logs, totalCount, page, pageSize, isLoading, error)
-  - [ ] Создать filterStore (searchText, minLevel, maxLevel, fromDate, toDate, logger)
-  - [ ] Создать recentStore (recentFiles)
+  - [ ] Создать logStore — состояние: sessionId, fileName, logs, totalCount, page, pageSize, isLoading, error
+  - [ ] Создать filterStore — фильтры: searchText, minLevel, maxLevel, fromDate, toDate, logger
+  - [ ] Создать recentStore — список недавно открытых файлов и директорий
 
 - [ ] **4.4 FileSelector компонент**
-  - [ ] Кнопка "Выбрать файл" (input type=file)
-  - [ ] Drag-and-drop зона для загрузки
-  - [ ] Валидация расширения файла
-  - [ ] Loading state при загрузке
+  - [ ] Кнопка "Выбрать файл" (input type=file) — стилизованный input для выбора файла
+  - [ ] Валидация расширения файла — проверка .log и .txt перед загрузкой
+  - [ ] Loading state при загрузке — отображение спиннера и блокировка повторной загрузки
 
 - [ ] **4.5 LogTable компонент**
-  - [ ] Базовая таблица с TanStack Table
-  - [ ] Колонки: Time, Level, Message, Logger
-  - [ ] Цветовая индикация уровней логирования
-  - [ ] Отображение состояния "нет данных"
+  - [ ] Базовая таблица с TanStack Table — настройка колонок и рендеринга строк
+  - [ ] Колонки: Time, Level, Message, Logger — основные поля записи лога
+  - [ ] Цветовая индикация уровней логирования — красный для Error, жёлтый для Warn и т.д.
+  - [ ] Отображение состояния "нет данных" — placeholder при пустом списке
 
 - [ ] **4.6 Интеграция и проверка**
-  - [ ] App.vue с базовой разметкой
-  - [ ] Проверка загрузки файла → отображение логов
-  - [ ] Настройка proxy в vite.config.ts для API
+  - [ ] App.vue с базовой разметкой — layout приложения: header, main, footer
+  - [ ] Проверка загрузки файла → отображение логов — end-to-end тест основного flow
+  - [ ] Настройка proxy в vite.config.ts для API — проксирование /api на localhost:5000
 
 **Результат фазы:** Работающее Vue приложение с загрузкой файла и отображением логов.
 
@@ -434,39 +438,39 @@ NLogMonitor/
 
 ### Фаза 5: UI компоненты
 - [ ] **5.1 FilterPanel компонент**
-  - [ ] Кнопки-фильтры по уровням (Trace, Debug, Info, Warn, Error, Fatal)
-  - [ ] Подсчёт количества записей каждого уровня
-  - [ ] Активное/неактивное состояние фильтров
-  - [ ] Цветовая индикация уровней
+  - [ ] Кнопки-фильтры по уровням (Trace, Debug, Info, Warn, Error, Fatal) — toggle-кнопки для включения/выключения уровней
+  - [ ] Подсчёт количества записей каждого уровня — badge с числом на каждой кнопке
+  - [ ] Активное/неактивное состояние фильтров — визуальное различие выбранных и невыбранных
+  - [ ] Цветовая индикация уровней — соответствие цветов стандартам NLog
 
 - [ ] **5.2 SearchBar компонент**
-  - [ ] Input с placeholder
-  - [ ] Debounce 300ms
-  - [ ] Иконка поиска
-  - [ ] Кнопка очистки
+  - [ ] Input с placeholder — подсказка "Поиск по сообщениям..."
+  - [ ] Debounce 300ms — задержка запроса для оптимизации производительности
+  - [ ] Иконка поиска — визуальный индикатор назначения поля
+  - [ ] Кнопка очистки — быстрый сброс поискового запроса
 
 - [ ] **5.3 Pagination компонент**
-  - [ ] Кнопки Previous/Next
-  - [ ] Выбор размера страницы (50, 100, 200)
-  - [ ] Отображение текущей страницы и общего количества
-  - [ ] Прямой переход на страницу (опционально)
+  - [ ] Кнопки Previous/Next — навигация между страницами
+  - [ ] Выбор размера страницы (50, 100, 200) — dropdown для настройки количества записей
+  - [ ] Отображение текущей страницы и общего количества — "Страница 1 из 100"
+  - [ ] Прямой переход на страницу (опционально) — input для ввода номера страницы
 
 - [ ] **5.4 ExportButton компонент**
-  - [ ] Dropdown с выбором формата (JSON/CSV)
-  - [ ] Скачивание файла
-  - [ ] Loading state
+  - [ ] Dropdown с выбором формата (JSON/CSV) — меню выбора формата экспорта
+  - [ ] Скачивание файла — автоматическое сохранение через download attribute
+  - [ ] Loading state — индикатор генерации файла
 
 - [ ] **5.5 RecentFiles компонент**
-  - [ ] Список недавних файлов/директорий
-  - [ ] Иконки для файла/директории
-  - [ ] Клик для повторного открытия
-  - [ ] Отображение в начальном экране (когда файл не загружен)
+  - [ ] Список недавних файлов/директорий — отображение истории с датой открытия
+  - [ ] Иконки для файла/директории — визуальное различие типа записи
+  - [ ] Клик для повторного открытия — быстрый доступ к ранее открытым файлам
+  - [ ] Отображение в начальном экране — показ когда файл не загружен
 
 - [ ] **5.6 Улучшение UX**
-  - [ ] Loading spinner для таблицы
-  - [ ] Error toast/alert
-  - [ ] Empty state (нет результатов поиска)
-  - [ ] Responsive design (адаптивная верстка)
+  - [ ] Loading spinner для таблицы — скелетон или спиннер при загрузке данных
+  - [ ] Error toast/alert — уведомления об ошибках через shadcn Toast
+  - [ ] Empty state (нет результатов поиска) — информативный placeholder с иконкой
+  - [ ] Responsive design (адаптивная верстка) — корректное отображение на мобильных
 
 **Результат фазы:** Полнофункциональный UI с фильтрацией, поиском, пагинацией и экспортом.
 
@@ -474,34 +478,34 @@ NLogMonitor/
 
 ### Фаза 6: Real-time обновления
 - [ ] **6.1 Backend - FileWatcher**
-  - [ ] Реализовать FileWatcherService с FileSystemWatcher
-  - [ ] Debounce событий изменения файла (200ms)
-  - [ ] Отслеживание нескольких сессий одновременно
-  - [ ] Корректная остановка при закрытии сессии
+  - [ ] Реализовать FileWatcherService с FileSystemWatcher — мониторинг изменений лог-файла
+  - [ ] Debounce событий изменения файла (200ms) — предотвращение множественных срабатываний при записи
+  - [ ] Отслеживание нескольких сессий одновременно — Dictionary<sessionId, FileWatcher>
+  - [ ] Корректная остановка при закрытии сессии — освобождение FileSystemWatcher и ресурсов
 
 - [ ] **6.2 Backend - SignalR Hub**
-  - [ ] Создать LogWatcherHub
-  - [ ] Метод JoinSession(sessionId) — подписка на обновления
-  - [ ] Метод LeaveSession(sessionId) — отписка
-  - [ ] Событие NewLogs — отправка новых записей клиентам
-  - [ ] Настройка SignalR в Program.cs
+  - [ ] Создать LogWatcherHub — хаб для real-time коммуникации с клиентами
+  - [ ] Метод JoinSession(sessionId) — добавление клиента в группу сессии для получения обновлений
+  - [ ] Метод LeaveSession(sessionId) — удаление клиента из группы при уходе
+  - [ ] Событие NewLogs — отправка новых записей всем подписчикам группы
+  - [ ] Настройка SignalR в Program.cs — регистрация middleware и маршрутов
 
 - [ ] **6.3 Frontend - SignalR клиент**
-  - [ ] Установить @microsoft/signalr
-  - [ ] Создать signalr.ts — connection manager
-  - [ ] Создать composable useFileWatcher(sessionId)
-  - [ ] Автоматическое переподключение при разрыве
+  - [ ] Установить @microsoft/signalr — официальный npm пакет для SignalR
+  - [ ] Создать signalr.ts — singleton менеджер подключения с автореконнектом
+  - [ ] Создать composable useFileWatcher(sessionId) — Vue composable для подписки на обновления
+  - [ ] Автоматическое переподключение при разрыве — exponential backoff при потере соединения
 
 - [ ] **6.4 Интеграция**
-  - [ ] При открытии файла — подписка на обновления
-  - [ ] При получении NewLogs — добавление в store
-  - [ ] Индикатор "Live" в UI
-  - [ ] При закрытии/смене файла — отписка
+  - [ ] При открытии файла — подписка на обновления — вызов JoinSession после успешного открытия
+  - [ ] При получении NewLogs — добавление в store — append новых записей без перезагрузки
+  - [ ] Индикатор "Live" в UI — зелёный badge показывающий активное соединение
+  - [ ] При закрытии/смене файла — отписка — вызов LeaveSession и очистка состояния
 
 - [ ] **6.5 Тестирование**
-  - [ ] Тест: изменение файла → появление новых записей
-  - [ ] Тест: переподключение при разрыве соединения
-  - [ ] Нагрузочное тестирование (частые изменения файла)
+  - [ ] Тест: изменение файла → появление новых записей — проверка полного цикла обновления
+  - [ ] Тест: переподключение при разрыве соединения — симуляция потери сети
+  - [ ] Нагрузочное тестирование — проверка при частых изменениях файла (10+ в секунду)
 
 **Результат фазы:** Автоматическое обновление логов при изменении файла.
 
@@ -509,31 +513,31 @@ NLogMonitor/
 
 ### Фаза 7: Docker конфигурация
 - [ ] **7.1 Backend Dockerfile**
-  - [ ] Multi-stage build (build → publish → runtime)
-  - [ ] Оптимизация слоёв для кэширования
-  - [ ] Non-root user для безопасности
-  - [ ] Health check endpoint
+  - [ ] Multi-stage build (build → publish → runtime) — минимизация размера итогового образа
+  - [ ] Оптимизация слоёв для кэширования — копирование csproj перед restore
+  - [ ] Non-root user для безопасности — запуск от непривилегированного пользователя
+  - [ ] Health check endpoint — /health для проверки работоспособности контейнера
 
 - [ ] **7.2 Frontend Dockerfile**
-  - [ ] Multi-stage build (build → nginx)
-  - [ ] Оптимизированный nginx.conf
-  - [ ] Gzip compression
-  - [ ] SPA routing (try_files)
+  - [ ] Multi-stage build (build → nginx) — сборка и статический сервер в одном образе
+  - [ ] Оптимизированный nginx.conf — настройка кэширования и безопасности
+  - [ ] Gzip compression — сжатие статики для уменьшения трафика
+  - [ ] SPA routing (try_files) — перенаправление всех запросов на index.html
 
 - [ ] **7.3 docker-compose.yml**
-  - [ ] Сервис api (backend)
-  - [ ] Сервис client (frontend + nginx)
-  - [ ] Volumes для логов и данных
-  - [ ] Переменные окружения
+  - [ ] Сервис api (backend) — ASP.NET Core на порту 5000
+  - [ ] Сервис client (frontend + nginx) — статика на порту 80
+  - [ ] Volumes для логов и данных — монтирование папок хоста для персистентности
+  - [ ] Переменные окружения — ASPNETCORE_ENVIRONMENT и другие настройки
 
 - [ ] **7.4 docker-compose.override.yml (development)**
-  - [ ] Hot reload для backend (watch mode)
-  - [ ] Vite dev server для frontend
-  - [ ] Порты для отладки
+  - [ ] Hot reload для backend (watch mode) — автоматическая перезагрузка при изменении кода
+  - [ ] Vite dev server для frontend — HMR для быстрой разработки
+  - [ ] Порты для отладки — expose отладочных портов .NET и Node
 
 - [ ] **7.5 Документация**
-  - [ ] Инструкции по запуску в README
-  - [ ] Переменные окружения (.env.example)
+  - [ ] Инструкции по запуску в README — шаги для production и development
+  - [ ] Переменные окружения (.env.example) — шаблон с описанием всех переменных
 
 **Результат фазы:** Приложение запускается одной командой `docker-compose up`.
 
@@ -541,35 +545,35 @@ NLogMonitor/
 
 ### Фаза 8: Client-side Logging
 - [ ] **8.1 Backend - ClientLogsController**
-  - [ ] POST /api/client-logs — приём batch логов
-  - [ ] Валидация Level (обязательное поле)
-  - [ ] Нормализация алиасов (warning→warn, fatal/critical→error)
-  - [ ] Rate limiting для защиты от спама
+  - [ ] POST /api/client-logs — приём batch логов с фронтенда в JSON формате
+  - [ ] Валидация Level (обязательное поле) — проверка наличия уровня логирования
+  - [ ] Нормализация алиасов — преобразование warning→warn, fatal/critical→error
+  - [ ] Rate limiting для защиты от спама — ограничение количества запросов на IP
 
 - [ ] **8.2 Backend - логирование**
-  - [ ] Запись в общий лог-файл с префиксом [CLIENT]
-  - [ ] Structured logging с контекстом (userId, version, url)
-  - [ ] Санитизация входных данных
+  - [ ] Запись в общий лог-файл с префиксом [CLIENT] — идентификация источника логов
+  - [ ] Structured logging с контекстом — добавление userId, version, url в записи
+  - [ ] Санитизация входных данных — защита от XSS и инъекций в логах
 
 - [ ] **8.3 Frontend - ClientLogger service**
-  - [ ] Методы: trace, debug, info, warn, error, exception
-  - [ ] Буферизация логов (batchSize: 10)
-  - [ ] Автоматический flush по таймеру (5 сек)
-  - [ ] Retry с exponential backoff (maxRetries: 3)
+  - [ ] Методы: trace, debug, info, warn, error, exception — API аналогичный NLog
+  - [ ] Буферизация логов (batchSize: 10) — накопление перед отправкой
+  - [ ] Автоматический flush по таймеру (5 сек) — гарантия отправки даже при малом трафике
+  - [ ] Retry с exponential backoff (maxRetries: 3) — повтор при ошибках сети
 
 - [ ] **8.4 Frontend - глобальный контекст**
-  - [ ] setGlobalContext({ userId, version, sessionId })
-  - [ ] Автоматическое добавление url, userAgent
+  - [ ] setGlobalContext({ userId, version, sessionId }) — установка метаданных для всех логов
+  - [ ] Автоматическое добавление url, userAgent — сбор информации о браузере
 
 - [ ] **8.5 Frontend - error handlers**
-  - [ ] window.onerror — глобальные ошибки JS
-  - [ ] window.onunhandledrejection — необработанные Promise
-  - [ ] Vue Error Boundary (errorCaptured hook)
+  - [ ] window.onerror — перехват глобальных ошибок JavaScript
+  - [ ] window.onunhandledrejection — перехват необработанных Promise rejection
+  - [ ] Vue Error Boundary (errorCaptured hook) — перехват ошибок в компонентах Vue
 
 - [ ] **8.6 Тестирование**
-  - [ ] Unit tests для ClientLogger
-  - [ ] Integration tests для /api/client-logs
-  - [ ] Тест rate limiting
+  - [ ] Unit tests для ClientLogger — проверка буферизации и retry логики
+  - [ ] Integration tests для /api/client-logs — тесты API эндпоинта
+  - [ ] Тест rate limiting — проверка ограничения частоты запросов
 
 **Результат фазы:** Ошибки с фронтенда автоматически отправляются на сервер.
 
@@ -577,42 +581,42 @@ NLogMonitor/
 
 ### Фаза 9: Photino Desktop
 - [ ] **9.1 Создание Desktop проекта**
-  - [ ] Создать NLogMonitor.Desktop (console → winexe)
-  - [ ] Добавить Photino.NET NuGet пакет
-  - [ ] Reference на NLogMonitor.Api
+  - [ ] Создать NLogMonitor.Desktop (console → winexe) — проект без консольного окна
+  - [ ] Добавить Photino.NET NuGet пакет — кроссплатформенный WebView wrapper
+  - [ ] Reference на NLogMonitor.Api — использование embedded web server
 
 - [ ] **9.2 Program.cs - основа**
-  - [ ] Запуск embedded ASP.NET Core в фоновом потоке
-  - [ ] Создание PhotinoWindow
-  - [ ] Загрузка index.html (production) или localhost:5173 (dev)
-  - [ ] RegisterWebMessageReceivedHandler для IPC
+  - [ ] Запуск embedded ASP.NET Core в фоновом потоке — self-hosted Kestrel внутри приложения
+  - [ ] Создание PhotinoWindow — нативное окно с WebView
+  - [ ] Загрузка index.html (production) или localhost:5173 (dev) — переключение по конфигурации
+  - [ ] RegisterWebMessageReceivedHandler для IPC — обработка сообщений от JavaScript
 
 - [ ] **9.3 Нативные диалоги**
-  - [ ] ShowOpenFileDialog (OpenFileDialog)
-  - [ ] ShowOpenFolderDialog (FolderBrowserDialog)
-  - [ ] Фильтры файлов (*.log)
+  - [ ] ShowOpenFileDialog (OpenFileDialog) — системный диалог выбора файла
+  - [ ] ShowOpenFolderDialog (FolderBrowserDialog) — системный диалог выбора директории
+  - [ ] Фильтры файлов (*.log) — ограничение выбора только лог-файлами
 
 - [ ] **9.4 JS ↔ .NET Bridge**
-  - [ ] Message handler для команд (openFile, openFolder, isDesktop)
-  - [ ] JSON сериализация запросов/ответов
-  - [ ] Отправка результата обратно в WebView
+  - [ ] Message handler для команд — обработка openFile, openFolder, isDesktop
+  - [ ] JSON сериализация запросов/ответов — структурированный обмен данными
+  - [ ] Отправка результата обратно в WebView — callback через postMessage
 
 - [ ] **9.5 Frontend - usePhotinoBridge composable**
-  - [ ] Определение режима (isDesktop)
-  - [ ] showOpenFileDialog() → Promise<string | null>
-  - [ ] showOpenFolderDialog() → Promise<string | null>
-  - [ ] Fallback на web-версию если не desktop
+  - [ ] Определение режима (isDesktop) — проверка наличия window.external.sendMessage
+  - [ ] showOpenFileDialog() → Promise<string | null> — async wrapper над нативным диалогом
+  - [ ] showOpenFolderDialog() → Promise<string | null> — async wrapper над нативным диалогом
+  - [ ] Fallback на web-версию если не desktop — graceful degradation
 
 - [ ] **9.6 FileSelector - режимы работы**
-  - [ ] Web: drag-and-drop + input[type=file]
-  - [ ] Desktop: нативные кнопки "Открыть файл" / "Открыть директорию"
-  - [ ] Переключение на основе isDesktop
+  - [ ] Web: input[type=file] — стандартный input для выбора файла
+  - [ ] Desktop: нативные кнопки "Открыть файл" / "Открыть директорию" — системные диалоги
+  - [ ] Переключение на основе isDesktop — автоматическое определение режима
 
 - [ ] **9.7 Сборка и публикация**
-  - [ ] npm run build → client/dist
-  - [ ] Копирование dist в wwwroot
-  - [ ] dotnet publish -c Release -r win-x64 --self-contained
-  - [ ] Тестирование собранного приложения
+  - [ ] npm run build → client/dist — production сборка фронтенда
+  - [ ] Копирование dist в wwwroot — встраивание статики в Desktop приложение
+  - [ ] dotnet publish -c Release -r win-x64 --self-contained — публикация автономного exe
+  - [ ] Тестирование собранного приложения — проверка работы всех функций
 
 **Результат фазы:** Desktop приложение с нативными диалогами.
 
@@ -620,37 +624,37 @@ NLogMonitor/
 
 ### Фаза 10: Оптимизация и тестирование
 - [ ] **10.1 Performance - Frontend**
-  - [ ] Virtual scrolling для больших списков (@tanstack/vue-virtual)
-  - [ ] Lazy loading компонентов (defineAsyncComponent)
-  - [ ] Оптимизация bundle size (analyze + tree shaking)
-  - [ ] Memoization для вычисляемых значений
+  - [ ] Virtual scrolling для больших списков (@tanstack/vue-virtual) — рендеринг только видимых строк
+  - [ ] Lazy loading компонентов (defineAsyncComponent) — отложенная загрузка редко используемых компонентов
+  - [ ] Оптимизация bundle size (analyze + tree shaking) — анализ и удаление неиспользуемого кода
+  - [ ] Memoization для вычисляемых значений — кэширование тяжёлых вычислений через computed
 
 - [ ] **10.2 Performance - Backend**
-  - [ ] IMemoryCache для частых запросов
-  - [ ] Streaming для экспорта больших файлов
-  - [ ] Оптимизация парсера (Span<char>)
+  - [ ] IMemoryCache для частых запросов — кэширование результатов фильтрации и подсчётов
+  - [ ] Streaming для экспорта больших файлов — потоковая генерация без загрузки в память
+  - [ ] Оптимизация парсера (Span<char>) — использование Span для zero-allocation парсинга
 
 - [ ] **10.3 UX улучшения**
-  - [ ] Skeleton loaders
-  - [ ] Smooth animations
-  - [ ] Keyboard shortcuts (Ctrl+F для поиска)
-  - [ ] Dark mode (опционально)
+  - [ ] Skeleton loaders — placeholder контент во время загрузки данных
+  - [ ] Smooth animations — плавные переходы между состояниями UI
+  - [ ] Keyboard shortcuts (Ctrl+F для поиска) — быстрый доступ к основным функциям
+  - [ ] Dark mode (опционально) — тёмная тема для комфортной работы ночью
 
 - [ ] **10.4 Тестирование**
-  - [ ] E2E tests (Playwright)
-  - [ ] Performance testing с большими файлами (100MB+, 1M+ записей)
-  - [ ] Cross-browser testing
-  - [ ] Cross-platform testing Desktop (Windows, Linux, macOS)
+  - [ ] E2E tests (Playwright) — автоматизированные тесты всего пользовательского сценария
+  - [ ] Performance testing с большими файлами (100MB+, 1M+ записей) — проверка производительности
+  - [ ] Cross-browser testing — проверка в Chrome, Firefox, Safari, Edge
+  - [ ] Cross-platform testing Desktop (Windows, Linux, macOS) — проверка Photino на всех ОС
 
 - [ ] **10.5 Документация**
-  - [ ] README.md с инструкциями
-  - [ ] Changelog
-  - [ ] Примеры использования API
+  - [ ] README.md с инструкциями — руководство по установке и использованию
+  - [ ] Changelog — история изменений по версиям
+  - [ ] Примеры использования API — curl/Postman примеры для всех эндпоинтов
 
 - [ ] **10.6 Финализация**
-  - [ ] Security review
-  - [ ] Code cleanup
-  - [ ] Release v1.0.0
+  - [ ] Security review — проверка на уязвимости (OWASP Top 10)
+  - [ ] Code cleanup — удаление мёртвого кода и TODO комментариев
+  - [ ] Release v1.0.0 — создание тега и релиза в Git
 
 **Результат фазы:** Production-ready приложение.
 
@@ -712,13 +716,49 @@ docker-compose logs -f api
 ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid}
 ```
 
-### Пример записи
+**Формат полей:**
+| Поле | Формат | Пример |
+|------|--------|--------|
+| longdate | `YYYY-MM-DD HH:mm:ss.ffff` | `2024-01-15 10:30:45.1234` |
+| level | `TRACE\|DEBUG\|INFO\|WARN\|ERROR\|FATAL` | `ERROR` |
+| message | Произвольный текст, **может быть многострочным** | `Error occurred\nStack trace...` |
+| logger | Имя класса/модуля | `MyApp.Services.UserService` |
+| processid | Целое число | `1234` |
+| threadid | Целое число | `5` |
+
+### Многострочные сообщения
+
+Сообщение в записи лога **может содержать переносы строк** (stack traces, многострочные данные). При этом:
+- Сообщение может содержать символы `|` внутри текста
+- Новая запись определяется по **наличию даты в начале строки** (regex: `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4}`)
+- Поля `logger`, `processid`, `threadid` всегда находятся **в конце записи**
+
+**Алгоритм парсинга многострочных записей (как в nLogViewer):**
+1. Читать строки в буфер пока не встретится строка, начинающаяся с даты
+2. Для парсинга многострочной записи искать разделители `|` **с конца** строки
+3. Последние 3 поля (logger, processid, threadid) фиксированы
+4. Всё что между level и logger — это message (может содержать `\n` и `|`)
+
+### Примеры записей
+
+**Однострочная запись:**
 ```
 2024-01-15 10:30:45.1234|INFO|Application started|MyApp.Program|1234|1
-2024-01-15 10:30:46.5678|ERROR|Unhandled exception|MyApp.Service|1234|5
-System.NullReferenceException: Object reference not set...
-   at MyApp.Service.Process()
-   at MyApp.Program.Main()
+```
+
+**Многострочная запись (stack trace):**
+```
+2024-01-15 10:30:46.5678|ERROR|Unhandled exception: Object reference not set
+   at MyApp.Service.Process() in C:\src\Service.cs:line 42
+   at MyApp.Program.Main() in C:\src\Program.cs:line 15|MyApp.Service|1234|5
+2024-01-15 10:30:47.0000|INFO|Next log entry|MyApp.Program|1234|1
+```
+
+В этом примере первая запись содержит message:
+```
+Unhandled exception: Object reference not set
+   at MyApp.Service.Process() in C:\src\Service.cs:line 42
+   at MyApp.Program.Main() in C:\src\Program.cs:line 15
 ```
 
 ---

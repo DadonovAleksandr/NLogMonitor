@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 9 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (Docker) и Desktop (Photino).
+NLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (Docker) и Desktop (Photino).
 
 ## Build & Run Commands
 
@@ -78,7 +78,13 @@ Infrastructure (Parser, Storage, Export, FileWatcher) - реализует ин�
 ```
 ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid}
 ```
-Пример: `2024-01-15 10:30:45.1234|INFO|Application started|MyApp.Program|1234|1`
+
+**Важно:** Сообщение может быть **многострочным** (stack traces, многострочные данные). Парсинг многострочных записей:
+- Новая запись определяется по дате в начале строки (`^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4}`)
+- Разделители `|` ищутся **с конца** строки (logger, processid, threadid фиксированы)
+- Message может содержать `\n` и `|`
+
+Пример однострочной: `2024-01-15 10:30:45.1234|INFO|Application started|MyApp.Program|1234|1`
 
 Имя файла: `${shortdate}.log` (например: `2024-01-15.log`)
 
@@ -94,7 +100,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 
 ## Tech Stack
 
-- **Backend:** .NET 9, ASP.NET Core, SignalR, FluentValidation, NLog
+- **Backend:** .NET 10, ASP.NET Core, SignalR, FluentValidation, NLog
 - **Frontend:** Vue 3, TypeScript 5, Vite, Pinia, TanStack Table, Tailwind CSS, shadcn-vue
 - **Desktop:** Photino.NET
 - **Infrastructure:** Docker, docker-compose, Nginx
