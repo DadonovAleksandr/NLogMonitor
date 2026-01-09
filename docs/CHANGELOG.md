@@ -9,7 +9,7 @@
 
 ## [Unreleased]
 
-> Планируется: Фаза 4 — Базовый Frontend (Vue 3 + TypeScript)
+> Планируется: Фаза 5 — Расширенные UI компоненты (FilterPanel, SearchBar, ExportButton)
 
 ---
 
@@ -91,23 +91,27 @@
 - [x] Unit-тесты для экспортеров (30 тестов: JsonExporter 12, CsvExporter 18)
 
 ### 📊 Статистика
-- Общее количество тестов: 214 (было 160)
-  - Infrastructure: 106 (было 76)
+- Общее количество тестов: 240 (было 160)
+  - Infrastructure: 113 (было 76)
   - Application: 28 (без изменений)
-  - Api: 80 (было 56)
+  - Api: 99 (было 56)
 
 ---
 
-## [0.4.0] - YYYY-MM-DD
+## [0.4.0] - 2026-01-10
 
-> 🎯 **Фаза 4: Базовый Frontend**
+> 🎯 **Фаза 4: Базовый Frontend** ✅
 
 ### 🚀 Добавлено
-- [ ] Vite + Vue 3 + TypeScript проект
-- [ ] Pinia store для состояния
-- [ ] Axios API client
-- [ ] Базовая маршрутизация
-- [ ] Tailwind CSS + shadcn-vue
+- [x] Vite + Vue 3 + TypeScript проект
+- [x] Pinia stores (logStore, filterStore, recentStore)
+- [x] Axios API client с interceptors
+- [x] Tailwind CSS + shadcn-vue (Button, Input, Card, Table)
+- [x] TypeScript типы соответствующие backend DTOs
+- [x] FileSelector компонент с drag & drop
+- [x] LogTable компонент с TanStack Table
+- [x] LogLevelBadge с цветовой индикацией уровней
+- [x] Dark theme поддержка
 
 ---
 

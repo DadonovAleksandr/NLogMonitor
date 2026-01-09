@@ -129,21 +129,21 @@ nLogMonitor/
 │   └── nLogMonitor.Desktop/      # Photino shell (планируется)
 ├── client/                       # Frontend source (Vue 3)
 │   ├── src/
-│   │   ├── components/           # Vue components
-│   │   ├── stores/               # Pinia stores
-│   │   ├── api/                  # API client
-│   │   ├── composables/          # Vue composables
+│   │   ├── components/           # Vue components (ui/, LogTable/, FileSelector/)
+│   │   ├── stores/               # Pinia stores (logStore, filterStore, recentStore)
+│   │   ├── api/                  # Axios API client
+│   │   ├── lib/                  # Utility functions
 │   │   └── types/                # TypeScript types
 │   └── public/
-├── tests/                        # Unit/Integration tests (214 тестов)
-│   ├── nLogMonitor.Infrastructure.Tests/  # 106 тестов
+├── tests/                        # Unit/Integration tests (240 тестов)
+│   ├── nLogMonitor.Infrastructure.Tests/  # 113 тестов
 │   │   ├── Parsing/              # NLogParserTests
 │   │   ├── Storage/              # InMemorySessionStorageTests, RecentLogsFileRepositoryTests
 │   │   ├── FileSystem/           # DirectoryScannerTests
 │   │   └── Export/               # JsonExporterTests, CsvExporterTests
 │   ├── nLogMonitor.Application.Tests/     # 28 тестов
 │   │   └── Services/             # LogServiceTests
-│   └── nLogMonitor.Api.Tests/             # 80 тестов
+│   └── nLogMonitor.Api.Tests/             # 99 тестов
 │       ├── Controllers/          # LogsControllerTests
 │       ├── Validators/           # FilterOptionsValidatorTests
 │       └── Integration/          # Интеграционные тесты (WebApplicationFactory)
@@ -183,10 +183,10 @@ nLogMonitor/
 
 | Проект | Тестов | Описание |
 |--------|--------|----------|
-| `nLogMonitor.Infrastructure.Tests` | 106 | Тесты парсера, хранилища, файловой системы, экспортеров (JsonExporter 12, CsvExporter 18) |
+| `nLogMonitor.Infrastructure.Tests` | 113 | Тесты парсера, хранилища, файловой системы, экспортеров |
 | `nLogMonitor.Application.Tests` | 28 | Тесты LogService (бизнес-логика) |
-| `nLogMonitor.Api.Tests` | 80 | Unit тесты контроллеров (56) + Integration тесты с WebApplicationFactory (24) |
-| **Всего** | **214** | |
+| `nLogMonitor.Api.Tests` | 99 | Unit тесты контроллеров + Integration тесты с WebApplicationFactory |
+| **Всего** | **240** | |
 
 **Фреймворк:** NUnit 3.x + Moq
 

@@ -203,11 +203,11 @@ export default defineConfig({
 VITE_APP_TITLE=nLogMonitor
 
 # .env.development
-VITE_API_BASE_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000
 VITE_ENABLE_DEVTOOLS=true
 
 # .env.production
-VITE_API_BASE_URL=/api
+VITE_API_URL=
 VITE_ENABLE_DEVTOOLS=false
 ```
 
@@ -215,7 +215,7 @@ VITE_ENABLE_DEVTOOLS=false
 
 ```typescript
 const config = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   appTitle: import.meta.env.VITE_APP_TITLE,
   enableDevtools: import.meta.env.VITE_ENABLE_DEVTOOLS === 'true',
 };

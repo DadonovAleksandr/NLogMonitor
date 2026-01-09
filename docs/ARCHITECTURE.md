@@ -358,23 +358,18 @@ nLogMonitor/
 ├── client/                           # Vue 3 Frontend
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ui/                   # shadcn-vue components
-│   │   │   ├── LogTable/
-│   │   │   ├── FilterPanel/
-│   │   │   ├── SearchBar/
-│   │   │   ├── FileSelector/
-│   │   │   └── ExportButton/
+│   │   │   ├── ui/                   # shadcn-vue (Button, Input, Card, Table)
+│   │   │   ├── LogTable/             # Таблица логов с TanStack Table
+│   │   │   └── FileSelector/         # Drag & drop загрузка файлов
+│   │   │   # Планируются (Фаза 5): FilterPanel/, SearchBar/, ExportButton/
 │   │   ├── stores/
 │   │   │   ├── logStore.ts
 │   │   │   ├── filterStore.ts
 │   │   │   └── recentStore.ts
 │   │   ├── api/
-│   │   │   ├── client.ts
-│   │   │   └── signalr.ts
-│   │   ├── composables/
-│   │   │   ├── useLogs.ts
-│   │   │   ├── useFileWatcher.ts
-│   │   │   └── usePhotinoBridge.ts
+│   │   │   └── client.ts             # Axios API client
+│   │   │   # Планируется (Фаза 6): signalr.ts
+│   │   ├── lib/                      # Utility functions (cn)
 │   │   ├── types/
 │   │   │   └── index.ts
 │   │   ├── App.vue
@@ -382,11 +377,10 @@ nLogMonitor/
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── tests/
-│   ├── nLogMonitor.Domain.Tests/
-│   ├── nLogMonitor.Application.Tests/
-│   ├── nLogMonitor.Infrastructure.Tests/
-│   └── nLogMonitor.Api.Tests/
+├── tests/                            # 240 тестов (NUnit)
+│   ├── nLogMonitor.Application.Tests/    # 28 тестов
+│   ├── nLogMonitor.Infrastructure.Tests/ # 113 тестов
+│   └── nLogMonitor.Api.Tests/            # 99 тестов
 │
 ├── docs/
 ├── docker-compose.yml
