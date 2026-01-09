@@ -9,17 +9,7 @@
 
 ## [Unreleased]
 
-### 🚀 Добавлено
-- *Пока нет изменений*
-
-### 🔧 Изменено
-- *Пока нет изменений*
-
-### 🐛 Исправлено
-- *Пока нет исправлений*
-
-### 🗑️ Удалено
-- *Пока ничего не удалено*
+> Планируется: Фаза 4 — Базовый Frontend (Vue 3 + TypeScript)
 
 ---
 
@@ -74,6 +64,37 @@
 - [x] RecentLogsFileRepository для хранения истории в JSON
 - [x] 56 unit-тестов для контроллеров и валидаторов
 - [x] Общее количество тестов: 160 (Infrastructure 76 + Application 28 + Api 56)
+
+---
+
+## [0.3.1] - 2026-01-10
+
+> 🎯 **Фаза 3.1: Исправления и улучшения после код-ревью** ✅
+
+### 🔒 Безопасность
+- [x] Path traversal защита в UploadController — санитизация file.FileName через Path.GetFileName()
+- [x] Desktop-only эндпоинты защищены атрибутом `[DesktopOnly]` — возвращают 404 в Web-режиме
+- [x] Добавлена конфигурация `App.Mode: Web|Desktop` для определения режима работы
+
+### 🔧 Изменено
+- [x] Потоковый экспорт — Utf8JsonWriter и StreamWriter пишут напрямую в Response.Body
+- [x] stop-watching возвращает HTTP 501 Not Implemented (вместо 204 без действия)
+- [x] DirectoryNotFoundException теперь возвращает HTTP 404 (вместо 500)
+- [x] Синхронизация temp-каталога и sessionId — теперь всегда совпадают
+- [x] Все контроллеры возвращают консистентный формат ApiErrorResponse
+
+### 🚀 Добавлено
+- [x] DesktopOnlyAttribute — ActionFilterAttribute для защиты Desktop-only эндпоинтов
+- [x] AppSettings конфигурация с режимом Web/Desktop
+- [x] XML-комментарии включены в Swagger (GenerateDocumentationFile)
+- [x] 24 интеграционных теста с WebApplicationFactory
+- [x] Unit-тесты для экспортеров (30 тестов: JsonExporter 12, CsvExporter 18)
+
+### 📊 Статистика
+- Общее количество тестов: 214 (было 160)
+  - Infrastructure: 106 (было 76)
+  - Application: 28 (без изменений)
+  - Api: 80 (было 56)
 
 ---
 
@@ -168,6 +189,7 @@
 [0.6.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.6.0
 [0.5.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.5.0
 [0.4.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.4.0
+[0.3.1]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.3.1
 [0.3.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.3.0
 [0.2.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.2.0
 [0.1.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.1.0

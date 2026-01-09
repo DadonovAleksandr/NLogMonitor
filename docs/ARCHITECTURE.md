@@ -8,7 +8,7 @@
 - [Диаграммы](#-диаграммы)
 - [Структура проекта](#-структура-проекта)
 - [Потоки данных](#-потоки-данных)
-- [Реализованные компоненты (Фаза 2)](#реализованные-компоненты-фаза-2)
+- [Реализованные компоненты (Фаза 2-3.1)](#реализованные-компоненты-фаза-2-31)
 - [UI референс](#-ui-референс)
 
 ---
@@ -182,12 +182,30 @@ public record OpenFileResultDto(
 | `CsvExporter` | Потоковый экспорт в CSV | ✅ Реализован (Фаза 3) |
 | `RecentLogsFileRepository` | Хранение истории в JSON | ✅ Реализован (Фаза 3) |
 | `FileWatcherService` | Мониторинг изменений файлов | Планируется (Фаза 6) |
+| `DesktopOnlyAttribute` | Фильтр для защиты Desktop-only эндпоинтов | ✅ Реализован (Фаза 3.1) |
 
 ### Application Layer Services
 
 | Компонент | Назначение | Статус |
 |-----------|-----------|--------|
 | `LogService` | Основной сервис для работы с логами | Реализован (Фаза 2) |
+
+### Application Layer Configuration
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `SessionSettings` | Настройки TTL сессий | ✅ Реализован (Фаза 2) |
+| `FileSettings` | Настройки файлов (размер, расширения) | ✅ Реализован (Фаза 3) |
+| `RecentLogsSettings` | Настройки истории файлов | ✅ Реализован (Фаза 3) |
+| `AppSettings` | Режим работы приложения (Web/Desktop) | ✅ Реализован (Фаза 3.1) |
+
+```csharp
+// src/nLogMonitor.Application/Configuration/AppSettings.cs
+public class AppSettings
+{
+    public string Mode { get; set; } = "Web"; // Web | Desktop
+}
+```
 
 ### Presentation Layer
 
@@ -287,7 +305,8 @@ nLogMonitor/
 │   │   ├── Services/
 │   │   │   └── LogService.cs              # ✓ Реализован (Фаза 2)
 │   │   ├── Configuration/
-│   │   │   └── SessionSettings.cs         # ✓ Реализован (Фаза 2)
+│   │   │   ├── SessionSettings.cs         # ✓ Реализован (Фаза 2)
+│   │   │   └── AppSettings.cs             # ✓ Реализован (Фаза 3.1)
 │   │   ├── Exceptions/
 │   │   │   └── NoLogFilesFoundException.cs # ✓ Реализован (Фаза 2)
 │   │   ├── DTOs/
@@ -321,6 +340,8 @@ nLogMonitor/
 │   │   │   ├── ExportController.cs
 │   │   │   ├── RecentController.cs
 │   │   │   └── ClientLogsController.cs
+│   │   ├── Filters/
+│   │   │   └── DesktopOnlyAttribute.cs    # ✓ Реализован (Фаза 3.1)
 │   │   ├── Hubs/
 │   │   │   └── LogWatcherHub.cs
 │   │   ├── Program.cs
@@ -394,12 +415,19 @@ UI Filters → LogFilterDto → LogService.GetLogsAsync() → PagedResult<LogEnt
 ### 3. Экспорт
 
 ```
-Export Request → LogService → ExportService → byte[] (JSON/CSV) → File Download
+Export Request → LogService → ExportService → Stream (JSON/CSV) → Response.Body
 ```
+
+#### Потоковый экспорт (Фаза 3.1)
+
+- **Потоковая запись** напрямую в `Response.Body` без промежуточных буферов
+- **Utf8JsonWriter** для JSON — высокопроизводительная сериализация
+- **StreamWriter** для CSV — построчная запись
+- Минимальное потребление памяти независимо от размера данных
 
 ---
 
-## Реализованные компоненты (Фаза 2-3)
+## Реализованные компоненты (Фаза 2-3.1)
 
 ### NLogParser
 

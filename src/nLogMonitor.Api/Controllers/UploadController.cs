@@ -13,7 +13,9 @@ namespace nLogMonitor.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/upload")]
-[RequestSizeLimit(100_000_000)] // 100 MB limit
+// Note: RequestSizeLimit = FileSettings.MaxFileSizeMB (100MB) + 10MB overhead for multipart form data
+// Keep this in sync with FileSettings.MaxFileSizeMB in appsettings.json
+[RequestSizeLimit(110_000_000)] // 110 MB = 100 MB file + 10 MB multipart overhead
 public class UploadController : ControllerBase
 {
     private readonly ILogService _logService;
@@ -116,8 +118,24 @@ public class UploadController : ControllerBase
             // Ensure temp directory exists
             Directory.CreateDirectory(tempDirectory);
 
-            // Save uploaded file to temp directory
-            var tempFilePath = Path.Combine(tempDirectory, file.FileName);
+            // Sanitize filename to prevent path traversal
+            var safeFileName = Path.GetFileName(file.FileName);
+
+            // Validate that the resulting path is within the temp directory
+            var tempFilePath = Path.Combine(tempDirectory, safeFileName);
+            var normalizedPath = Path.GetFullPath(tempFilePath);
+            var normalizedTempDir = Path.GetFullPath(tempDirectory);
+
+            if (!normalizedPath.StartsWith(normalizedTempDir, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Path traversal attempt detected: {FileName}", file.FileName);
+                return BadRequest(new ApiErrorResponse
+                {
+                    Error = "BadRequest",
+                    Message = "Invalid file name.",
+                    TraceId = HttpContext.TraceIdentifier
+                });
+            }
 
             _logger.LogInformation(
                 "Saving uploaded file to temp: {TempPath}, Size: {Size} bytes",
@@ -128,8 +146,8 @@ public class UploadController : ControllerBase
                 await file.CopyToAsync(stream, cancellationToken);
             }
 
-            // Parse the file using LogService
-            var createdSessionId = await _logService.OpenFileAsync(tempFilePath, cancellationToken);
+            // Parse the file using LogService (pass sessionId to sync with temp directory)
+            var createdSessionId = await _logService.OpenFileAsync(tempFilePath, cancellationToken, sessionId);
             var session = await _logService.GetSessionAsync(createdSessionId);
 
             if (session is null)

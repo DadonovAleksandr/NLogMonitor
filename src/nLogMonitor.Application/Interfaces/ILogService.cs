@@ -4,7 +4,7 @@ namespace nLogMonitor.Application.Interfaces;
 
 public interface ILogService
 {
-    Task<Guid> OpenFileAsync(string filePath, CancellationToken cancellationToken = default);
+    Task<Guid> OpenFileAsync(string filePath, CancellationToken cancellationToken = default, Guid? sessionId = null);
     Task<Guid> OpenDirectoryAsync(string directoryPath, CancellationToken cancellationToken = default);
     Task<(IEnumerable<LogEntry> Entries, int TotalCount)> GetLogsAsync(
         Guid sessionId, 

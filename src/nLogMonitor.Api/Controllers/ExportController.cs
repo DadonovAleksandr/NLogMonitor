@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using nLogMonitor.Api.Models;
 using nLogMonitor.Application.Interfaces;
 using nLogMonitor.Domain.Entities;
 using LogLevel = nLogMonitor.Domain.Entities.LogLevel;
@@ -34,6 +35,7 @@ public class ExportController : ControllerBase
 
     /// <summary>
     /// Exports log entries for the specified session to JSON or CSV format.
+    /// Uses streaming to minimize memory usage for large exports.
     /// </summary>
     /// <param name="sessionId">Session identifier.</param>
     /// <param name="format">Export format: "json" or "csv" (default: "json").</param>
@@ -75,7 +77,12 @@ public class ExportController : ControllerBase
         {
             var supportedFormats = string.Join(", ", _exporters.Select(e => e.Format));
             _logger.LogWarning("Unsupported export format: {Format}. Supported: {SupportedFormats}", format, supportedFormats);
-            return BadRequest($"Unsupported export format. Supported: {supportedFormats}");
+            return BadRequest(new ApiErrorResponse
+            {
+                Error = "BadRequest",
+                Message = $"Unsupported export format. Supported: {supportedFormats}",
+                TraceId = HttpContext.TraceIdentifier
+            });
         }
 
         // Get session
@@ -84,26 +91,32 @@ public class ExportController : ControllerBase
         if (session == null)
         {
             _logger.LogWarning("Session not found: {SessionId}", sessionId);
-            return NotFound();
+            return NotFound(new ApiErrorResponse
+            {
+                Error = "NotFound",
+                Message = $"Session {sessionId} not found.",
+                TraceId = HttpContext.TraceIdentifier
+            });
         }
 
         // Apply filters to entries
         var filteredEntries = ApplyFilters(session.Entries, search, minLevel, maxLevel, fromDate, toDate, logger);
 
-        _logger.LogInformation(
-            "Exporting {EntryCount} entries for session {SessionId} in {Format} format",
-            filteredEntries.Count(), sessionId, format);
-
-        // Export to stream
-        var stream = await exporter.ExportAsync(filteredEntries, cancellationToken);
-
         // Generate filename
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
         var filename = $"logs_{sessionId}_{timestamp}{exporter.FileExtension}";
 
+        _logger.LogInformation("Starting streaming export for session {SessionId} in {Format} format", sessionId, format);
+
+        // Stream directly to response
+        Response.ContentType = exporter.ContentType;
+        Response.Headers.ContentDisposition = $"attachment; filename=\"{filename}\"";
+
+        await exporter.ExportToStreamAsync(filteredEntries, Response.Body, cancellationToken);
+
         _logger.LogInformation("Export completed: {Filename}, ContentType={ContentType}", filename, exporter.ContentType);
 
-        return File(stream, exporter.ContentType, filename);
+        return new EmptyResult();
     }
 
     /// <summary>

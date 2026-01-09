@@ -34,7 +34,7 @@ public class LogService : ILogService
     }
 
     /// <inheritdoc />
-    public async Task<Guid> OpenFileAsync(string filePath, CancellationToken cancellationToken = default)
+    public async Task<Guid> OpenFileAsync(string filePath, CancellationToken cancellationToken = default, Guid? sessionId = null)
     {
         _logger.LogInformation("Opening log file: {FilePath}", filePath);
 
@@ -46,13 +46,13 @@ public class LogService : ILogService
         }
 
         var fileInfo = new FileInfo(filePath);
-        var sessionId = Guid.NewGuid();
+        var actualSessionId = sessionId ?? Guid.NewGuid();
         var now = DateTime.UtcNow;
 
         // Создаём сессию
         var session = new LogSession
         {
-            Id = sessionId,
+            Id = actualSessionId,
             FileName = fileInfo.Name,
             FilePath = filePath,
             FileSize = fileInfo.Length,
@@ -92,11 +92,11 @@ public class LogService : ILogService
 
         _logger.LogInformation(
             "Session created: {SessionId} for file {FileName} with {EntryCount} entries",
-            sessionId,
+            actualSessionId,
             fileInfo.Name,
             session.Entries.Count);
 
-        return sessionId;
+        return actualSessionId;
     }
 
     /// <inheritdoc />

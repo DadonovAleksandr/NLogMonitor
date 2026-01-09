@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using nLogMonitor.Api.Filters;
 using nLogMonitor.Api.Models;
 using nLogMonitor.Application.DTOs;
 using nLogMonitor.Application.Interfaces;
@@ -41,8 +42,9 @@ public class FilesController : ControllerBase
     /// <returns>Session information with file statistics.</returns>
     /// <response code="200">File opened successfully.</response>
     /// <response code="400">Invalid file path.</response>
-    /// <response code="404">File not found.</response>
+    /// <response code="404">File not found or endpoint not available in Web mode.</response>
     [HttpPost("open")]
+    [DesktopOnly]
     [ProducesResponseType(typeof(OpenFileResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -97,8 +99,9 @@ public class FilesController : ControllerBase
     /// <returns>Session information with file statistics.</returns>
     /// <response code="200">Directory opened successfully.</response>
     /// <response code="400">Invalid directory path.</response>
-    /// <response code="404">Directory not found or no log files found.</response>
+    /// <response code="404">Directory not found, no log files found, or endpoint not available in Web mode.</response>
     [HttpPost("open-directory")]
+    [DesktopOnly]
     [ProducesResponseType(typeof(OpenFileResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -148,18 +151,21 @@ public class FilesController : ControllerBase
 
     /// <summary>
     /// Stops file monitoring for a session.
-    /// This is a placeholder for Phase 6 implementation.
     /// </summary>
+    /// <remarks>
+    /// This endpoint is planned for Phase 6 implementation.
+    /// Currently returns 501 Not Implemented.
+    /// </remarks>
     /// <param name="sessionId">Session identifier.</param>
-    /// <returns>No content on success.</returns>
-    /// <response code="204">Monitoring stopped successfully.</response>
+    /// <returns>501 Not Implemented until Phase 6.</returns>
+    /// <response code="501">File watching functionality not yet implemented.</response>
     /// <response code="404">Session not found.</response>
     [HttpPost("{sessionId:guid}/stop-watching")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status501NotImplemented)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> StopWatching(Guid sessionId)
     {
-        _logger.LogInformation("Stopping file watcher for session: {SessionId}", sessionId);
+        _logger.LogInformation("Stop watching requested for session: {SessionId} (not implemented)", sessionId);
 
         var session = await _logService.GetSessionAsync(sessionId);
         if (session is null)
@@ -172,12 +178,13 @@ public class FilesController : ControllerBase
             });
         }
 
-        // TODO: Implement file watcher stop logic in Phase 6
-        // await _fileWatcherService.StopWatchingAsync(sessionId);
-
-        _logger.LogInformation("File watcher stopped for session: {SessionId}", sessionId);
-
-        return NoContent();
+        // File watching planned for Phase 6
+        return StatusCode(StatusCodes.Status501NotImplemented, new ApiErrorResponse
+        {
+            Error = "NotImplemented",
+            Message = "File watching functionality is planned for Phase 6.",
+            TraceId = HttpContext.TraceIdentifier
+        });
     }
 
     private static OpenFileResultDto MapToOpenFileResult(LogSession session)

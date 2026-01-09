@@ -1,12 +1,11 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using nLogMonitor.Application.Interfaces;
 using nLogMonitor.Domain.Entities;
 
 namespace nLogMonitor.Infrastructure.Export;
 
 /// <summary>
-/// Exports log entries to JSON format with async streaming.
+/// Exports log entries to JSON format with streaming.
 /// </summary>
 public sealed class JsonExporter : ILogExporter
 {
@@ -14,48 +13,41 @@ public sealed class JsonExporter : ILogExporter
     public string ContentType => "application/json";
     public string FileExtension => ".json";
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    public async Task ExportToStreamAsync(IEnumerable<LogEntry> entries, Stream outputStream, CancellationToken cancellationToken = default)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
-    };
-
-    public async Task<Stream> ExportAsync(IEnumerable<LogEntry> entries, CancellationToken cancellationToken = default)
-    {
-        var memoryStream = new MemoryStream();
-
-        var exportEntries = entries.Select(e => new LogEntryExportModel
+        await using var writer = new Utf8JsonWriter(outputStream, new JsonWriterOptions
         {
-            Id = e.Id,
-            Timestamp = e.Timestamp,
-            Level = e.Level.ToString(),
-            Message = e.Message,
-            Logger = e.Logger,
-            ProcessId = e.ProcessId,
-            ThreadId = e.ThreadId,
-            Exception = e.Exception
+            Indented = false
         });
 
-        await JsonSerializer.SerializeAsync(memoryStream, exportEntries, JsonOptions, cancellationToken)
-            .ConfigureAwait(false);
+        writer.WriteStartArray();
 
-        memoryStream.Position = 0;
-        return memoryStream;
-    }
+        foreach (var entry in entries)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-    /// <summary>
-    /// Internal model for JSON export with string Level.
-    /// </summary>
-    private sealed class LogEntryExportModel
-    {
-        public long Id { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string Level { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-        public string Logger { get; set; } = string.Empty;
-        public int ProcessId { get; set; }
-        public int ThreadId { get; set; }
-        public string? Exception { get; set; }
+            writer.WriteStartObject();
+            writer.WriteNumber("id", entry.Id);
+            writer.WriteString("timestamp", entry.Timestamp);
+            writer.WriteString("level", entry.Level.ToString());
+            writer.WriteString("message", entry.Message);
+            writer.WriteString("logger", entry.Logger);
+            writer.WriteNumber("processId", entry.ProcessId);
+            writer.WriteNumber("threadId", entry.ThreadId);
+            if (entry.Exception != null)
+                writer.WriteString("exception", entry.Exception);
+            else
+                writer.WriteNull("exception");
+            writer.WriteEndObject();
+
+            // Flush periodically to avoid memory buildup
+            if (writer.BytesPending > 16384)
+            {
+                await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        writer.WriteEndArray();
+        await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 }

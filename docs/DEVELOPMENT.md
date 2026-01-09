@@ -135,17 +135,18 @@ nLogMonitor/
 │   │   ├── composables/          # Vue composables
 │   │   └── types/                # TypeScript types
 │   └── public/
-├── tests/                        # Unit/Integration tests (160 тестов)
-│   ├── nLogMonitor.Infrastructure.Tests/  # 76 тестов
+├── tests/                        # Unit/Integration tests (214 тестов)
+│   ├── nLogMonitor.Infrastructure.Tests/  # 106 тестов
 │   │   ├── Parsing/              # NLogParserTests
 │   │   ├── Storage/              # InMemorySessionStorageTests, RecentLogsFileRepositoryTests
 │   │   ├── FileSystem/           # DirectoryScannerTests
 │   │   └── Export/               # JsonExporterTests, CsvExporterTests
 │   ├── nLogMonitor.Application.Tests/     # 28 тестов
 │   │   └── Services/             # LogServiceTests
-│   └── nLogMonitor.Api.Tests/             # 56 тестов
+│   └── nLogMonitor.Api.Tests/             # 80 тестов
 │       ├── Controllers/          # LogsControllerTests
-│       └── Validators/           # FilterOptionsValidatorTests
+│       ├── Validators/           # FilterOptionsValidatorTests
+│       └── Integration/          # Интеграционные тесты (WebApplicationFactory)
 └── docs/                         # Documentation
 ```
 
@@ -182,10 +183,10 @@ nLogMonitor/
 
 | Проект | Тестов | Описание |
 |--------|--------|----------|
-| `nLogMonitor.Infrastructure.Tests` | 76 | Тесты парсера, хранилища, файловой системы, экспортеров |
+| `nLogMonitor.Infrastructure.Tests` | 106 | Тесты парсера, хранилища, файловой системы, экспортеров (JsonExporter 12, CsvExporter 18) |
 | `nLogMonitor.Application.Tests` | 28 | Тесты LogService (бизнес-логика) |
-| `nLogMonitor.Api.Tests` | 56 | Тесты контроллеров и валидаторов |
-| **Всего** | **160** | |
+| `nLogMonitor.Api.Tests` | 80 | Unit тесты контроллеров (56) + Integration тесты с WebApplicationFactory (24) |
+| **Всего** | **214** | |
 
 **Фреймворк:** NUnit 3.x + Moq
 
@@ -235,8 +236,14 @@ tests/
 └── nLogMonitor.Api.Tests/
     ├── Controllers/
     │   └── LogsControllerTests.cs       # 17 тестов контроллера логов
-    └── Validators/
-        └── FilterOptionsValidatorTests.cs # 39 тестов валидатора
+    ├── Validators/
+    │   └── FilterOptionsValidatorTests.cs # 39 тестов валидатора
+    └── Integration/                     # 24 интеграционных теста
+        ├── WebApplicationTestBase.cs    # Базовый класс с WebApplicationFactory
+        ├── FilesControllerIntegrationTests.cs  # Desktop-only эндпоинты
+        ├── UploadControllerIntegrationTests.cs # Path traversal защита
+        ├── ExportControllerIntegrationTests.cs # Потоковый экспорт
+        └── HealthCheckIntegrationTests.cs      # Health endpoint
 ```
 
 ### Что покрывают тесты

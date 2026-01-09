@@ -35,6 +35,10 @@ nLogMonitor использует иерархическую систему ко�
   },
   "AllowedHosts": "*",
 
+  "App": {
+    "Mode": "Web"
+  },
+
   "SessionSettings": {
     "FallbackTtlMinutes": 5,
     "CleanupIntervalMinutes": 1
@@ -110,6 +114,26 @@ public class SessionSettings
 | `CleanupIntervalMinutes` | int | 1 | Интервал запуска фоновой задачи очистки просроченных сессий. Hosted service проверяет все сессии и удаляет те, у которых истёк TTL. |
 
 > **Важно:** В Production рекомендуется увеличить `FallbackTtlMinutes` до 10 минут для учёта временных проблем с сетью.
+
+### AppSettings
+
+Настройки режима работы приложения.
+
+```csharp
+// src/nLogMonitor.Application/Configuration/AppSettings.cs
+public class AppSettings
+{
+    public string Mode { get; set; } = "Web";
+}
+```
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `Mode` | string | `"Web"` | Режим работы приложения: `Web` (ограниченный доступ, только upload) или `Desktop` (полный доступ к файловой системе). |
+
+> **Web режим**: Desktop-only эндпоинты (`/api/files/open`, `/api/files/open-directory`) возвращают HTTP 404. Загрузка файлов только через `/api/upload`.
+
+> **Desktop режим**: Полный доступ к файловой системе через нативные диалоги. Доступны все эндпоинты.
 
 ### FileSettings
 
@@ -206,6 +230,7 @@ const config = {
 | Переменная | Тип | По умолчанию | Описание |
 |------------|-----|--------------|----------|
 | `ASPNETCORE_ENVIRONMENT` | string | Production | Окружение (Development, Production) |
+| `App__Mode` | string | Web | Режим работы: Web или Desktop |
 | `ASPNETCORE_URLS` | string | http://+:5000 | URL для прослушивания |
 | `SessionSettings__FallbackTtlMinutes` | int | 5 | Fallback TTL сессий (страховка) |
 | `SessionSettings__CleanupIntervalMinutes` | int | 1 | Интервал очистки |
@@ -222,6 +247,7 @@ services:
   app:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - App__Mode=Web
       - SessionSettings__FallbackTtlMinutes=10
       - FileSettings__MaxFileSizeMB=200
       - Cors__AllowedOrigins__0=https://myapp.com

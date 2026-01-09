@@ -6,7 +6,7 @@ using nLogMonitor.Domain.Entities;
 namespace nLogMonitor.Infrastructure.Export;
 
 /// <summary>
-/// Exports log entries to CSV format with proper escaping and UTF-8 BOM for Excel compatibility.
+/// Exports log entries to CSV format with streaming.
 /// </summary>
 public sealed class CsvExporter : ILogExporter
 {
@@ -16,18 +16,14 @@ public sealed class CsvExporter : ILogExporter
 
     private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss.ffff";
     private const string Header = "Id,Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception";
-
-    // UTF-8 BOM for Excel compatibility
     private static readonly byte[] Utf8Bom = [0xEF, 0xBB, 0xBF];
 
-    public async Task<Stream> ExportAsync(IEnumerable<LogEntry> entries, CancellationToken cancellationToken = default)
+    public async Task ExportToStreamAsync(IEnumerable<LogEntry> entries, Stream outputStream, CancellationToken cancellationToken = default)
     {
-        var memoryStream = new MemoryStream();
-
         // Write UTF-8 BOM
-        await memoryStream.WriteAsync(Utf8Bom, cancellationToken).ConfigureAwait(false);
+        await outputStream.WriteAsync(Utf8Bom, cancellationToken).ConfigureAwait(false);
 
-        await using var writer = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true);
+        await using var writer = new StreamWriter(outputStream, Encoding.UTF8, bufferSize: 65536, leaveOpen: true);
 
         // Write header
         await writer.WriteLineAsync(Header).ConfigureAwait(false);
@@ -36,52 +32,31 @@ public sealed class CsvExporter : ILogExporter
         foreach (var entry in entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
             var line = FormatCsvLine(entry);
             await writer.WriteLineAsync(line).ConfigureAwait(false);
         }
 
         await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-        memoryStream.Position = 0;
-        return memoryStream;
     }
 
     private static string FormatCsvLine(LogEntry entry)
     {
         var sb = new StringBuilder();
-
-        // Id
         sb.Append(entry.Id);
         sb.Append(',');
-
-        // Timestamp
         sb.Append(entry.Timestamp.ToString(TimestampFormat, CultureInfo.InvariantCulture));
         sb.Append(',');
-
-        // Level
         sb.Append(entry.Level.ToString());
         sb.Append(',');
-
-        // Message (needs escaping)
         sb.Append(EscapeCsvField(entry.Message));
         sb.Append(',');
-
-        // Logger (needs escaping for safety)
         sb.Append(EscapeCsvField(entry.Logger));
         sb.Append(',');
-
-        // ProcessId
         sb.Append(entry.ProcessId);
         sb.Append(',');
-
-        // ThreadId
         sb.Append(entry.ThreadId);
         sb.Append(',');
-
-        // Exception (needs escaping)
         sb.Append(EscapeCsvField(entry.Exception));
-
         return sb.ToString();
     }
 
@@ -95,7 +70,6 @@ public sealed class CsvExporter : ILogExporter
         if (string.IsNullOrEmpty(value))
             return string.Empty;
 
-        // Check if escaping is needed
         bool needsQuoting = value.Contains(',') ||
                             value.Contains('"') ||
                             value.Contains('\n') ||
@@ -104,10 +78,7 @@ public sealed class CsvExporter : ILogExporter
         if (!needsQuoting)
             return value;
 
-        // Escape double quotes by doubling them
         var escaped = value.Replace("\"", "\"\"");
-
-        // Wrap in quotes
         return $"\"{escaped}\"";
     }
 }

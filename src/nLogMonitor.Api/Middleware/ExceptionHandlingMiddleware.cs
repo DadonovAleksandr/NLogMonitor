@@ -78,6 +78,12 @@ public class ExceptionHandlingMiddleware
                 $"File not found: {ex.FileName ?? ex.Message}"
             ),
 
+            DirectoryNotFoundException ex => (
+                HttpStatusCode.NotFound,
+                "NotFound",
+                $"Directory not found: {ex.Message}"
+            ),
+
             NoLogFilesFoundException ex => (
                 HttpStatusCode.NotFound,
                 "NotFound",

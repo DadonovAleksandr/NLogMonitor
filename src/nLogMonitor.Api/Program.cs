@@ -30,7 +30,23 @@ try
 
     // Swagger/OpenAPI
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+        {
+            Version = "v1",
+            Title = "nLogMonitor API",
+            Description = "API для просмотра и анализа NLog-логов"
+        });
+
+        // Include XML comments
+        var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
+        }
+    });
 
     // CORS
     var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -60,6 +76,8 @@ try
         builder.Configuration.GetSection(SessionSettings.SectionName));
     builder.Services.Configure<RecentLogsSettings>(
         builder.Configuration.GetSection(RecentLogsSettings.SectionName));
+    builder.Services.Configure<AppSettings>(
+        builder.Configuration.GetSection(AppSettings.SectionName));
 
     // Application Services
     builder.Services.AddScoped<ILogParser, NLogParser>();
@@ -116,3 +134,6 @@ finally
 {
     LogManager.Shutdown();
 }
+
+// Make the implicit Program class public so test projects can access it
+public partial class Program { }
