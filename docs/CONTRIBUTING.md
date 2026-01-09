@@ -55,7 +55,7 @@
 
 ### Требования
 
-- .NET 9.0 SDK
+- .NET 10.0 SDK
 - Node.js 20+
 - Git
 - VS Code / Rider (рекомендуется)
@@ -175,32 +175,33 @@ namespace NLogMonitor.Application.Services
 }
 ```
 
-### TypeScript (Frontend)
+### TypeScript/Vue (Frontend)
 
-- Используйте функциональные компоненты
-- Типизируйте все props и state
+- Используйте Composition API с `<script setup>`
+- Типизируйте все props и emits
 - Запускайте `npm run lint:fix` перед коммитом
 
-```typescript
-// ✅ Хорошо
-interface LogTableProps {
+```vue
+<!-- ✅ Хорошо -->
+<script setup lang="ts">
+import type { LogEntry } from '@/types';
+
+interface Props {
   logs: LogEntry[];
   isLoading: boolean;
-  onPageChange: (page: number) => void;
 }
 
-export const LogTable: React.FC<LogTableProps> = ({
-  logs,
-  isLoading,
-  onPageChange
-}) => {
-  // ...
-};
+const props = defineProps<Props>();
 
-// ❌ Плохо
-export const LogTable = (props: any) => {
-  // ...
-};
+const emit = defineEmits<{
+  pageChange: [page: number];
+}>();
+</script>
+
+<!-- ❌ Плохо -->
+<script setup>
+const props = defineProps(['logs', 'isLoading']);
+</script>
 ```
 
 ---

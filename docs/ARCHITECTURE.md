@@ -28,7 +28,7 @@ NLogMonitor построен на принципах **Clean Architecture**, о�
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Presentation Layer                       │
-│                  (API Controllers, React UI)                 │
+│                  (API Controllers, Vue 3 UI)                 │
 ├─────────────────────────────────────────────────────────────┤
 │                     Application Layer                        │
 │               (Services, DTOs, Interfaces)                   │
@@ -58,8 +58,8 @@ public class LogEntry
     public int Id { get; set; }
     public DateTime Timestamp { get; set; }
     public LogLevel Level { get; set; }
-    public string Message { get; set; }
-    public string Logger { get; set; }
+    public required string Message { get; set; }
+    public required string Logger { get; set; }
     public int? ProcessId { get; set; }
     public int? ThreadId { get; set; }
     public string? Exception { get; set; }
@@ -68,11 +68,20 @@ public class LogEntry
 public class LogSession
 {
     public Guid Id { get; set; }
-    public string FileName { get; set; }
+    public required string FileName { get; set; }
+    public required string FilePath { get; set; }
     public long FileSize { get; set; }
     public DateTime CreatedAt { get; set; }
-    public DateTime? ExpiresAt { get; set; }
-    public List<LogEntry> Entries { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public List<LogEntry> Entries { get; set; } = [];
+    public Dictionary<LogLevel, int> LevelCounts { get; set; } = [];
+}
+
+public class RecentLogEntry
+{
+    public required string Path { get; set; }
+    public bool IsDirectory { get; set; }
+    public DateTime OpenedAt { get; set; }
 }
 
 // Enums
@@ -95,35 +104,64 @@ public enum LogLevel
 // Interfaces
 public interface ILogParser
 {
-    IAsyncEnumerable<LogEntry> ParseAsync(Stream stream);
+    IAsyncEnumerable<LogEntry> ParseAsync(Stream stream, CancellationToken ct = default);
+    bool CanParse(string fileName);
 }
 
 public interface ISessionStorage
 {
-    Task<Guid> CreateSessionAsync(LogSession session);
-    Task<LogSession?> GetSessionAsync(Guid sessionId);
-    Task DeleteSessionAsync(Guid sessionId);
+    Task<Guid> SaveAsync(LogSession session, CancellationToken ct = default);
+    Task<LogSession?> GetAsync(Guid sessionId, CancellationToken ct = default);
+    Task DeleteAsync(Guid sessionId, CancellationToken ct = default);
 }
 
-public interface IExportService
+public interface ILogService
 {
-    Task<byte[]> ExportToJsonAsync(IEnumerable<LogEntry> entries);
-    Task<byte[]> ExportToCsvAsync(IEnumerable<LogEntry> entries);
+    Task<OpenFileResultDto> OpenFileAsync(string filePath, CancellationToken ct = default);
+    Task<PagedResultDto<LogEntryDto>> GetLogsAsync(Guid sessionId, FilterOptionsDto filter, int page, int pageSize, CancellationToken ct = default);
+}
+
+public interface IFileWatcherService
+{
+    void StartWatching(Guid sessionId, string filePath);
+    void StopWatching(Guid sessionId);
+}
+
+public interface ILogExporter
+{
+    Task<byte[]> ExportAsync(IEnumerable<LogEntry> entries, string format, CancellationToken ct = default);
+}
+
+public interface IRecentLogsRepository
+{
+    Task<IReadOnlyList<RecentLogEntry>> GetAllAsync(CancellationToken ct = default);
+    Task AddAsync(RecentLogEntry entry, CancellationToken ct = default);
 }
 
 // DTOs
-public record LogFilterDto(
-    IEnumerable<LogLevel>? Levels,
-    string? SearchQuery,
+public record FilterOptionsDto(
+    string? SearchText,
+    LogLevel? MinLevel,
+    LogLevel? MaxLevel,
     DateTime? FromDate,
-    DateTime? ToDate
+    DateTime? ToDate,
+    string? Logger
 );
 
-public record PagedResult<T>(
-    IEnumerable<T> Items,
+public record PagedResultDto<T>(
+    IReadOnlyList<T> Items,
     int TotalCount,
     int Page,
-    int PageSize
+    int PageSize,
+    int TotalPages
+);
+
+public record OpenFileResultDto(
+    Guid SessionId,
+    string FileName,
+    string FilePath,
+    int TotalEntries,
+    Dictionary<LogLevel, int> LevelCounts
 );
 ```
 
@@ -137,10 +175,12 @@ public record PagedResult<T>(
 | `InMemorySessionStorage` | Хранение в памяти с TTL |
 | `JsonExporter` | Экспорт в JSON |
 | `CsvExporter` | Экспорт в CSV |
+| `FileWatcherService` | Мониторинг изменений файлов |
+| `RecentLogsFileRepository` | Хранение истории в JSON |
 
 ### Presentation Layer
 
-API контроллеры и React UI.
+API контроллеры и Vue 3 UI.
 
 ---
 
@@ -150,14 +190,14 @@ API контроллеры и React UI.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                         Client (Browser)                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
-│  │FileUpload│  │ LogTable │  │ Filters  │  │ ExportButton     │  │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────────┬─────────┘  │
-│       │             │             │                  │            │
-│       └─────────────┼─────────────┼──────────────────┘            │
-│                     │  Zustand Store                              │
-└─────────────────────┼─────────────────────────────────────────────┘
+│                     Client (Browser / WebView)                     │
+│  ┌────────────┐  ┌──────────┐  ┌──────────┐  ┌────────────────┐  │
+│  │FileSelector│  │ LogTable │  │ Filters  │  │ ExportButton   │  │
+│  └─────┬──────┘  └────┬─────┘  └────┬─────┘  └───────┬────────┘  │
+│        │              │             │                 │           │
+│        └──────────────┼─────────────┼─────────────────┘           │
+│                       │  Pinia Stores                             │
+└───────────────────────┼───────────────────────────────────────────┘
                       │ HTTP (REST API)
 ┌─────────────────────┼─────────────────────────────────────────────┐
 │                     ▼                                             │
@@ -185,28 +225,28 @@ API контроллеры и React UI.
 ### Sequence диаграмма: Загрузка файла
 
 ```
-User          FileUpload       API             LogService        NLogParser       Storage
- │                │              │                  │                │              │
- │  Drop file     │              │                  │                │              │
- │───────────────>│              │                  │                │              │
- │                │ POST /upload │                  │                │              │
- │                │─────────────>│                  │                │              │
- │                │              │ UploadAsync()    │                │              │
- │                │              │─────────────────>│                │              │
- │                │              │                  │ ParseAsync()   │              │
- │                │              │                  │───────────────>│              │
- │                │              │                  │                │──┐           │
- │                │              │                  │                │  │ Streaming │
- │                │              │                  │                │<─┘ Parse     │
- │                │              │                  │<───────────────│              │
- │                │              │                  │ CreateSession()│              │
- │                │              │                  │────────────────────────────────>│
- │                │              │                  │<────────────────────────────────│
- │                │              │<─────────────────│                │              │
- │                │ { sessionId }│                  │                │              │
- │                │<─────────────│                  │                │              │
- │  Show table    │              │                  │                │              │
- │<───────────────│              │                  │                │              │
+User        FileSelector      API            LogService        NLogParser       Storage
+ │               │              │                  │                │              │
+ │  Select file  │              │                  │                │              │
+ │──────────────>│              │                  │                │              │
+ │               │POST /upload  │                  │                │              │
+ │               │─────────────>│                  │                │              │
+ │               │              │ OpenFileAsync()  │                │              │
+ │               │              │─────────────────>│                │              │
+ │               │              │                  │ ParseAsync()   │              │
+ │               │              │                  │───────────────>│              │
+ │               │              │                  │                │──┐           │
+ │               │              │                  │                │  │ Streaming │
+ │               │              │                  │                │<─┘ Parse     │
+ │               │              │                  │<───────────────│              │
+ │               │              │                  │ SaveAsync()    │              │
+ │               │              │                  │────────────────────────────────>│
+ │               │              │                  │<────────────────────────────────│
+ │               │              │<─────────────────│                │              │
+ │               │ { sessionId }│                  │                │              │
+ │               │<─────────────│                  │                │              │
+ │  Show table   │              │                  │                │              │
+ │<──────────────│              │                  │                │              │
 ```
 
 ---
@@ -216,63 +256,103 @@ User          FileUpload       API             LogService        NLogParser     
 ```
 NLogMonitor/
 ├── src/
-│   ├── NLogMonitor.Domain/           # Entities, Enums
+│   ├── NLogMonitor.Domain/           # Domain Layer (Entities, Enums)
 │   │   ├── Entities/
 │   │   │   ├── LogEntry.cs
-│   │   │   └── LogSession.cs
-│   │   └── Enums/
-│   │       └── LogLevel.cs
+│   │   │   ├── LogSession.cs
+│   │   │   ├── LogLevel.cs
+│   │   │   └── RecentLogEntry.cs
+│   │   └── NLogMonitor.Domain.csproj
 │   │
-│   ├── NLogMonitor.Application/      # Business Logic
+│   ├── NLogMonitor.Application/      # Application Layer
 │   │   ├── Interfaces/
 │   │   │   ├── ILogParser.cs
 │   │   │   ├── ISessionStorage.cs
-│   │   │   └── IExportService.cs
-│   │   ├── Services/
-│   │   │   └── LogService.cs
-│   │   └── DTOs/
-│   │       ├── LogFilterDto.cs
-│   │       └── PagedResult.cs
+│   │   │   ├── ILogService.cs
+│   │   │   ├── IFileWatcherService.cs
+│   │   │   ├── ILogExporter.cs
+│   │   │   └── IRecentLogsRepository.cs
+│   │   ├── DTOs/
+│   │   │   ├── LogEntryDto.cs
+│   │   │   ├── FilterOptionsDto.cs
+│   │   │   ├── PagedResultDto.cs
+│   │   │   ├── OpenFileResultDto.cs
+│   │   │   ├── RecentLogDto.cs
+│   │   │   └── ClientLogDto.cs
+│   │   └── NLogMonitor.Application.csproj
 │   │
-│   ├── NLogMonitor.Infrastructure/   # Implementations
-│   │   ├── Parser/
+│   ├── NLogMonitor.Infrastructure/   # Infrastructure Layer
+│   │   ├── Parsing/
 │   │   │   └── NLogParser.cs
 │   │   ├── Storage/
-│   │   │   └── InMemorySessionStorage.cs
-│   │   └── Export/
-│   │       ├── JsonExporter.cs
-│   │       └── CsvExporter.cs
+│   │   │   ├── InMemorySessionStorage.cs
+│   │   │   └── RecentLogsFileRepository.cs
+│   │   ├── FileSystem/
+│   │   │   └── FileWatcherService.cs
+│   │   ├── Export/
+│   │   │   ├── JsonExporter.cs
+│   │   │   └── CsvExporter.cs
+│   │   └── NLogMonitor.Infrastructure.csproj
 │   │
-│   └── NLogMonitor.Api/              # Web API
-│       ├── Controllers/
-│       │   ├── UploadController.cs
-│       │   ├── LogsController.cs
-│       │   └── ExportController.cs
+│   ├── NLogMonitor.Api/              # Presentation Layer (Web API)
+│   │   ├── Controllers/
+│   │   │   ├── LogsController.cs
+│   │   │   ├── FilesController.cs
+│   │   │   ├── UploadController.cs
+│   │   │   ├── ExportController.cs
+│   │   │   ├── RecentController.cs
+│   │   │   └── ClientLogsController.cs
+│   │   ├── Hubs/
+│   │   │   └── LogWatcherHub.cs
+│   │   ├── Program.cs
+│   │   ├── appsettings.json
+│   │   ├── nlog.config
+│   │   └── NLogMonitor.Api.csproj
+│   │
+│   └── NLogMonitor.Desktop/          # Photino Desktop Shell
 │       ├── Program.cs
-│       └── appsettings.json
+│       ├── Services/
+│       │   └── NativeDialogService.cs
+│       └── NLogMonitor.Desktop.csproj
 │
-├── client/                           # React Frontend
+├── client/                           # Vue 3 Frontend
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── FileUpload.tsx
-│   │   │   ├── LogTable.tsx
-│   │   │   ├── FilterPanel.tsx
-│   │   │   └── SearchBar.tsx
-│   │   ├── store/
-│   │   │   └── useLogStore.ts
+│   │   │   ├── ui/                   # shadcn-vue components
+│   │   │   ├── LogTable/
+│   │   │   ├── FilterPanel/
+│   │   │   ├── SearchBar/
+│   │   │   ├── FileSelector/
+│   │   │   └── ExportButton/
+│   │   ├── stores/
+│   │   │   ├── logStore.ts
+│   │   │   ├── filterStore.ts
+│   │   │   └── recentStore.ts
 │   │   ├── api/
-│   │   │   └── logApi.ts
-│   │   └── App.tsx
+│   │   │   ├── client.ts
+│   │   │   └── signalr.ts
+│   │   ├── composables/
+│   │   │   ├── useLogs.ts
+│   │   │   ├── useFileWatcher.ts
+│   │   │   └── usePhotinoBridge.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   ├── App.vue
+│   │   └── main.ts
 │   ├── package.json
 │   └── vite.config.ts
 │
 ├── tests/
 │   ├── NLogMonitor.Domain.Tests/
 │   ├── NLogMonitor.Application.Tests/
-│   └── NLogMonitor.Infrastructure.Tests/
+│   ├── NLogMonitor.Infrastructure.Tests/
+│   └── NLogMonitor.Api.Tests/
 │
 ├── docs/
+├── docker-compose.yml
 ├── NLogMonitor.sln
+├── PLAN.md
+├── CLAUDE.md
 └── README.md
 ```
 

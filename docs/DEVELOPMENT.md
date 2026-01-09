@@ -16,7 +16,7 @@
 
 | Инструмент | Версия | Назначение |
 |------------|--------|------------|
-| .NET SDK | 9.0+ | Backend runtime |
+| .NET SDK | 10.0+ | Backend runtime |
 | Node.js | 20+ | Frontend runtime |
 | npm/pnpm | latest | Package manager |
 | Git | 2.40+ | Version control |
@@ -28,6 +28,7 @@
 {
   "recommendations": [
     "ms-dotnettools.csdevkit",
+    "vue.volar",
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "bradlc.vscode-tailwindcss"
@@ -112,14 +113,16 @@ services:
 NLogMonitor/
 ├── src/                          # Backend source
 │   ├── NLogMonitor.Domain/       # Entities, Enums
-│   ├── NLogMonitor.Application/  # Services, DTOs
+│   ├── NLogMonitor.Application/  # Interfaces, DTOs
 │   ├── NLogMonitor.Infrastructure/ # Implementations
-│   └── NLogMonitor.Api/          # Controllers
-├── client/                       # Frontend source
+│   ├── NLogMonitor.Api/          # Controllers, Hubs
+│   └── NLogMonitor.Desktop/      # Photino shell
+├── client/                       # Frontend source (Vue 3)
 │   ├── src/
-│   │   ├── components/           # React components
-│   │   ├── store/                # Zustand store
+│   │   ├── components/           # Vue components
+│   │   ├── stores/               # Pinia stores
 │   │   ├── api/                  # API client
+│   │   ├── composables/          # Vue composables
 │   │   └── types/                # TypeScript types
 │   └── public/
 ├── tests/                        # Unit/Integration tests
@@ -228,12 +231,12 @@ ESLint + Prettier:
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:react-hooks/recommended",
+    "plugin:vue/vue3-recommended",
     "prettier"
   ],
   "rules": {
     "@typescript-eslint/no-unused-vars": "error",
-    "react-hooks/exhaustive-deps": "warn"
+    "vue/multi-word-component-names": "off"
   }
 }
 ```
@@ -283,7 +286,7 @@ npx husky add .husky/pre-commit "npx lint-staged"
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/NLogMonitor.Api/bin/Debug/net9.0/NLogMonitor.Api.dll",
+      "program": "${workspaceFolder}/src/NLogMonitor.Api/bin/Debug/net10.0/NLogMonitor.Api.dll",
       "cwd": "${workspaceFolder}/src/NLogMonitor.Api",
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development"

@@ -68,7 +68,7 @@ cp -r dist/* ../publish/wwwroot/
 
 ```dockerfile
 # Dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 WORKDIR /src
 COPY ["src/", "src/"]
 COPY ["NLogMonitor.sln", "."]
@@ -82,7 +82,7 @@ RUN npm ci
 COPY client/ ./
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=backend-build /app/publish .
 COPY --from=frontend-build /app/dist ./wwwroot
@@ -170,7 +170,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -231,7 +231,7 @@ variables:
 
 test:
   stage: test
-  image: mcr.microsoft.com/dotnet/sdk:9.0
+  image: mcr.microsoft.com/dotnet/sdk:10.0
   script:
     - dotnet restore
     - dotnet test

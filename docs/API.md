@@ -30,7 +30,97 @@
 
 ## 📡 Endpoints
 
-### Upload
+### Files (Desktop режим)
+
+#### `POST /api/files/open`
+
+Открытие лог-файла по абсолютному пути (для Desktop режима).
+
+**Request:**
+
+```json
+{
+  "filePath": "C:\\logs\\app\\2024-01-15.log"
+}
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "sessionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "fileName": "2024-01-15.log",
+  "filePath": "C:\\logs\\app\\2024-01-15.log",
+  "totalEntries": 15420,
+  "levelCounts": {
+    "Trace": 1000,
+    "Debug": 5000,
+    "Info": 8000,
+    "Warn": 1000,
+    "Error": 400,
+    "Fatal": 20
+  }
+}
+```
+
+**Ошибки:**
+
+| Код | Описание |
+|-----|----------|
+| 400 | Путь не указан |
+| 404 | Файл не найден |
+
+---
+
+#### `POST /api/files/open-directory`
+
+Открытие директории с автоматическим выбором последнего по имени .log файла.
+
+**Request:**
+
+```json
+{
+  "directoryPath": "C:\\logs\\app"
+}
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "sessionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "fileName": "2024-01-15.log",
+  "filePath": "C:\\logs\\app\\2024-01-15.log",
+  "totalEntries": 15420,
+  "levelCounts": {
+    "Trace": 1000,
+    "Debug": 5000,
+    "Info": 8000,
+    "Warn": 1000,
+    "Error": 400,
+    "Fatal": 20
+  }
+}
+```
+
+**Ошибки:**
+
+| Код | Описание |
+|-----|----------|
+| 400 | Путь не указан |
+| 404 | Директория не найдена или не содержит .log файлов |
+
+---
+
+#### `POST /api/files/{sessionId}/stop-watching`
+
+Остановка мониторинга изменений файла для указанной сессии.
+
+**Response:** `204 No Content`
+
+---
+
+### Upload (Web режим)
 
 #### `POST /api/upload`
 
@@ -207,6 +297,65 @@ Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
 Удаление сессии.
 
 **Response:** `204 No Content`
+
+---
+
+### Recent
+
+#### `GET /api/recent`
+
+Получение списка недавно открытых файлов и директорий.
+
+**Response:** `200 OK`
+
+```json
+[
+  {
+    "path": "C:\\logs\\app\\2024-01-15.log",
+    "isDirectory": false,
+    "openedAt": "2024-01-15T10:30:00Z"
+  },
+  {
+    "path": "C:\\logs\\app",
+    "isDirectory": true,
+    "openedAt": "2024-01-14T15:00:00Z"
+  }
+]
+```
+
+---
+
+### Client Logs
+
+#### `POST /api/client-logs`
+
+Приём логов с фронтенда (batch отправка).
+
+**Request:**
+
+```json
+{
+  "logs": [
+    {
+      "level": "error",
+      "message": "Failed to load component",
+      "timestamp": "2024-01-15T10:30:45.123Z",
+      "url": "http://localhost:5173/logs",
+      "userAgent": "Mozilla/5.0...",
+      "stackTrace": "Error: Failed to load...\n    at Component.vue:42"
+    }
+  ]
+}
+```
+
+**Response:** `204 No Content`
+
+**Ошибки:**
+
+| Код | Описание |
+|-----|----------|
+| 400 | Некорректный формат логов |
+| 429 | Слишком много запросов (rate limit) |
 
 ---
 

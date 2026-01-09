@@ -10,9 +10,7 @@
 ## [Unreleased]
 
 ### 🚀 Добавлено
-- Начальная архитектура проекта
-- Документация (README, ARCHITECTURE, API, и др.)
-- План разработки по фазам
+- *Пока нет изменений*
 
 ### 🔧 Изменено
 - *Пока нет изменений*
@@ -25,17 +23,21 @@
 
 ---
 
-## [0.1.0] - YYYY-MM-DD
+## [0.1.0] - 2026-01-09
 
-> 🎯 **Фаза 1: Базовая инфраструктура**
+> 🎯 **Фаза 1: Базовая инфраструктура** ✅
 
 ### 🚀 Добавлено
-- [ ] Создание Solution и проектов (.NET 9.0)
-- [ ] Настройка Dependency Injection
-- [ ] Базовые Domain Entities (LogEntry, LogSession, LogLevel)
-- [ ] Swagger/OpenAPI документация
-- [ ] Health checks endpoint
-- [ ] Базовая конфигурация CORS
+- [x] Создание Solution и проектов (.NET 10.0)
+- [x] Настройка Dependency Injection
+- [x] Domain Entities: LogEntry, LogSession, LogLevel, RecentLogEntry
+- [x] Application Interfaces: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository
+- [x] Application DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto
+- [x] Swagger/OpenAPI документация
+- [x] Health checks endpoint (/health)
+- [x] Базовая конфигурация CORS (для localhost:5173)
+- [x] NLog конфигурация с файловыми логами
+- [x] SignalR инфраструктура для real-time обновлений
 
 ---
 
