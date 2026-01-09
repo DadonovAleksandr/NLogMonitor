@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using NUnit.Framework;
 
@@ -350,12 +351,11 @@ public class LogsControllerIntegrationTests : WebApplicationTestBase
         var response = await Client.PostAsync("/api/upload", content);
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), "Upload should succeed");
 
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var sessionIdMatch = System.Text.RegularExpressions.Regex.Match(
-            responseContent, @"""sessionId""\s*:\s*""([^""]+)""");
-        Assert.That(sessionIdMatch.Success, Is.True, "Could not extract sessionId from upload response");
+        var result = await response.Content.ReadFromJsonAsync<UploadResponse>(JsonOptions);
+        Assert.That(result, Is.Not.Null, "Could not deserialize upload response");
+        Assert.That(result!.SessionId, Is.Not.EqualTo(Guid.Empty), "SessionId should not be empty");
 
-        return sessionIdMatch.Groups[1].Value;
+        return result.SessionId.ToString();
     }
 
     #endregion
@@ -383,6 +383,15 @@ public class LogsControllerIntegrationTests : WebApplicationTestBase
         public int ProcessId { get; set; }
         public int ThreadId { get; set; }
         public string? Exception { get; set; }
+    }
+
+    private class UploadResponse
+    {
+        public Guid SessionId { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
+        public int TotalEntries { get; set; }
+        public Dictionary<string, int> LevelCounts { get; set; } = new();
     }
 
     #endregion

@@ -285,31 +285,29 @@ public class InMemorySessionStorageTests
         Assert.DoesNotThrowAsync(async () => await Task.WhenAll(tasks));
     }
 
-    // === TTL expiration ===
+    // === Expired session handling ===
 
     [Test]
-    public async Task Session_WithExpiredTTL_CleanedUpByTimer()
+    public async Task SaveAsync_WithExpiredSession_SavesSuccessfully()
     {
-        // Arrange - очень короткий TTL
+        // Arrange - сессия с уже истёкшим TTL
         var options = Options.Create(new SessionSettings
         {
             FallbackTtlMinutes = 0, // Минимальный TTL
-            CleanupIntervalMinutes = 1 // Короткий интервал очистки
+            CleanupIntervalMinutes = 1 // Интервал очистки
         });
 
         using var storage = new InMemorySessionStorage(options, _loggerMock.Object);
         var session = CreateTestSession();
         session.ExpiresAt = DateTime.UtcNow.AddMilliseconds(-1); // Уже истёк
 
+        // Act
         await storage.SaveAsync(session);
 
-        // Сессия ещё должна быть доступна (очистка ещё не прошла)
-        var beforeCleanup = await storage.GetAsync(session.Id);
-        Assert.That(beforeCleanup, Is.Not.Null, "Session should exist before cleanup");
-
-        // Примечание: тест не ждёт реальной очистки по таймеру,
-        // так как это занимает минуту. Этот тест проверяет только
-        // что сессия с истёкшим TTL может быть сохранена.
+        // Assert - сессия сохранена и доступна (очистка происходит асинхронно по таймеру)
+        var retrieved = await storage.GetAsync(session.Id);
+        Assert.That(retrieved, Is.Not.Null, "Expired session should be saved successfully");
+        Assert.That(retrieved!.Id, Is.EqualTo(session.Id));
     }
 
     // === Dispose ===
