@@ -62,11 +62,11 @@
 | **Экспорт** | JSON и CSV форматы с потоковой генерацией (Utf8JsonWriter) |
 | **DesktopOnlyAttribute** | Защита Desktop-only эндпоинтов в Web-режиме |
 | **Path traversal защита** | Санитизация имён файлов при Upload |
-| **Unit/Integration тесты** | 240 тестов (NUnit) — парсер, хранилище, сервисы, контроллеры |
+| **Unit/Integration тесты** | 127 тестов (NUnit) — парсер, хранилище, сервисы, контроллеры |
 
 ```bash
 # Проверка работоспособности
-dotnet test                       # 240 тестов (113 + 28 + 99)
+dotnet test                       # 127 тестов
 curl http://localhost:5000/health  # {"status":"healthy",...}
 ```
 
@@ -260,7 +260,7 @@ GET /api/export/{sessionId}?format=csv
 | ASP.NET Core | 10.0 | Web API |
 | FluentValidation | 11.x | Валидация |
 | NLog | 5.x | Логирование |
-| Swagger | 6.x | API документация |
+| Swagger | 10.x | API документация |
 
 ### Frontend
 
@@ -268,11 +268,11 @@ GET /api/export/{sessionId}?format=csv
 |------------|--------|------------|
 | Vue | 3.5 | UI фреймворк |
 | TypeScript | 5.9 | Типизация |
-| Vite | 7.x | Сборщик |
-| Pinia | 3.x | State management |
-| TanStack Table Vue | 8.x | Таблица |
-| Tailwind CSS | 3.x | Стилизация |
-| shadcn-vue | latest | UI компоненты |
+| Vite | 7.2 | Сборщик |
+| Pinia | 3.0 | State management |
+| TanStack Table Vue | 8.21 | Таблица |
+| Tailwind CSS | 3.4 | Стилизация |
+| Reka UI | 2.7 | UI компоненты |
 
 ---
 

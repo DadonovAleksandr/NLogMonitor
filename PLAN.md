@@ -562,7 +562,7 @@ nLogMonitor/
 - [x] `DirectoryNotFoundException` → HTTP 404 в middleware
 - [x] XML-комментарии включены в Swagger через GenerateDocumentationFile
 
-**Статистика тестов:** 240 тестов — Infrastructure: 113, Application: 28, Api: 99
+**Статистика тестов:** 127 тестов
 
 ---
 

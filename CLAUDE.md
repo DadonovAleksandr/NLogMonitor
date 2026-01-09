@@ -42,11 +42,11 @@ dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — 240 тестов
-dotnet test                               # Все тесты (240: Infrastructure 113 + Application 28 + Api 99)
-dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта (113)
-dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28)
-dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров (99)
+# Tests (NUnit) — 127 тестов
+dotnet test                               # Все тесты (127)
+dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта
+dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов
+dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
 # Lint / Format
@@ -95,9 +95,9 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Application/Configuration/** — FileSettings, RecentLogsSettings, AppSettings (режим Web/Desktop)
 
 ### Структура tests/
-- **nLogMonitor.Infrastructure.Tests** — 113 тестов: NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests (12), CsvExporterTests (18), RecentLogsFileRepositoryTests
-- **nLogMonitor.Application.Tests** — 28 тестов: LogServiceTests (фильтрация, пагинация, поиск, статистика)
-- **nLogMonitor.Api.Tests** — 99 тестов: Unit тесты контроллеров (56) + Integration тесты с WebApplicationFactory (43: Files, Upload, Export, Health, Logs, Recent)
+- **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests
+- **nLogMonitor.Application.Tests** — LogServiceTests (фильтрация, пагинация, поиск, статистика)
+- **nLogMonitor.Api.Tests** — Unit тесты контроллеров + Integration тесты с WebApplicationFactory (Files, Upload, Export, Health, Logs, Recent)
 
 ### Структура client/
 - **src/types/** — TypeScript типы (LogEntry, PagedResult, FilterOptions, etc.)
@@ -155,9 +155,9 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 ## Tech Stack
 
 - **Backend:** .NET 10, ASP.NET Core, SignalR, FluentValidation, NLog
-- **Frontend:** Vue 3.5, TypeScript 5.9, Vite 7, Pinia 3, TanStack Table 8, Tailwind CSS 3, shadcn-vue, lucide-vue-next
+- **Frontend:** Vue 3.5, TypeScript 5.9, Vite 7.2, Pinia 3.0, TanStack Table 8.21, Tailwind CSS 3.4, Reka UI 2.7, lucide-vue-next
 - **Desktop (план):** Photino.NET
-- **Testing:** NUnit 3.x, Moq, coverlet
+- **Testing:** NUnit 4.x, Moq, FluentAssertions, coverlet
 
 ## Development Notes
 

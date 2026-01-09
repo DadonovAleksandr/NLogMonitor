@@ -91,7 +91,7 @@
 - [x] Unit-тесты для экспортеров (30 тестов: JsonExporter 12, CsvExporter 18)
 
 ### 📊 Статистика
-- Общее количество тестов: 240 (было 160)
+- Общее количество тестов: 240 (было 160) *(число актуально на момент релиза)*
   - Infrastructure: 113 (было 76)
   - Application: 28 (без изменений)
   - Api: 99 (было 56)
@@ -106,7 +106,7 @@
 - [x] Vite + Vue 3 + TypeScript проект
 - [x] Pinia stores (logStore, filterStore, recentStore)
 - [x] Axios API client с interceptors
-- [x] Tailwind CSS + shadcn-vue (Button, Input, Card, Table)
+- [x] Tailwind CSS + Reka UI (shadcn-vue API) (Button, Input, Card, Table)
 - [x] TypeScript типы соответствующие backend DTOs
 - [x] FileSelector компонент с drag & drop
 - [x] LogTable компонент с TanStack Table

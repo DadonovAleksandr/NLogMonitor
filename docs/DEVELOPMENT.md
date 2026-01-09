@@ -135,15 +135,15 @@ nLogMonitor/
 │   │   ├── lib/                  # Utility functions
 │   │   └── types/                # TypeScript types
 │   └── public/
-├── tests/                        # Unit/Integration tests (240 тестов)
-│   ├── nLogMonitor.Infrastructure.Tests/  # 113 тестов
+├── tests/                        # Unit/Integration tests (127 тестов)
+│   ├── nLogMonitor.Infrastructure.Tests/
 │   │   ├── Parsing/              # NLogParserTests
 │   │   ├── Storage/              # InMemorySessionStorageTests, RecentLogsFileRepositoryTests
 │   │   ├── FileSystem/           # DirectoryScannerTests
 │   │   └── Export/               # JsonExporterTests, CsvExporterTests
-│   ├── nLogMonitor.Application.Tests/     # 28 тестов
+│   ├── nLogMonitor.Application.Tests/
 │   │   └── Services/             # LogServiceTests
-│   └── nLogMonitor.Api.Tests/             # 99 тестов
+│   └── nLogMonitor.Api.Tests/
 │       ├── Controllers/          # LogsControllerTests
 │       ├── Validators/           # FilterOptionsValidatorTests
 │       └── Integration/          # Интеграционные тесты (WebApplicationFactory)
@@ -178,14 +178,13 @@ nLogMonitor/
 
 ### Тестовые проекты
 
-| Проект | Тестов | Описание |
-|--------|--------|----------|
-| `nLogMonitor.Infrastructure.Tests` | 113 | Тесты парсера, хранилища, файловой системы, экспортеров |
-| `nLogMonitor.Application.Tests` | 28 | Тесты LogService (бизнес-логика) |
-| `nLogMonitor.Api.Tests` | 99 | Unit тесты контроллеров + Integration тесты с WebApplicationFactory |
-| **Всего** | **240** | |
+| Проект | Описание |
+|--------|----------|
+| `nLogMonitor.Infrastructure.Tests` | Тесты парсера, хранилища, файловой системы, экспортеров |
+| `nLogMonitor.Application.Tests` | Тесты LogService (бизнес-логика) |
+| `nLogMonitor.Api.Tests` | Unit тесты контроллеров + Integration тесты с WebApplicationFactory |
 
-**Фреймворк:** NUnit 3.x + Moq
+**Фреймворк:** NUnit 4.x + Moq + FluentAssertions
 
 ### Команды запуска тестов
 
@@ -218,24 +217,24 @@ dotnet test --filter "Category=UnitTest"
 tests/
 ├── nLogMonitor.Infrastructure.Tests/
 │   ├── Parsing/
-│   │   └── NLogParserTests.cs           # 17 тестов парсера NLog
+│   │   └── NLogParserTests.cs           # Тесты парсера NLog
 │   ├── Storage/
-│   │   ├── InMemorySessionStorageTests.cs  # 19 тестов хранилища сессий
-│   │   └── RecentLogsFileRepositoryTests.cs # 18 тестов репозитория недавних
+│   │   ├── InMemorySessionStorageTests.cs  # Тесты хранилища сессий
+│   │   └── RecentLogsFileRepositoryTests.cs # Тесты репозитория недавних
 │   ├── FileSystem/
-│   │   └── DirectoryScannerTests.cs     # 20 тестов сканера директорий
+│   │   └── DirectoryScannerTests.cs     # Тесты сканера директорий
 │   └── Export/
 │       ├── JsonExporterTests.cs         # Тесты JSON экспортера
 │       └── CsvExporterTests.cs          # Тесты CSV экспортера
 ├── nLogMonitor.Application.Tests/
 │   └── Services/
-│       └── LogServiceTests.cs           # 28 тестов бизнес-логики
+│       └── LogServiceTests.cs           # Тесты бизнес-логики
 └── nLogMonitor.Api.Tests/
     ├── Controllers/
-    │   └── LogsControllerTests.cs       # 17 тестов контроллера логов
+    │   └── LogsControllerTests.cs       # Тесты контроллера логов
     ├── Validators/
-    │   └── FilterOptionsValidatorTests.cs # 39 тестов валидатора
-    └── Integration/                     # 24 интеграционных теста
+    │   └── FilterOptionsValidatorTests.cs # Тесты валидатора
+    └── Integration/                     # Интеграционные тесты
         ├── WebApplicationTestBase.cs    # Базовый класс с WebApplicationFactory
         ├── FilesControllerIntegrationTests.cs  # Desktop-only эндпоинты
         ├── UploadControllerIntegrationTests.cs # Path traversal защита

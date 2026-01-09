@@ -358,7 +358,7 @@ nLogMonitor/
 ├── client/                           # Vue 3 Frontend
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ui/                   # shadcn-vue (Button, Input, Card, Table)
+│   │   │   ├── ui/                   # Reka UI (shadcn-vue порт) (Button, Input, Card, Table)
 │   │   │   ├── LogTable/             # Таблица логов с TanStack Table
 │   │   │   └── FileSelector/         # Drag & drop загрузка файлов
 │   │   │   # Планируются (Фаза 5): FilterPanel/, SearchBar/, ExportButton/
@@ -377,10 +377,10 @@ nLogMonitor/
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── tests/                            # 240 тестов (NUnit)
-│   ├── nLogMonitor.Application.Tests/    # 28 тестов
-│   ├── nLogMonitor.Infrastructure.Tests/ # 113 тестов
-│   └── nLogMonitor.Api.Tests/            # 99 тестов
+├── tests/                            # 127 тестов (NUnit)
+│   ├── nLogMonitor.Application.Tests/
+│   ├── nLogMonitor.Infrastructure.Tests/
+│   └── nLogMonitor.Api.Tests/
 │
 ├── docs/
 ├── docker-compose.yml
