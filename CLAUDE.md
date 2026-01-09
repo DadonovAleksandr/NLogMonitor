@@ -16,7 +16,8 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ DirectoryNotFoundException → HTTP 404
 - ✅ stop-watching → HTTP 501 Not Implemented
 - ✅ XML-комментарии в Swagger
-- ✅ 24 интеграционных теста с WebApplicationFactory
+- ✅ 43 интеграционных теста с WebApplicationFactory
+- ✅ Очистка temp-каталогов при удалении/истечении сессии (cleanup callbacks)
 
 ## Build & Run Commands
 
@@ -26,11 +27,11 @@ dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — 214 тестов
-dotnet test                               # Все тесты (214: Infrastructure 106 + Application 28 + Api 80)
-dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта (106)
+# Tests (NUnit) — 240 тестов
+dotnet test                               # Все тесты (240: Infrastructure 113 + Application 28 + Api 99)
+dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта (113)
 dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28)
-dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров (80)
+dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров (99)
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
 # Lint / Format
@@ -73,9 +74,9 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Application/Configuration/** — FileSettings, RecentLogsSettings, AppSettings (режим Web/Desktop)
 
 ### Структура tests/
-- **nLogMonitor.Infrastructure.Tests** — 106 тестов: NLogParserTests, InMemorySessionStorageTests, DirectoryScannerTests, JsonExporterTests (12), CsvExporterTests (18), RecentLogsFileRepositoryTests
+- **nLogMonitor.Infrastructure.Tests** — 113 тестов: NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests (12), CsvExporterTests (18), RecentLogsFileRepositoryTests
 - **nLogMonitor.Application.Tests** — 28 тестов: LogServiceTests (фильтрация, пагинация, поиск, статистика)
-- **nLogMonitor.Api.Tests** — 80 тестов: Unit тесты контроллеров (56) + Integration тесты с WebApplicationFactory (24)
+- **nLogMonitor.Api.Tests** — 99 тестов: Unit тесты контроллеров (56) + Integration тесты с WebApplicationFactory (43: Files, Upload, Export, Health, Logs, Recent)
 
 ## NLog Format
 
@@ -97,6 +98,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - **Потоковый экспорт** — Utf8JsonWriter и StreamWriter пишут напрямую в Response.Body без промежуточных буферов
 - **SignalR session lifecycle** — сессия живёт пока открыта вкладка (SignalR connected), удаляется при закрытии (Фаза 6)
 - **Fallback TTL** — 5 минут как страховка для потерянных сессий (краш браузера, потеря сети)
+- **Cleanup callbacks** — очистка temp-каталогов при удалении сессии через RegisterCleanupCallbackAsync
 - **DesktopOnlyAttribute** — фильтр для защиты Desktop-эндпоинтов в Web-режиме (возвращает 404)
 - **Virtual scrolling** — для таблицы с миллионами записей (Frontend, Фаза 4-5)
 
