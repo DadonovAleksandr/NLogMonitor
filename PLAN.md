@@ -144,7 +144,7 @@ fileName="${var:logDirectory}/${shortdate}.log"
 |-----------|------------|--------|
 | Framework | Photino.NET | 3.x |
 | WebView | Platform native | Edge/WebKit/GTK |
-| File Dialogs | System.Windows.Forms | .NET 10 |
+| File Dialogs | Photino.NET built-in | 3.x |
 | IPC | JS ↔ .NET Bridge | Photino built-in |
 
 ### Инфраструктура
@@ -154,6 +154,26 @@ fileName="${var:logDirectory}/${shortdate}.log"
 | Web Server | Nginx (reverse proxy) |
 | Хранение сессий | In-Memory |
 | Хранение недавних | JSON файл |
+
+### Стратегия работы с файлами
+
+**Web-режим (Docker)** — только upload через браузер:
+
+| Параметр | Значение |
+|----------|----------|
+| Endpoint | `POST /api/upload` |
+| Лимит размера | 100 MB |
+| Хранение | `/app/temp/{sessionId}/` (внутри контейнера) |
+| Очистка | Вместе с сессией (SignalR disconnect или fallback TTL) |
+| Persist | Нет — файлы теряются при перезапуске контейнера |
+
+**Desktop-режим (Photino)** — прямой доступ к файловой системе:
+
+| Параметр | Значение |
+|----------|----------|
+| Endpoints | `POST /api/files/open`, `POST /api/files/open-directory` |
+| Диалоги | Photino built-in (кроссплатформенные) |
+| Ограничения | Нет лимита размера, доступ к любым путям |
 
 ---
 
@@ -366,15 +386,17 @@ nLogMonitor/
 ---
 
 ### Фаза 3: API Endpoints
-- [ ] **3.1 Files Controller**
-  - [ ] POST /api/files/open — открытие файла по абсолютному пути (для Desktop режима)
-  - [ ] POST /api/files/open-directory — открытие директории с автоматическим выбором последнего по имени .log файла
+- [ ] **3.1 Files Controller (Desktop-only)**
+  - [ ] POST /api/files/open — открытие файла по абсолютному пути (**только Desktop**)
+  - [ ] POST /api/files/open-directory — открытие директории с автоматическим выбором последнего по имени .log файла (**только Desktop**)
   - [ ] POST /api/files/{sessionId}/stop-watching — остановка мониторинга изменений файла для указанной сессии
 
 - [ ] **3.2 Upload Controller (Web режим)**
   - [ ] POST /api/upload — загрузка файла через multipart/form-data для Web-версии
   - [ ] Валидация расширения (.log, .txt) — проверка допустимых типов файлов
   - [ ] Лимит размера файла (100MB) — защита от загрузки слишком больших файлов
+  - [ ] Сохранение в `/app/temp/{sessionId}/` — временное хранение загруженного файла
+  - [ ] Очистка временных файлов при удалении сессии — удаление папки `{sessionId}` вместе с файлом
 
 - [ ] **3.3 Logs Controller**
   - [ ] GET /api/logs/{sessionId} — получение логов сессии с поддержкой фильтрации и пагинации
@@ -607,10 +629,10 @@ nLogMonitor/
   - [ ] Загрузка index.html (production) или localhost:5173 (dev) — переключение по конфигурации
   - [ ] RegisterWebMessageReceivedHandler для IPC — обработка сообщений от JavaScript
 
-- [ ] **9.3 Нативные диалоги**
-  - [ ] ShowOpenFileDialog (OpenFileDialog) — системный диалог выбора файла
-  - [ ] ShowOpenFolderDialog (FolderBrowserDialog) — системный диалог выбора директории
-  - [ ] Фильтры файлов (*.log) — ограничение выбора только лог-файлами
+- [ ] **9.3 Нативные диалоги (Photino built-in, кроссплатформенные)**
+  - [ ] ShowOpenFileDialog — `PhotinoWindow.ShowOpenFile()` с фильтрами `[("Log files", "*.log"), ("All files", "*.*")]`
+  - [ ] ShowOpenFolderDialog — `PhotinoWindow.ShowOpenFolder()` для выбора директории
+  - [ ] Обработка результата — проверка на null (пользователь отменил диалог)
 
 - [ ] **9.4 JS ↔ .NET Bridge**
   - [ ] Message handler для команд — обработка openFile, openFolder, isDesktop
@@ -688,8 +710,8 @@ services:
     ports:
       - "5000:8080"
     volumes:
-      - ./logs:/app/logs
-      - ./data:/app/data
+      - ./data:/app/data    # recent.json и другие персистентные данные
+      # temp/ не монтируется — загруженные файлы теряются при перезапуске
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
     healthcheck:
