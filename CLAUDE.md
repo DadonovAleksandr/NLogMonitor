@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend (планируется). Работает в двух режимах: Web (Docker) и Desktop (Photino).
 
-**Текущий статус:** Фаза 3.1 ✅ ЗАВЕРШЕНА. Следующая: Фаза 4 (Frontend базовый Vue 3). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 4 ✅ В ПРОЦЕССЕ (осталась интеграция E2E). Следующая: Фаза 5 (UI компоненты). Полный план — см. `PLAN.md`.
 
 ### Выполнено в Фазе 3.1
 - ✅ Path traversal защита (санитизация file.FileName)
@@ -18,6 +18,18 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ XML-комментарии в Swagger
 - ✅ 43 интеграционных теста с WebApplicationFactory
 - ✅ Очистка temp-каталогов при удалении/истечении сессии (cleanup callbacks)
+
+### Выполнено в Фазе 4
+- ✅ Инициализация Vue 3 + Vite + TypeScript
+- ✅ shadcn-vue компоненты (Button, Input, Card, Table)
+- ✅ Tailwind CSS с dark theme
+- ✅ TypeScript типы, соответствующие backend DTOs
+- ✅ Axios API клиент с interceptors
+- ✅ Pinia stores (logStore, filterStore, recentStore)
+- ✅ FileSelector компонент с drag & drop
+- ✅ LogTable компонент с TanStack Table
+- ✅ LogLevelBadge с цветовой индикацией уровней
+- ✅ App.vue с интеграцией компонентов
 
 ## Build & Run Commands
 
@@ -37,6 +49,13 @@ dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 # Lint / Format
 dotnet format                             # Автоформатирование кода
 dotnet format --verify-no-changes         # Проверка форматирования (CI)
+
+# Frontend
+cd client
+npm install                           # Установка зависимостей
+npm run dev                           # Dev server (http://localhost:5173)
+npm run build                         # Production build
+npm run lint                          # Проверка кода
 
 # Проверка работы API
 curl http://localhost:5000/health         # Health check → {"status":"healthy","timestamp":"..."}
@@ -77,6 +96,14 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Infrastructure.Tests** — 113 тестов: NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests (12), CsvExporterTests (18), RecentLogsFileRepositoryTests
 - **nLogMonitor.Application.Tests** — 28 тестов: LogServiceTests (фильтрация, пагинация, поиск, статистика)
 - **nLogMonitor.Api.Tests** — 99 тестов: Unit тесты контроллеров (56) + Integration тесты с WebApplicationFactory (43: Files, Upload, Export, Health, Logs, Recent)
+
+### Структура client/
+- **src/types/** — TypeScript типы (LogEntry, PagedResult, FilterOptions, etc.)
+- **src/api/** — Axios клиент и API методы (client.ts, logs.ts, files.ts, export.ts, health.ts)
+- **src/stores/** — Pinia stores (logStore, filterStore, recentStore)
+- **src/components/ui/** — shadcn-vue компоненты (Button, Input, Card, Table)
+- **src/components/FileSelector/** — загрузка файлов с drag & drop
+- **src/components/LogTable/** — таблица логов с TanStack Table и LogLevelBadge
 
 ## NLog Format
 
@@ -126,7 +153,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 ## Tech Stack
 
 - **Backend:** .NET 10, ASP.NET Core, SignalR, FluentValidation, NLog
-- **Frontend (план):** Vue 3, TypeScript 5, Vite, Pinia, TanStack Table, Tailwind CSS, shadcn-vue
+- **Frontend:** Vue 3, TypeScript 5, Vite, Pinia, TanStack Table, Tailwind CSS, shadcn-vue, lucide-vue-next
 - **Desktop (план):** Photino.NET
 - **Testing:** NUnit 3.x, Moq, coverlet
 

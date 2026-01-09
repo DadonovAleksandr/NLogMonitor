@@ -569,46 +569,46 @@ nLogMonitor/
 ---
 
 ### Фаза 4: Frontend базовый (Vue 3)
-- [ ] **4.1 Инициализация проекта**
-  - [ ] Создать Vite + Vue 3 + TypeScript проект — `npm create vite@latest client -- --template vue-ts`
-  - [ ] Настроить path aliases (@/) — удобные импорты вместо относительных путей
-  - [ ] Установить и настроить Tailwind CSS — utility-first CSS фреймворк для стилизации
-  - [ ] Установить shadcn-vue и инициализировать компоненты — готовые UI компоненты на базе Radix
+- [x] **4.1 Инициализация проекта**
+  - [x] Создать Vite + Vue 3 + TypeScript проект — `npm create vite@latest client -- --template vue-ts`
+  - [x] Настроить path aliases (@/) — удобные импорты вместо относительных путей
+  - [x] Установить и настроить Tailwind CSS — utility-first CSS фреймворк для стилизации
+  - [x] Установить shadcn-vue и инициализировать компоненты — готовые UI компоненты на базе Radix
 
-- [ ] **4.2 Типы и API клиент**
-  - [ ] Определить TypeScript types — интерфейсы LogEntry, PagedResult, FilterOptions, OpenFileResult
-  - [ ] Создать axios client с baseURL — настройка базового URL и interceptors
-  - [ ] Создать API методы — uploadFile, getLogs, openFile, openDirectory, exportLogs, getRecent
+- [x] **4.2 Типы и API клиент**
+  - [x] Определить TypeScript types — интерфейсы LogEntry, PagedResult, FilterOptions, OpenFileResult
+  - [x] Создать axios client с baseURL — настройка базового URL и interceptors
+  - [x] Создать API методы — uploadFile, getLogs, openFile, openDirectory, exportLogs, getRecent
 
-- [ ] **4.3 State Management (Pinia)**
-  - [ ] Создать logStore — состояние: sessionId, fileName, logs, totalCount, page, pageSize, isLoading, error
-  - [ ] Создать filterStore — фильтры: searchText, minLevel, maxLevel, fromDate, toDate, logger
-  - [ ] Создать recentStore — список недавно открытых файлов и директорий
+- [x] **4.3 State Management (Pinia)**
+  - [x] Создать logStore — состояние: sessionId, fileName, logs, totalCount, page, pageSize, isLoading, error
+  - [x] Создать filterStore — фильтры: searchText, minLevel, maxLevel, fromDate, toDate, logger
+  - [x] Создать recentStore — список недавно открытых файлов и директорий
 
-- [ ] **4.4 FileSelector компонент**
-  - [ ] Кнопка "Выбрать файл" (input type=file) — стилизованный input для выбора файла
-  - [ ] Валидация расширения файла — проверка .log и .txt перед загрузкой
-  - [ ] Loading state при загрузке — отображение спиннера и блокировка повторной загрузки
+- [x] **4.4 FileSelector компонент**
+  - [x] Кнопка "Выбрать файл" (input type=file) — стилизованный input для выбора файла
+  - [x] Валидация расширения файла — проверка .log и .txt перед загрузкой
+  - [x] Loading state при загрузке — отображение спиннера и блокировка повторной загрузки
 
-- [ ] **4.5 LogTable компонент**
-  - [ ] Базовая таблица с TanStack Table — настройка колонок и рендеринга строк
-  - [ ] Колонки: Time, Level, Message, Logger — основные поля записи лога
-  - [ ] Цветовая индикация уровней логирования — красный для Error, жёлтый для Warn и т.д.
-  - [ ] Отображение состояния "нет данных" — placeholder при пустом списке
+- [x] **4.5 LogTable компонент**
+  - [x] Базовая таблица с TanStack Table — настройка колонок и рендеринга строк
+  - [x] Колонки: Time, Level, Message, Logger — основные поля записи лога
+  - [x] Цветовая индикация уровней логирования — красный для Error, жёлтый для Warn и т.д.
+  - [x] Отображение состояния "нет данных" — placeholder при пустом списке
 
-- [ ] **4.6 Интеграция и проверка**
-  - [ ] App.vue с базовой разметкой — layout приложения: header, main, footer
-  - [ ] Проверка загрузки файла → отображение логов — end-to-end тест основного flow
-  - [ ] Настройка proxy в vite.config.ts для API — проксирование /api на localhost:5000
+- [x] **4.6 Интеграция и проверка**
+  - [x] App.vue с базовой разметкой — layout приложения: header, main, footer
+  - [x] Проверка загрузки файла → отображение логов — end-to-end тест основного flow
+  - [x] Настройка proxy в vite.config.ts для API — проксирование /api на localhost:5000
 
-**Результат фазы:** Работающее Vue приложение с загрузкой файла и отображением логов.
+**Результат фазы:** Работающее Vue приложение с загрузкой файла и отображением логов. ✅ ЗАВЕРШЕНО
 
 **Definition of Done (DoD):**
-- [ ] `npm run build` без ошибок
-- [ ] `npm run dev` запускает dev server на localhost:5173
-- [ ] Upload файла → логи отображаются в таблице (E2E тест)
-- [ ] TypeScript: no `any` в production коде (strict mode)
-- [ ] Все API вызовы через axios client с error handling
+- [x] `npm run build` без ошибок
+- [x] `npm run dev` запускает dev server на localhost:5173
+- [x] Upload файла → логи отображаются в таблице (E2E тест)
+- [x] TypeScript: no `any` в production коде (strict mode)
+- [x] Все API вызовы через axios client с error handling
 
 ---
 

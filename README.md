@@ -46,7 +46,7 @@
 
 ## 🎯 Текущий статус
 
-**Фаза 3.1 завершена** — полнофункциональное REST API с исправлениями безопасности и оптимизациями.
+**Фаза 4 в процессе** — базовый Vue 3 frontend с загрузкой файлов и отображением логов.
 
 ### Реализовано (Backend)
 
@@ -68,6 +68,26 @@
 # Проверка работоспособности
 dotnet test                       # 240 тестов (113 + 28 + 99)
 curl http://localhost:5000/health  # {"status":"healthy",...}
+```
+
+### Реализовано (Frontend)
+
+| Компонент | Описание |
+|-----------|----------|
+| **Vue 3 + Vite + TypeScript** | Современный frontend stack |
+| **shadcn-vue + Tailwind CSS** | UI компоненты с dark theme |
+| **Pinia stores** | State management (logStore, filterStore, recentStore) |
+| **Axios API client** | HTTP клиент с interceptors |
+| **FileSelector** | Drag & drop загрузка файлов |
+| **LogTable** | TanStack Table с цветовой индикацией уровней |
+| **LogLevelBadge** | Компактные badges для Trace/Debug/Info/Warn/Error/Fatal |
+
+```bash
+# Запуск frontend
+cd client
+npm install
+npm run dev    # http://localhost:5173
+npm run build  # Production build
 ```
 
 ---
@@ -123,9 +143,13 @@ dotnet test
 dotnet run --project src/nLogMonitor.Api
 # или с hot reload:
 dotnet watch run --project src/nLogMonitor.Api
-```
 
-> Frontend (Vue 3) будет добавлен в Фазах 4-5.
+# 5. Запустите Frontend (в отдельном терминале)
+cd client
+npm install
+npm run dev
+# Frontend: http://localhost:5173
+```
 
 </details>
 
@@ -247,7 +271,7 @@ GET /api/export/{sessionId}?format=csv
 - [x] **Фаза 2**: Парсинг и хранение
 - [x] **Фаза 3**: REST API Endpoints
 - [x] **Фаза 3.1**: Исправления безопасности и оптимизации (path traversal, DesktopOnly, потоковый экспорт)
-- [ ] **Фаза 4**: Базовый фронтенд (Vue 3) ← *следующая*
+- [~] **Фаза 4**: Базовый фронтенд (Vue 3) ← *в процессе*
 - [ ] **Фаза 5**: UI компоненты
 - [ ] **Фаза 6**: Real-time обновления (SignalR)
 - [ ] **Фаза 7**: Docker конфигурация
