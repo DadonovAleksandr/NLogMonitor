@@ -9,8 +9,13 @@ namespace nLogMonitor.Api.Tests.Integration;
 [TestFixture]
 public class ExportControllerIntegrationTests : WebApplicationTestBase
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     [Test]
-    public async Task Export_WithNonExistentSession_Returns404()
+    public async Task Export_WithNonExistentSession_Returns404WithApiError()
     {
         // Arrange
         var sessionId = Guid.NewGuid();
@@ -20,10 +25,11 @@ public class ExportControllerIntegrationTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        await AssertApiErrorAsync(response, "NotFound", sessionId.ToString());
     }
 
     [Test]
-    public async Task Export_WithUnsupportedFormat_Returns400()
+    public async Task Export_WithUnsupportedFormat_Returns400WithApiError()
     {
         // Arrange
         var sessionId = Guid.NewGuid();
@@ -33,8 +39,7 @@ public class ExportControllerIntegrationTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.That(content, Does.Contain("Unsupported"));
+        await AssertApiErrorAsync(response, "BadRequest", "Unsupported");
     }
 
     [Test]
@@ -51,22 +56,7 @@ public class ExportControllerIntegrationTests : WebApplicationTestBase
     public async Task Export_JsonFormat_AfterUpload_ReturnsJsonFile()
     {
         // Arrange - first upload a file to create a session
-        var logContent = "2024-01-15 10:30:45.1234|INFO|Test message|Logger|1|1";
-
-        var uploadContent = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(logContent));
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("text/plain");
-        uploadContent.Add(fileContent, "file", "test.log");
-
-        var uploadResponse = await Client.PostAsync("/api/upload", uploadContent);
-        Assert.That(uploadResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-        var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
-        var sessionIdMatch = System.Text.RegularExpressions.Regex.Match(
-            uploadResponseContent, @"""sessionId""\s*:\s*""([^""]+)""");
-        Assert.That(sessionIdMatch.Success, Is.True, "Could not extract sessionId from upload response");
-
-        var sessionId = sessionIdMatch.Groups[1].Value;
+        var sessionId = await UploadLogFileAsync("2024-01-15 10:30:45.1234|INFO|Test message|Logger|1|1");
 
         // Act - export with JSON format
         var response = await Client.GetAsync($"/api/export/{sessionId}?format=json");
@@ -82,22 +72,7 @@ public class ExportControllerIntegrationTests : WebApplicationTestBase
     public async Task Export_CsvFormat_AfterUpload_ReturnsCsvFile()
     {
         // Arrange - first upload a file to create a session
-        var logContent = "2024-01-15 10:30:45.1234|WARN|Warning message|Logger|1|1";
-
-        var uploadContent = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(logContent));
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("text/plain");
-        uploadContent.Add(fileContent, "file", "test.log");
-
-        var uploadResponse = await Client.PostAsync("/api/upload", uploadContent);
-        Assert.That(uploadResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-        var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
-        var sessionIdMatch = System.Text.RegularExpressions.Regex.Match(
-            uploadResponseContent, @"""sessionId""\s*:\s*""([^""]+)""");
-        Assert.That(sessionIdMatch.Success, Is.True);
-
-        var sessionId = sessionIdMatch.Groups[1].Value;
+        var sessionId = await UploadLogFileAsync("2024-01-15 10:30:45.1234|WARN|Warning message|Logger|1|1");
 
         // Act - export with CSV format
         var response = await Client.GetAsync($"/api/export/{sessionId}?format=csv");
@@ -113,22 +88,7 @@ public class ExportControllerIntegrationTests : WebApplicationTestBase
     public async Task Export_DefaultFormat_ReturnsJson()
     {
         // Arrange - first upload a file to create a session
-        var logContent = "2024-01-15 10:30:45.1234|INFO|Test|Logger|1|1";
-
-        var uploadContent = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(logContent));
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("text/plain");
-        uploadContent.Add(fileContent, "file", "test.log");
-
-        var uploadResponse = await Client.PostAsync("/api/upload", uploadContent);
-        Assert.That(uploadResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-        var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
-        var sessionIdMatch = System.Text.RegularExpressions.Regex.Match(
-            uploadResponseContent, @"""sessionId""\s*:\s*""([^""]+)""");
-        Assert.That(sessionIdMatch.Success, Is.True);
-
-        var sessionId = sessionIdMatch.Groups[1].Value;
+        var sessionId = await UploadLogFileAsync("2024-01-15 10:30:45.1234|INFO|Test|Logger|1|1");
 
         // Act - export without specifying format
         var response = await Client.GetAsync($"/api/export/{sessionId}");
@@ -137,4 +97,38 @@ public class ExportControllerIntegrationTests : WebApplicationTestBase
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/json"));
     }
+
+    #region Helper Methods
+
+    private async Task<Guid> UploadLogFileAsync(string logContent)
+    {
+        var uploadContent = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(logContent));
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("text/plain");
+        uploadContent.Add(fileContent, "file", "test.log");
+
+        var uploadResponse = await Client.PostAsync("/api/upload", uploadContent);
+        Assert.That(uploadResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        var result = await uploadResponse.Content.ReadFromJsonAsync<UploadResponse>(JsonOptions);
+        Assert.That(result, Is.Not.Null, "Could not deserialize upload response");
+        Assert.That(result!.SessionId, Is.Not.EqualTo(Guid.Empty), "SessionId should not be empty");
+
+        return result.SessionId;
+    }
+
+    #endregion
+
+    #region Response DTOs
+
+    private class UploadResponse
+    {
+        public Guid SessionId { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
+        public int TotalEntries { get; set; }
+        public Dictionary<string, int> LevelCounts { get; set; } = new();
+    }
+
+    #endregion
 }

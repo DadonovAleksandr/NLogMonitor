@@ -17,11 +17,13 @@ public class UploadControllerIntegrationTests : WebApplicationTestBase
         var response = await Client.PostAsync("/api/upload", content);
 
         // Assert
+        // Note: Empty multipart request triggers ASP.NET Core model binding error,
+        // which returns ValidationProblemDetails, not our ApiErrorResponse
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]
-    public async Task Upload_WithInvalidExtension_Returns400()
+    public async Task Upload_WithInvalidExtension_Returns400WithApiError()
     {
         // Arrange
         var content = new MultipartFormDataContent();
@@ -34,8 +36,7 @@ public class UploadControllerIntegrationTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-        var responseContent = await response.Content.ReadAsStringAsync();
-        Assert.That(responseContent, Does.Contain("extension"));
+        await AssertApiErrorAsync(response, "BadRequest", "extension");
     }
 
     [Test]
@@ -102,7 +103,7 @@ public class UploadControllerIntegrationTests : WebApplicationTestBase
     }
 
     [Test]
-    public async Task Upload_WithEmptyFile_Returns400()
+    public async Task Upload_WithEmptyFile_Returns400WithApiError()
     {
         // Arrange
         var content = new MultipartFormDataContent();
@@ -115,6 +116,7 @@ public class UploadControllerIntegrationTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        await AssertApiErrorAsync(response, "BadRequest");
     }
 
     [Test]

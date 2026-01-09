@@ -51,7 +51,7 @@ public class FilesControllerIntegrationTests : WebApplicationTestBase
 public class FilesControllerDesktopIntegrationTests : DesktopModeTestBase
 {
     [Test]
-    public async Task OpenFile_InDesktopMode_WithMissingFile_Returns404()
+    public async Task OpenFile_InDesktopMode_WithMissingFile_Returns404WithApiError()
     {
         // Arrange
         var request = new { FilePath = "C:\\nonexistent\\test.log" };
@@ -61,10 +61,11 @@ public class FilesControllerDesktopIntegrationTests : DesktopModeTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        await AssertApiErrorAsync(response, "NotFound");
     }
 
     [Test]
-    public async Task OpenFile_InDesktopMode_WithEmptyPath_Returns400()
+    public async Task OpenFile_InDesktopMode_WithEmptyPath_Returns400WithApiError()
     {
         // Arrange
         var request = new { FilePath = "" };
@@ -74,10 +75,11 @@ public class FilesControllerDesktopIntegrationTests : DesktopModeTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        await AssertApiErrorAsync(response, "BadRequest");
     }
 
     [Test]
-    public async Task OpenDirectory_InDesktopMode_WithMissingDirectory_Returns404()
+    public async Task OpenDirectory_InDesktopMode_WithMissingDirectory_Returns404WithApiError()
     {
         // Arrange
         var request = new { DirectoryPath = "C:\\nonexistent\\directory" };
@@ -87,10 +89,11 @@ public class FilesControllerDesktopIntegrationTests : DesktopModeTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        await AssertApiErrorAsync(response, "NotFound");
     }
 
     [Test]
-    public async Task OpenDirectory_InDesktopMode_WithEmptyPath_Returns400()
+    public async Task OpenDirectory_InDesktopMode_WithEmptyPath_Returns400WithApiError()
     {
         // Arrange
         var request = new { DirectoryPath = "" };
@@ -100,6 +103,7 @@ public class FilesControllerDesktopIntegrationTests : DesktopModeTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        await AssertApiErrorAsync(response, "BadRequest");
     }
 
     [Test]

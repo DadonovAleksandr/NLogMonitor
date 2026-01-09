@@ -15,7 +15,7 @@ public class LogsControllerIntegrationTests : WebApplicationTestBase
     };
 
     [Test]
-    public async Task GetLogs_WithoutSession_Returns404()
+    public async Task GetLogs_WithoutSession_Returns404WithApiError()
     {
         // Arrange
         var nonExistentSessionId = Guid.NewGuid();
@@ -25,9 +25,7 @@ public class LogsControllerIntegrationTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.That(content, Does.Contain("NotFound"));
-        Assert.That(content, Does.Contain(nonExistentSessionId.ToString()));
+        await AssertApiErrorAsync(response, "NotFound", nonExistentSessionId.ToString());
     }
 
     [Test]
@@ -239,7 +237,7 @@ public class LogsControllerIntegrationTests : WebApplicationTestBase
     }
 
     [Test]
-    public async Task GetLogs_WithInvalidPage_Returns400()
+    public async Task GetLogs_WithInvalidPage_Returns400WithApiError()
     {
         // Arrange
         var logContent = "2024-01-15 10:30:45.1234|INFO|Test message|Logger|1|1";
@@ -250,10 +248,11 @@ public class LogsControllerIntegrationTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        await AssertApiErrorAsync(response, "BadRequest");
     }
 
     [Test]
-    public async Task GetLogs_WithInvalidPageSize_Returns400()
+    public async Task GetLogs_WithInvalidPageSize_Returns400WithApiError()
     {
         // Arrange
         var logContent = "2024-01-15 10:30:45.1234|INFO|Test message|Logger|1|1";
@@ -264,6 +263,7 @@ public class LogsControllerIntegrationTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        await AssertApiErrorAsync(response, "BadRequest");
     }
 
     [Test]
