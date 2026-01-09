@@ -13,7 +13,7 @@ nLogMonitor — кроссплатформенное приложение для
 ```bash
 # Backend
 dotnet build                              # Сборка solution
-dotnet run --project src/nLogMonitor.Api  # Запуск API (localhost:5000)
+dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
 # Tests (NUnit) — когда будут созданы
@@ -21,9 +21,13 @@ dotnet test                               # Все тесты
 dotnet test tests/nLogMonitor.Application.Tests  # Конкретный проект
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
+# Lint / Format
+dotnet format                             # Автоформатирование кода
+dotnet format --verify-no-changes         # Проверка форматирования (CI)
+
 # Проверка работы API
-curl http://localhost:5000/health         # Health check
-# Swagger UI: http://localhost:5000/swagger
+curl http://localhost:5000/health         # Health check → {"status":"healthy","timestamp":"..."}
+# Swagger UI: http://localhost:5000/swagger (только в Development)
 ```
 
 ## Architecture
@@ -91,3 +95,12 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - **Frontend (план):** Vue 3, TypeScript 5, Vite, Pinia, TanStack Table, Tailwind CSS, shadcn-vue
 - **Desktop (план):** Photino.NET
 - **Testing:** NUnit 3.x, Moq, coverlet
+
+## Development Notes
+
+**Серверная фильтрация и пагинация:** Все операции фильтрации, поиска и пагинации выполняются на сервере (LINQ over in-memory collection). Клиент получает только запрошенную страницу данных. Это критично для больших логов (100K+ записей).
+
+**Жизненный цикл сессии:**
+1. Основной механизм — SignalR: сессия живёт пока открыта вкладка браузера (WebSocket connected)
+2. При закрытии вкладки → OnDisconnectedAsync → удаление сессии
+3. Fallback TTL (5 мин) — страховка для потерянных соединений (crash браузера, потеря сети)
