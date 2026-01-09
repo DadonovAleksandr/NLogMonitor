@@ -43,8 +43,8 @@
 ### 1. Клонирование
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/NLogMonitor.git
-cd NLogMonitor
+git clone https://github.com/YOUR_USERNAME/nLogMonitor.git
+cd nLogMonitor
 ```
 
 ### 2. Backend
@@ -54,10 +54,10 @@ cd NLogMonitor
 dotnet restore
 
 # Запуск в режиме разработки
-dotnet run --project src/NLogMonitor.Api
+dotnet run --project src/nLogMonitor.Api
 
 # С hot reload
-dotnet watch run --project src/NLogMonitor.Api
+dotnet watch run --project src/nLogMonitor.Api
 ```
 
 API будет доступен на `http://localhost:5000`
@@ -110,13 +110,13 @@ services:
 ## 📁 Структура проекта
 
 ```
-NLogMonitor/
+nLogMonitor/
 ├── src/                          # Backend source
-│   ├── NLogMonitor.Domain/       # Entities, Enums
-│   ├── NLogMonitor.Application/  # Interfaces, DTOs
-│   ├── NLogMonitor.Infrastructure/ # Implementations
-│   ├── NLogMonitor.Api/          # Controllers, Hubs
-│   └── NLogMonitor.Desktop/      # Photino shell
+│   ├── nLogMonitor.Domain/       # Entities, Enums
+│   ├── nLogMonitor.Application/  # Interfaces, DTOs
+│   ├── nLogMonitor.Infrastructure/ # Implementations
+│   ├── nLogMonitor.Api/          # Controllers, Hubs
+│   └── nLogMonitor.Desktop/      # Photino shell
 ├── client/                       # Frontend source (Vue 3)
 │   ├── src/
 │   │   ├── components/           # Vue components
@@ -138,8 +138,8 @@ NLogMonitor/
 | Команда | Описание |
 |---------|----------|
 | `dotnet build` | Сборка проекта |
-| `dotnet run --project src/NLogMonitor.Api` | Запуск API |
-| `dotnet watch run --project src/NLogMonitor.Api` | Запуск с hot reload |
+| `dotnet run --project src/nLogMonitor.Api` | Запуск API |
+| `dotnet watch run --project src/nLogMonitor.Api` | Запуск с hot reload |
 | `dotnet test` | Запуск всех тестов |
 | `dotnet format` | Форматирование кода |
 
@@ -168,7 +168,7 @@ dotnet test
 dotnet test --collect:"XPlat Code Coverage"
 
 # Конкретный проект
-dotnet test tests/NLogMonitor.Application.Tests
+dotnet test tests/nLogMonitor.Application.Tests
 
 # Фильтрация по имени
 dotnet test --filter "FullyQualifiedName~LogService"
@@ -178,13 +178,13 @@ dotnet test --filter "FullyQualifiedName~LogService"
 
 ```
 tests/
-├── NLogMonitor.Domain.Tests/
+├── nLogMonitor.Domain.Tests/
 │   └── Entities/
 │       └── LogEntryTests.cs
-├── NLogMonitor.Application.Tests/
+├── nLogMonitor.Application.Tests/
 │   └── Services/
 │       └── LogServiceTests.cs
-└── NLogMonitor.Infrastructure.Tests/
+└── nLogMonitor.Infrastructure.Tests/
     └── Parser/
         └── NLogParserTests.cs
 ```
@@ -286,8 +286,8 @@ npx husky add .husky/pre-commit "npx lint-staged"
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/NLogMonitor.Api/bin/Debug/net10.0/NLogMonitor.Api.dll",
-      "cwd": "${workspaceFolder}/src/NLogMonitor.Api",
+      "program": "${workspaceFolder}/src/nLogMonitor.Api/bin/Debug/net10.0/nLogMonitor.Api.dll",
+      "cwd": "${workspaceFolder}/src/nLogMonitor.Api",
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -329,9 +329,9 @@ Frontend использует console с prefix:
 ```typescript
 const logger = {
   debug: (msg: string, ...args: unknown[]) =>
-    console.debug(`[NLogMonitor] ${msg}`, ...args),
+    console.debug(`[nLogMonitor] ${msg}`, ...args),
   error: (msg: string, ...args: unknown[]) =>
-    console.error(`[NLogMonitor] ${msg}`, ...args),
+    console.error(`[nLogMonitor] ${msg}`, ...args),
 };
 ```
 

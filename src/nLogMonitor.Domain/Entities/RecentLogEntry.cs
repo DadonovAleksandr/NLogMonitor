@@ -1,9 +1,8 @@
-namespace NLogMonitor.Application.DTOs;
+namespace nLogMonitor.Domain.Entities;
 
-public class RecentLogDto
+public class RecentLogEntry
 {
     public string Path { get; set; } = string.Empty;
     public bool IsDirectory { get; set; }
     public DateTime OpenedAt { get; set; }
-    public string DisplayName { get; set; } = string.Empty;
 }

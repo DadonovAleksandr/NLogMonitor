@@ -13,7 +13,7 @@
 
 ## 📖 Обзор
 
-NLogMonitor поддерживает несколько вариантов деплоя:
+nLogMonitor поддерживает несколько вариантов деплоя:
 
 | Вариант | Сложность | Рекомендуется для |
 |---------|-----------|-------------------|
@@ -30,10 +30,10 @@ NLogMonitor поддерживает несколько вариантов де�
 
 ```bash
 # Release сборка
-dotnet publish src/NLogMonitor.Api -c Release -o ./publish
+dotnet publish src/nLogMonitor.Api -c Release -o ./publish
 
 # Self-contained (без установленного .NET)
-dotnet publish src/NLogMonitor.Api -c Release -o ./publish \
+dotnet publish src/nLogMonitor.Api -c Release -o ./publish \
   --self-contained true \
   -r linux-x64
 ```
@@ -53,7 +53,7 @@ npm run build
 
 ```bash
 # Backend
-dotnet publish src/NLogMonitor.Api -c Release -o ./publish
+dotnet publish src/nLogMonitor.Api -c Release -o ./publish
 
 # Frontend → wwwroot
 cd client && npm run build
@@ -71,9 +71,9 @@ cp -r dist/* ../publish/wwwroot/
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 WORKDIR /src
 COPY ["src/", "src/"]
-COPY ["NLogMonitor.sln", "."]
+COPY ["nLogMonitor.sln", "."]
 RUN dotnet restore
-RUN dotnet publish src/NLogMonitor.Api -c Release -o /app/publish
+RUN dotnet publish src/nLogMonitor.Api -c Release -o /app/publish
 
 FROM node:20-alpine AS frontend-build
 WORKDIR /app
@@ -88,7 +88,7 @@ COPY --from=backend-build /app/publish .
 COPY --from=frontend-build /app/dist ./wwwroot
 EXPOSE 5000
 ENV ASPNETCORE_URLS=http://+:5000
-ENTRYPOINT ["dotnet", "NLogMonitor.Api.dll"]
+ENTRYPOINT ["dotnet", "nLogMonitor.Api.dll"]
 ```
 
 ### Docker Compose

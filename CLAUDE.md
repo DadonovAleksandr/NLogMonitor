@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend (планируется). Работает в двух режимах: Web (Docker) и Desktop (Photino).
+nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend (планируется). Работает в двух режимах: Web (Docker) и Desktop (Photino).
 
 **Текущий статус:** Фаза 1 завершена — базовая инфраструктура проекта. Следующая: Фаза 2 (Парсинг и хранение логов). Полный план — см. `PLAN.md`.
 
@@ -13,12 +13,12 @@ NLogMonitor — кроссплатформенное приложение для
 ```bash
 # Backend
 dotnet build                              # Сборка solution
-dotnet run --project src/NLogMonitor.Api  # Запуск API (localhost:5000)
-dotnet watch run --project src/NLogMonitor.Api  # Hot reload
+dotnet run --project src/nLogMonitor.Api  # Запуск API (localhost:5000)
+dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
 # Tests (NUnit) — когда будут созданы
 dotnet test                               # Все тесты
-dotnet test tests/NLogMonitor.Application.Tests  # Конкретный проект
+dotnet test tests/nLogMonitor.Application.Tests  # Конкретный проект
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
 # Проверка работы API
@@ -41,10 +41,10 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 ```
 
 ### Текущая структура src/
-- **NLogMonitor.Domain** — сущности: LogEntry, LogSession, LogLevel enum, RecentLogEntry
-- **NLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto
-- **NLogMonitor.Infrastructure** — пока пустой, будет содержать реализации
-- **NLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
+- **nLogMonitor.Domain** — сущности: LogEntry, LogSession, LogLevel enum, RecentLogEntry
+- **nLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto
+- **nLogMonitor.Infrastructure** — пока пустой, будет содержать реализации
+- **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
 
 ## NLog Format
 
@@ -69,7 +69,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 
 ## Configuration
 
-Ключевые настройки в `src/NLogMonitor.Api/appsettings.json`:
+Ключевые настройки в `src/nLogMonitor.Api/appsettings.json`:
 - `SessionSettings.TimeToLiveMinutes: 60` — TTL сессии
 - `FileSettings.MaxFileSizeMB: 100` — лимит размера файла
 - `FileSettings.AllowedExtensions: [".log", ".txt"]`

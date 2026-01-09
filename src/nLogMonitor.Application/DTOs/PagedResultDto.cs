@@ -1,4 +1,4 @@
-namespace NLogMonitor.Application.DTOs;
+namespace nLogMonitor.Application.DTOs;
 
 public class PagedResultDto<T>
 {

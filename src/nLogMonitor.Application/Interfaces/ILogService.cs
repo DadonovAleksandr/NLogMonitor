@@ -1,6 +1,6 @@
-using NLogMonitor.Domain.Entities;
+using nLogMonitor.Domain.Entities;
 
-namespace NLogMonitor.Application.Interfaces;
+namespace nLogMonitor.Application.Interfaces;
 
 public interface ILogService
 {

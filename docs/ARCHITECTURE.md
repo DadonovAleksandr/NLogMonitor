@@ -14,7 +14,7 @@
 
 ## 📖 Обзор
 
-NLogMonitor построен на принципах **Clean Architecture**, обеспечивая:
+nLogMonitor построен на принципах **Clean Architecture**, обеспечивая:
 
 - Независимость от фреймворков
 - Тестируемость бизнес-логики
@@ -254,17 +254,17 @@ User        FileSelector      API            LogService        NLogParser       
 ## 📁 Структура проекта
 
 ```
-NLogMonitor/
+nLogMonitor/
 ├── src/
-│   ├── NLogMonitor.Domain/           # Domain Layer (Entities, Enums)
+│   ├── nLogMonitor.Domain/           # Domain Layer (Entities, Enums)
 │   │   ├── Entities/
 │   │   │   ├── LogEntry.cs
 │   │   │   ├── LogSession.cs
 │   │   │   ├── LogLevel.cs
 │   │   │   └── RecentLogEntry.cs
-│   │   └── NLogMonitor.Domain.csproj
+│   │   └── nLogMonitor.Domain.csproj
 │   │
-│   ├── NLogMonitor.Application/      # Application Layer
+│   ├── nLogMonitor.Application/      # Application Layer
 │   │   ├── Interfaces/
 │   │   │   ├── ILogParser.cs
 │   │   │   ├── ISessionStorage.cs
@@ -279,9 +279,9 @@ NLogMonitor/
 │   │   │   ├── OpenFileResultDto.cs
 │   │   │   ├── RecentLogDto.cs
 │   │   │   └── ClientLogDto.cs
-│   │   └── NLogMonitor.Application.csproj
+│   │   └── nLogMonitor.Application.csproj
 │   │
-│   ├── NLogMonitor.Infrastructure/   # Infrastructure Layer
+│   ├── nLogMonitor.Infrastructure/   # Infrastructure Layer
 │   │   ├── Parsing/
 │   │   │   └── NLogParser.cs
 │   │   ├── Storage/
@@ -292,9 +292,9 @@ NLogMonitor/
 │   │   ├── Export/
 │   │   │   ├── JsonExporter.cs
 │   │   │   └── CsvExporter.cs
-│   │   └── NLogMonitor.Infrastructure.csproj
+│   │   └── nLogMonitor.Infrastructure.csproj
 │   │
-│   ├── NLogMonitor.Api/              # Presentation Layer (Web API)
+│   ├── nLogMonitor.Api/              # Presentation Layer (Web API)
 │   │   ├── Controllers/
 │   │   │   ├── LogsController.cs
 │   │   │   ├── FilesController.cs
@@ -307,13 +307,13 @@ NLogMonitor/
 │   │   ├── Program.cs
 │   │   ├── appsettings.json
 │   │   ├── nlog.config
-│   │   └── NLogMonitor.Api.csproj
+│   │   └── nLogMonitor.Api.csproj
 │   │
-│   └── NLogMonitor.Desktop/          # Photino Desktop Shell
+│   └── nLogMonitor.Desktop/          # Photino Desktop Shell
 │       ├── Program.cs
 │       ├── Services/
 │       │   └── NativeDialogService.cs
-│       └── NLogMonitor.Desktop.csproj
+│       └── nLogMonitor.Desktop.csproj
 │
 ├── client/                           # Vue 3 Frontend
 │   ├── src/
@@ -343,14 +343,14 @@ NLogMonitor/
 │   └── vite.config.ts
 │
 ├── tests/
-│   ├── NLogMonitor.Domain.Tests/
-│   ├── NLogMonitor.Application.Tests/
-│   ├── NLogMonitor.Infrastructure.Tests/
-│   └── NLogMonitor.Api.Tests/
+│   ├── nLogMonitor.Domain.Tests/
+│   ├── nLogMonitor.Application.Tests/
+│   ├── nLogMonitor.Infrastructure.Tests/
+│   └── nLogMonitor.Api.Tests/
 │
 ├── docs/
 ├── docker-compose.yml
-├── NLogMonitor.sln
+├── nLogMonitor.sln
 ├── PLAN.md
 ├── CLAUDE.md
 └── README.md
@@ -416,7 +416,7 @@ Export Request → LogService → ExportService → byte[] (JSON/CSV) → File D
 | ERROR | Красный |
 | FATAL | Тёмно-красный |
 
-### Улучшения для NLogMonitor
+### Улучшения для nLogMonitor
 
 Современный веб-интерфейс должен включать:
 

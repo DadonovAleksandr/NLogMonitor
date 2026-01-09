@@ -1,6 +1,6 @@
 # 🤝 Contributing Guide
 
-Спасибо за интерес к проекту NLogMonitor! Мы приветствуем любой вклад.
+Спасибо за интерес к проекту nLogMonitor! Мы приветствуем любой вклад.
 
 ## 📋 Содержание
 
@@ -24,7 +24,7 @@
 
 ### Сообщить о баге
 
-1. Проверьте [существующие issues](https://github.com/YOUR_USERNAME/NLogMonitor/issues)
+1. Проверьте [существующие issues](https://github.com/YOUR_USERNAME/nLogMonitor/issues)
 2. Создайте новый issue с меткой `bug`
 3. Опишите:
    - Ожидаемое поведение
@@ -66,18 +66,18 @@
 # 1. Fork репозитория на GitHub
 
 # 2. Клонируйте свой fork
-git clone https://github.com/YOUR_USERNAME/NLogMonitor.git
-cd NLogMonitor
+git clone https://github.com/YOUR_USERNAME/nLogMonitor.git
+cd nLogMonitor
 
 # 3. Добавьте upstream
-git remote add upstream https://github.com/ORIGINAL_OWNER/NLogMonitor.git
+git remote add upstream https://github.com/ORIGINAL_OWNER/nLogMonitor.git
 
 # 4. Установите зависимости
 dotnet restore
 cd client && npm install
 
 # 5. Запустите проект
-dotnet run --project src/NLogMonitor.Api
+dotnet run --project src/nLogMonitor.Api
 # В другом терминале:
 cd client && npm run dev
 ```
@@ -145,7 +145,7 @@ git push origin feature/dark-mode
 
 ```csharp
 // ✅ Хорошо
-namespace NLogMonitor.Application.Services;
+namespace nLogMonitor.Application.Services;
 
 public class LogService : ILogService
 {
@@ -165,7 +165,7 @@ public class LogService : ILogService
 }
 
 // ❌ Плохо
-namespace NLogMonitor.Application.Services
+namespace nLogMonitor.Application.Services
 {
     public class logService
     {
@@ -302,7 +302,7 @@ Closes #123
 
 ## ❓ Вопросы?
 
-- Создайте [Discussion](https://github.com/YOUR_USERNAME/NLogMonitor/discussions)
+- Создайте [Discussion](https://github.com/YOUR_USERNAME/nLogMonitor/discussions)
 - Или задайте вопрос в issue с меткой `question`
 
 ---
@@ -313,5 +313,5 @@ Closes #123
 
 <!--
 Список контрибьюторов будет автоматически обновляться:
-https://github.com/YOUR_USERNAME/NLogMonitor/graphs/contributors
+https://github.com/YOUR_USERNAME/nLogMonitor/graphs/contributors
 -->

@@ -1,17 +1,17 @@
-# 📊 NLogMonitor
+# 📊 nLogMonitor
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 <!-- Добавьте после настройки CI/CD:
-[![Build Status](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/NLogMonitor/ci.yml?branch=master)](https://github.com/YOUR_USERNAME/NLogMonitor/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/YOUR_USERNAME/NLogMonitor)](https://codecov.io/gh/YOUR_USERNAME/NLogMonitor)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/nLogMonitor/ci.yml?branch=master)](https://github.com/YOUR_USERNAME/nLogMonitor/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/YOUR_USERNAME/nLogMonitor)](https://codecov.io/gh/YOUR_USERNAME/nLogMonitor)
 -->
 
 > Современный веб-инструмент для просмотра, анализа и экспорта логов NLog
 
-![NLogMonitor Screenshot](docs/assets/screenshot-placeholder.png)
+![nLogMonitor Screenshot](docs/assets/screenshot-placeholder.png)
 <!-- TODO: Заменить на реальный скриншот после реализации UI -->
 
 ---
@@ -47,11 +47,11 @@
 
 ```bash
 # Клонирование
-git clone https://github.com/YOUR_USERNAME/NLogMonitor.git
-cd NLogMonitor
+git clone https://github.com/YOUR_USERNAME/nLogMonitor.git
+cd nLogMonitor
 
 # Запуск бэкенда
-cd src/NLogMonitor.Api
+cd src/nLogMonitor.Api
 dotnet run
 
 # Запуск фронтенда (в новом терминале)
@@ -67,7 +67,7 @@ npm install && npm run dev
 
 ### Требования
 
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 20+](https://nodejs.org/)
 - [npm](https://www.npmjs.com/) или [pnpm](https://pnpm.io/)
 
@@ -78,8 +78,8 @@ npm install && npm run dev
 
 ```bash
 # 1. Клонируйте репозиторий
-git clone https://github.com/YOUR_USERNAME/NLogMonitor.git
-cd NLogMonitor
+git clone https://github.com/YOUR_USERNAME/nLogMonitor.git
+cd nLogMonitor
 
 # 2. Восстановите зависимости бэкенда
 dotnet restore
@@ -90,7 +90,7 @@ npm install
 
 # 4. Запустите в режиме разработки
 # Терминал 1:
-dotnet run --project src/NLogMonitor.Api
+dotnet run --project src/nLogMonitor.Api
 
 # Терминал 2:
 cd client && npm run dev
@@ -222,7 +222,7 @@ GET /api/export/{sessionId}?format=csv
 
 ```bash
 # Форк и клон
-git clone https://github.com/YOUR_USERNAME/NLogMonitor.git
+git clone https://github.com/YOUR_USERNAME/nLogMonitor.git
 
 # Создайте ветку
 git checkout -b feature/amazing-feature

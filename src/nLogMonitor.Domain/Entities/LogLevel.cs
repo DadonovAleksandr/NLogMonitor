@@ -1,4 +1,4 @@
-namespace NLogMonitor.Domain.Entities;
+namespace nLogMonitor.Domain.Entities;
 
 public enum LogLevel
 {

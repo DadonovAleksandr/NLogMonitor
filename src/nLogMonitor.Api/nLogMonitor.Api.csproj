@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NLogMonitor.Application\NLogMonitor.Application.csproj" />
-    <ProjectReference Include="..\NLogMonitor.Infrastructure\NLogMonitor.Infrastructure.csproj" />
+    <ProjectReference Include="..\nLogMonitor.Application\nLogMonitor.Application.csproj" />
+    <ProjectReference Include="..\nLogMonitor.Infrastructure\nLogMonitor.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

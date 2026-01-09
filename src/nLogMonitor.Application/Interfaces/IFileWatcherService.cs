@@ -1,4 +1,4 @@
-namespace NLogMonitor.Application.Interfaces;
+namespace nLogMonitor.Application.Interfaces;
 
 public interface IFileWatcherService
 {

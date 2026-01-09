@@ -6,7 +6,7 @@ var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentCla
 
 try
 {
-    logger.Info("Starting NLogMonitor API...");
+    logger.Info("Starting nLogMonitor API...");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -54,7 +54,7 @@ try
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "NLogMonitor API v1");
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "nLogMonitor API v1");
             options.RoutePrefix = "swagger";
         });
     }
@@ -72,7 +72,7 @@ try
     // TODO: Map SignalR hub (will be added in Phase 6)
     // app.MapHub<LogWatcherHub>("/hubs/logwatcher");
 
-    logger.Info("NLogMonitor API started successfully");
+    logger.Info("nLogMonitor API started successfully");
     app.Run();
 }
 catch (Exception ex)

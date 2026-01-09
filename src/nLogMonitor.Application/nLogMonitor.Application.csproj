@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\NLogMonitor.Domain\NLogMonitor.Domain.csproj" />
+    <ProjectReference Include="..\nLogMonitor.Domain\nLogMonitor.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

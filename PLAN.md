@@ -1,4 +1,4 @@
-# NLogMonitor - План разработки
+# nLogMonitor - План разработки
 
 ## Содержание
 1. [Обзор проекта](#обзор-проекта)
@@ -13,7 +13,7 @@
 
 ## Обзор проекта
 
-**NLogMonitor** — кроссплатформенное приложение для просмотра и анализа NLog-логов. Работает в двух режимах:
+**nLogMonitor** — кроссплатформенное приложение для просмотра и анализа NLog-логов. Работает в двух режимах:
 - **Web-приложение** (Docker) — для разработки и серверного использования
 - **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
@@ -160,17 +160,17 @@ fileName="${var:logDirectory}/${shortdate}.log"
 ## Структура проекта
 
 ```
-NLogMonitor/
+nLogMonitor/
 ├── src/
-│   ├── NLogMonitor.Domain/           # Domain Layer
+│   ├── nLogMonitor.Domain/           # Domain Layer
 │   │   ├── Entities/
 │   │   │   ├── LogEntry.cs
 │   │   │   ├── LogSession.cs
 │   │   │   ├── LogLevel.cs
 │   │   │   └── RecentLogEntry.cs
-│   │   └── NLogMonitor.Domain.csproj
+│   │   └── nLogMonitor.Domain.csproj
 │   │
-│   ├── NLogMonitor.Application/      # Application Layer
+│   ├── nLogMonitor.Application/      # Application Layer
 │   │   ├── Interfaces/
 │   │   │   ├── ILogParser.cs
 │   │   │   ├── ILogService.cs
@@ -189,9 +189,9 @@ NLogMonitor/
 │   │   │   ├── LogService.cs
 │   │   │   ├── ExportService.cs
 │   │   │   └── RecentLogsService.cs
-│   │   └── NLogMonitor.Application.csproj
+│   │   └── nLogMonitor.Application.csproj
 │   │
-│   ├── NLogMonitor.Infrastructure/   # Infrastructure Layer
+│   ├── nLogMonitor.Infrastructure/   # Infrastructure Layer
 │   │   ├── Parsing/
 │   │   │   └── NLogParser.cs
 │   │   ├── Storage/
@@ -203,9 +203,9 @@ NLogMonitor/
 │   │   ├── Export/
 │   │   │   ├── JsonExporter.cs
 │   │   │   └── CsvExporter.cs
-│   │   └── NLogMonitor.Infrastructure.csproj
+│   │   └── nLogMonitor.Infrastructure.csproj
 │   │
-│   ├── NLogMonitor.Api/              # Presentation Layer (API)
+│   ├── nLogMonitor.Api/              # Presentation Layer (API)
 │   │   ├── Controllers/
 │   │   │   ├── LogsController.cs
 │   │   │   ├── FilesController.cs
@@ -220,14 +220,14 @@ NLogMonitor/
 │   │   ├── Program.cs
 │   │   ├── appsettings.json
 │   │   ├── Dockerfile
-│   │   └── NLogMonitor.Api.csproj
+│   │   └── nLogMonitor.Api.csproj
 │   │
-│   └── NLogMonitor.Desktop/          # Photino Desktop Shell
+│   └── nLogMonitor.Desktop/          # Photino Desktop Shell
 │       ├── Program.cs
 │       ├── Services/
 │       │   └── NativeDialogService.cs
 │       ├── wwwroot/                   # Vue build output
-│       └── NLogMonitor.Desktop.csproj
+│       └── nLogMonitor.Desktop.csproj
 │
 ├── client/                            # Frontend (Vue 3)
 │   ├── src/
@@ -265,14 +265,14 @@ NLogMonitor/
 │   └── vite.config.ts
 │
 ├── tests/
-│   ├── NLogMonitor.Domain.Tests/
-│   ├── NLogMonitor.Application.Tests/
-│   ├── NLogMonitor.Infrastructure.Tests/
-│   └── NLogMonitor.Api.Tests/
+│   ├── nLogMonitor.Domain.Tests/
+│   ├── nLogMonitor.Application.Tests/
+│   ├── nLogMonitor.Infrastructure.Tests/
+│   └── nLogMonitor.Api.Tests/
 │
 ├── docker-compose.yml
 ├── docker-compose.override.yml
-├── NLogMonitor.sln
+├── nLogMonitor.sln
 ├── PLAN.md
 ├── CLAUDE.md
 ├── README.md
@@ -285,11 +285,11 @@ NLogMonitor/
 
 ### Фаза 1: Базовая инфраструктура
 - [x] **1.1 Создание solution и проектов**
-  - [x] Создать NLogMonitor.sln — корневой solution файл для всего проекта
-  - [x] Создать NLogMonitor.Domain (classlib) — слой доменных сущностей без внешних зависимостей
-  - [x] Создать NLogMonitor.Application (classlib) — слой бизнес-логики, интерфейсов и DTO
-  - [x] Создать NLogMonitor.Infrastructure (classlib) — реализации интерфейсов, работа с файлами и хранилищем
-  - [x] Создать NLogMonitor.Api (webapi) — ASP.NET Core Web API проект
+  - [x] Создать nLogMonitor.sln — корневой solution файл для всего проекта
+  - [x] Создать nLogMonitor.Domain (classlib) — слой доменных сущностей без внешних зависимостей
+  - [x] Создать nLogMonitor.Application (classlib) — слой бизнес-логики, интерфейсов и DTO
+  - [x] Создать nLogMonitor.Infrastructure (classlib) — реализации интерфейсов, работа с файлами и хранилищем
+  - [x] Создать nLogMonitor.Api (webapi) — ASP.NET Core Web API проект
   - [x] Настроить project references между слоями — Domain ← Application ← Infrastructure ← Api
 
 - [x] **1.2 Domain Layer**
@@ -585,9 +585,9 @@ NLogMonitor/
 
 ### Фаза 9: Photino Desktop
 - [ ] **9.1 Создание Desktop проекта**
-  - [ ] Создать NLogMonitor.Desktop (console → winexe) — проект без консольного окна
+  - [ ] Создать nLogMonitor.Desktop (console → winexe) — проект без консольного окна
   - [ ] Добавить Photino.NET NuGet пакет — кроссплатформенный WebView wrapper
-  - [ ] Reference на NLogMonitor.Api — использование embedded web server
+  - [ ] Reference на nLogMonitor.Api — использование embedded web server
 
 - [ ] **9.2 Program.cs - основа**
   - [ ] Запуск embedded ASP.NET Core в фоновом потоке — self-hosted Kestrel внутри приложения
@@ -672,7 +672,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/NLogMonitor.Api/Dockerfile
+      dockerfile: src/nLogMonitor.Api/Dockerfile
     ports:
       - "5000:8080"
     volumes:
