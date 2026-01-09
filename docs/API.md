@@ -156,7 +156,7 @@ file: <binary>
 {
   "sessionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "fileName": "app.log",
-  "filePath": "/app/temp/{sessionId}/app.log",
+  "filePath": "{tempDirectory}/{sessionId}/app.log",
   "totalEntries": 15420,
   "levelCounts": {
     "Trace": 1000,
@@ -168,6 +168,8 @@ file: <binary>
   }
 }
 ```
+
+> **Примечание:** `filePath` зависит от настройки `FileSettings.TempDirectory` (по умолчанию `./temp`).
 
 **Ошибки:**
 
@@ -275,13 +277,15 @@ GET /api/logs/3fa85f64-5717-4562-b3fc-2c963f66afa6?page=1&pageSize=50&minLevel=E
 | `format` | string | json | Формат: `json` или `csv` |
 | `minLevel` | string | - | Минимальный уровень (Trace, Debug, Info, Warn, Error, Fatal) |
 | `maxLevel` | string | - | Максимальный уровень (Trace, Debug, Info, Warn, Error, Fatal) |
+| `fromDate` | DateTime | - | Начальная дата (ISO 8601) |
+| `toDate` | DateTime | - | Конечная дата (ISO 8601) |
 | `search` | string | - | Поисковый запрос |
 | `logger` | string | - | Фильтр по имени логгера |
 
 **Request:**
 
 ```http
-GET /api/export/3fa85f64-5717-4562-b3fc-2c963f66afa6?format=csv&minLevel=Error HTTP/1.1
+GET /api/export/3fa85f64-5717-4562-b3fc-2c963f66afa6?format=csv&minLevel=Error&fromDate=2024-01-15T00:00:00Z HTTP/1.1
 ```
 
 **Response:** `200 OK`
@@ -290,8 +294,8 @@ GET /api/export/3fa85f64-5717-4562-b3fc-2c963f66afa6?format=csv&minLevel=Error H
 Content-Type: text/csv
 Content-Disposition: attachment; filename="logs_{sessionId}_20240115_103045.csv"
 
-Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
-2024-01-15T10:30:45.123,Error,Connection failed,MyApp.Database,1234,2,"SocketException..."
+Id,Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
+1,2024-01-15 10:30:45.1234,Error,Connection failed,MyApp.Database,1234,2,"SocketException..."
 ```
 
 ---
