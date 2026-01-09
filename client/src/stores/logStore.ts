@@ -129,6 +129,7 @@ export const useLogStore = defineStore('logs', () => {
     totalCount.value = 0
     page.value = 1
     totalPages.value = 0
+    isLoading.value = false
     error.value = null
     levelCounts.value = {
       Trace: 0,

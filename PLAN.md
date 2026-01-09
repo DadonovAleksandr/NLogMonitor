@@ -6,7 +6,7 @@
 3. [Технологический стек](#технологический-стек)
 4. [Структура проекта](#структура-проекта)
 5. [План разработки](#план-разработки)
-6. [Docker конфигурация](#docker-конфигурация)
+6. [Скрипты запуска](#скрипты-запуска)
 7. [Планируемые доработки (Roadmap)](#планируемые-доработки-roadmap)
 
 ---
@@ -14,7 +14,7 @@
 ## Обзор проекта
 
 **nLogMonitor** — кроссплатформенное приложение для просмотра и анализа NLog-логов. Работает в двух режимах:
-- **Web-приложение** (Docker) — для разработки и серверного использования
+- **Web-приложение** — запуск через скрипт (backend + frontend)
 - **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
 ### Ключевые возможности
@@ -150,22 +150,23 @@ fileName="${var:logDirectory}/${shortdate}.log"
 ### Инфраструктура
 | Компонент | Технология |
 |-----------|------------|
-| Контейнеризация | Docker + docker-compose |
-| Web Server | Nginx (reverse proxy) |
+| Запуск | Скрипты (PowerShell/Bash) |
+| Backend Server | Kestrel (встроенный) |
+| Frontend Dev Server | Vite |
 | Хранение сессий | In-Memory |
 | Хранение недавних | JSON файл |
 
 ### Стратегия работы с файлами
 
-**Web-режим (Docker)** — только upload через браузер:
+**Web-режим** — только upload через браузер:
 
 | Параметр | Значение |
 |----------|----------|
 | Endpoint | `POST /api/upload` |
 | Лимит размера | 100 MB |
-| Хранение | `/app/temp/{sessionId}/` (внутри контейнера) |
+| Хранение | `./temp/{sessionId}/` (рядом с приложением) |
 | Очистка | Вместе с сессией (SignalR disconnect или fallback TTL) |
-| Persist | Нет — файлы теряются при перезапуске контейнера |
+| Persist | Нет — файлы теряются при перезапуске сервера |
 
 **Desktop-режим (Photino)** — прямой доступ к файловой системе:
 
@@ -177,8 +178,8 @@ fileName="${var:logDirectory}/${shortdate}.log"
 
 ### Матрица функциональности Web vs Desktop
 
-| Функция | Web (Docker) | Desktop (Photino) |
-|---------|:------------:|:-----------------:|
+| Функция | Web | Desktop (Photino) |
+|---------|:---:|:-----------------:|
 | Открытие файла | Upload (multipart) | Системный диалог |
 | Открытие директории | ❌ | ✅ |
 | File watching (real-time) | ❌ (только загруженный) | ✅ |
@@ -257,9 +258,9 @@ nLogMonitor/
 │   │   │   └── LogWatcherHub.cs
 │   │   ├── Middleware/
 │   │   │   └── ExceptionHandlingMiddleware.cs
+│   │   ├── wwwroot/                   # Production: Vue build output
 │   │   ├── Program.cs
 │   │   ├── appsettings.json
-│   │   ├── Dockerfile
 │   │   └── nLogMonitor.Api.csproj
 │   │
 │   └── nLogMonitor.Desktop/          # Photino Desktop Shell
@@ -298,8 +299,6 @@ nLogMonitor/
 │   │   │   └── index.ts
 │   │   ├── App.vue
 │   │   └── main.ts
-│   ├── Dockerfile
-│   ├── nginx.conf
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── vite.config.ts
@@ -310,8 +309,10 @@ nLogMonitor/
 │   ├── nLogMonitor.Infrastructure.Tests/
 │   └── nLogMonitor.Api.Tests/
 │
-├── docker-compose.yml
-├── docker-compose.override.yml
+├── start-dev.bat                 # Windows: запуск dev mode
+├── start-dev.sh                  # Linux/macOS: запуск dev mode
+├── build.bat                     # Windows: полная сборка
+├── build.sh                      # Linux/macOS: полная сборка
 ├── nLogMonitor.sln
 ├── PLAN.md
 ├── CLAUDE.md
@@ -711,35 +712,32 @@ nLogMonitor/
 
 ---
 
-### Фаза 7: Docker конфигурация
-- [ ] **7.1 Backend Dockerfile**
-  - [ ] Multi-stage build (build → publish → runtime) — минимизация размера итогового образа
-  - [ ] Оптимизация слоёв для кэширования — копирование csproj перед restore
-  - [ ] Non-root user для безопасности — запуск от непривилегированного пользователя
-  - [ ] Health check endpoint — /health для проверки работоспособности контейнера
+### Фаза 7: Скрипты запуска и конфигурация
+- [x] **7.1 Скрипты запуска**
+  - [x] `start-dev.bat` (Windows) — запуск backend + frontend с hot reload в двух терминалах
+  - [ ] `start-dev.sh` (Linux/macOS Bash) — аналогичный скрипт для Unix-систем
+  - [ ] `stop.bat` / `stop.sh` — остановка всех процессов (опционально)
 
-- [ ] **7.2 Frontend Dockerfile**
-  - [ ] Multi-stage build (build → nginx) — сборка и статический сервер в одном образе
-  - [ ] Оптимизированный nginx.conf — настройка кэширования и безопасности
-  - [ ] Gzip compression — сжатие статики для уменьшения трафика
-  - [ ] SPA routing (try_files) — перенаправление всех запросов на index.html
+- [ ] **7.2 Конфигурация production**
+  - [ ] `appsettings.Production.json` — настройки для production режима
+  - [ ] Сборка frontend в `dist/` — `npm run build` генерирует статику
+  - [ ] Раздача статики через Kestrel — UseStaticFiles для `wwwroot/`
+  - [ ] Копирование `client/dist/` в `wwwroot/` при production запуске
 
-- [ ] **7.3 docker-compose.yml**
-  - [ ] Сервис api (backend) — ASP.NET Core на порту 5000
-  - [ ] Сервис client (frontend + nginx) — статика на порту 80
-  - [ ] Volumes для логов и данных — монтирование папок хоста для персистентности
-  - [ ] Переменные окружения — ASPNETCORE_ENVIRONMENT и другие настройки
+- [x] **7.3 Единый скрипт сборки**
+  - [x] `build.bat` (Windows) — полная сборка проекта
+  - [x] Этап 1: `npm run build` — сборка frontend
+  - [x] Этап 2: копирование `dist/` → `src/nLogMonitor.Api/wwwroot/`
+  - [x] Этап 3: `dotnet publish -c Release` — сборка backend
+  - [x] Результат: готовый к запуску `publish/` каталог
+  - [ ] `build.sh` (Linux/macOS) — аналогичный скрипт для Unix-систем
 
-- [ ] **7.4 docker-compose.override.yml (development)**
-  - [ ] Hot reload для backend (watch mode) — автоматическая перезагрузка при изменении кода
-  - [ ] Vite dev server для frontend — HMR для быстрой разработки
-  - [ ] Порты для отладки — expose отладочных портов .NET и Node
+- [ ] **7.4 Документация**
+  - [ ] Инструкции по запуску в README — шаги для development и production
+  - [ ] Описание скриптов и их параметров
+  - [ ] Переменные окружения (.env.example) — шаблон с описанием
 
-- [ ] **7.5 Документация**
-  - [ ] Инструкции по запуску в README — шаги для production и development
-  - [ ] Переменные окружения (.env.example) — шаблон с описанием всех переменных
-
-- [ ] **7.6 Метрики и мониторинг (минимальный набор)**
+- [ ] **7.5 Метрики и мониторинг (минимальный набор)**
   - [ ] GET /api/metrics — JSON endpoint с базовыми метриками
   - [ ] Количество активных сессий — `sessions_active_count`
   - [ ] Общий размер данных в памяти — `sessions_memory_bytes` (примерная оценка)
@@ -747,14 +745,15 @@ nLogMonitor/
   - [ ] Uptime сервера — `server_uptime_seconds`
   - [ ] Количество SignalR подключений — `signalr_connections_count`
 
-**Результат фазы:** Приложение запускается одной командой `docker-compose up`.
+**Результат фазы:** Приложение запускается одной командой `./start.ps1` или `./start.sh`.
 
 **Definition of Done (DoD):**
-- [ ] `docker-compose up -d --build` запускает оба сервиса без ошибок
-- [ ] http://localhost:80 открывает frontend
+- [ ] `./start.ps1` запускает backend и frontend без ошибок (Windows)
+- [ ] `./start.sh` запускает backend и frontend без ошибок (Linux/macOS)
+- [ ] http://localhost:5173 открывает frontend (dev mode)
+- [ ] http://localhost:5000 открывает frontend (production mode, статика из wwwroot)
 - [ ] http://localhost:5000/health возвращает 200
 - [ ] Upload файла через браузер → логи отображаются
-- [ ] Размер образа api < 200MB, client < 50MB
 
 ---
 
@@ -896,51 +895,45 @@ nLogMonitor/
 
 ---
 
-## Docker конфигурация
+## Скрипты запуска
 
-### docker-compose.yml
-```yaml
-services:
-  api:
-    build:
-      context: .
-      dockerfile: src/nLogMonitor.Api/Dockerfile
-    ports:
-      - "5000:8080"
-    volumes:
-      - ./data:/app/data    # recent.json и другие персистентные данные
-      # temp/ не монтируется — загруженные файлы теряются при перезапуске
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+### Команды запуска (Development)
+```bash
+# Windows (CMD или PowerShell)
+start-dev.bat                # Запуск backend + frontend с hot reload
 
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-    depends_on:
-      - api
+# Linux/macOS Bash
+./start-dev.sh               # Запуск backend + frontend с hot reload
+
+# Или вручную в двух терминалах:
+# Терминал 1 (backend):
+dotnet watch run --project src/nLogMonitor.Api
+
+# Терминал 2 (frontend):
+cd client && npm run dev
 ```
 
-### Команды запуска
+### Команды запуска (Production)
 ```bash
-# Production
-docker-compose up -d --build
+# Сборка (Windows)
+build.bat                    # Полная сборка: frontend + backend → publish/
 
-# Development (с hot reload)
-docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+# Сборка (Linux/macOS)
+./build.sh                   # Аналогичный скрипт для Unix
 
-# Только backend
-docker-compose up api
+# Запуск (после сборки)
+cd publish
+nLogMonitor.Api.exe          # Windows
+./nLogMonitor.Api            # Linux/macOS
+```
 
-# Просмотр логов
-docker-compose logs -f api
+### Структура скриптов
+```
+nLogMonitor/
+├── start-dev.bat           # Windows: запуск dev mode
+├── start-dev.sh            # Linux/macOS: запуск dev mode
+├── build.bat               # Windows: полная сборка
+└── build.sh                # Linux/macOS: полная сборка
 ```
 
 ---

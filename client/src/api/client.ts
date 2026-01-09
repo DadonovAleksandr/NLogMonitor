@@ -3,7 +3,7 @@ import type { AxiosInstance, AxiosError } from 'axios'
 import type { ApiError } from '@/types'
 
 // Базовый URL API (можно переопределить через env)
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 // Создание axios instance с базовыми настройками
 export const apiClient: AxiosInstance = axios.create({

@@ -154,15 +154,31 @@ npm run dev
 </details>
 
 <details>
-<summary><b>🐳 Docker</b></summary>
+<summary><b>⚡ Быстрый запуск (скрипты)</b></summary>
 
 ```bash
-# Сборка и запуск
-docker-compose up -d
+# Windows (CMD или PowerShell)
+start-dev.bat      # Запуск backend + frontend с hot reload
 
-# Или отдельно
-docker build -t nlogmonitor .
-docker run -p 5000:5000 -p 5173:5173 nlogmonitor
+# Linux/macOS
+./start-dev.sh     # Запуск backend + frontend с hot reload
+```
+
+</details>
+
+<details>
+<summary><b>📦 Production сборка</b></summary>
+
+```bash
+# Windows
+build.bat
+
+# Linux/macOS
+./build.sh
+
+# Запуск (статика frontend + API на одном порту)
+cd publish
+nLogMonitor.Api.exe    # http://localhost:5000
 ```
 
 </details>
@@ -231,7 +247,7 @@ GET /api/export/{sessionId}?format=csv
 |----------|----------|
 | [🏗️ Архитектура](docs/ARCHITECTURE.md) | Clean Architecture, слои, диаграммы |
 | [👩‍💻 Разработка](docs/DEVELOPMENT.md) | Настройка окружения, запуск тестов |
-| [🚀 Деплой](docs/DEPLOYMENT.md) | Docker, CI/CD, production |
+| [🚀 Запуск](docs/DEPLOYMENT.md) | Скрипты запуска, production |
 | [🔌 API](docs/API.md) | REST endpoints, примеры запросов |
 | [⚙️ Конфигурация](docs/CONFIGURATION.md) | Настройки приложения |
 | [📝 Changelog](docs/CHANGELOG.md) | История изменений |
@@ -274,7 +290,7 @@ GET /api/export/{sessionId}?format=csv
 - [~] **Фаза 4**: Базовый фронтенд (Vue 3) ← *в процессе*
 - [ ] **Фаза 5**: UI компоненты
 - [ ] **Фаза 6**: Real-time обновления (SignalR)
-- [ ] **Фаза 7**: Docker конфигурация
+- [ ] **Фаза 7**: Скрипты запуска и конфигурация
 - [ ] **Фаза 8**: Client-side Logging
 - [ ] **Фаза 9**: Photino Desktop
 - [ ] **Фаза 10**: Оптимизация и тестирование

@@ -1,4 +1,5 @@
 import type { FilterOptions, ExportFormat } from '@/types'
+import { BASE_URL } from './client'
 
 export const exportApi = {
   /**
@@ -20,7 +21,7 @@ export const exportApi = {
     if (filters?.toDate) params.set('toDate', filters.toDate)
     if (filters?.logger) params.set('logger', filters.logger)
 
-    return `/api/export/${sessionId}?${params}`
+    return `${BASE_URL}/api/export/${sessionId}?${params}`
   },
 
   /**

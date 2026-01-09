@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend (планируется). Работает в двух режимах: Web (Docker) и Desktop (Photino).
+nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (скрипты запуска) и Desktop (Photino).
 
 **Текущий статус:** Фаза 4 ✅ В ПРОЦЕССЕ (осталась интеграция E2E). Следующая: Фаза 5 (UI компоненты). Полный план — см. `PLAN.md`.
 
@@ -34,6 +34,10 @@ nLogMonitor — кроссплатформенное приложение для
 ## Build & Run Commands
 
 ```bash
+# Быстрый запуск (Development)
+start-dev.bat                             # Windows: backend + frontend с hot reload
+./start-dev.sh                            # Linux/macOS: backend + frontend с hot reload
+
 # Backend
 dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
