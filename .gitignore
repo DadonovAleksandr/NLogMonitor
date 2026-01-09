@@ -60,3 +60,9 @@ nul
 
 # JetBrains IDE
 .idea/
+
+# Log files
+*.log
+
+# Session temp files
+**/temp/
