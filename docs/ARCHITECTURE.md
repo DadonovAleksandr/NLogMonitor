@@ -175,13 +175,13 @@ public record OpenFileResultDto(
 
 | Компонент | Назначение | Статус |
 |-----------|-----------|--------|
-| `NLogParser` | Высокопроизводительный парсер логов NLog | Реализован (Фаза 2) |
-| `InMemorySessionStorage` | Хранение сессий в памяти с TTL | Реализован (Фаза 2) |
-| `DirectoryScanner` | Поиск лог-файлов в директории | Реализован (Фаза 2) |
-| `JsonExporter` | Экспорт в JSON | Планируется (Фаза 5) |
-| `CsvExporter` | Экспорт в CSV | Планируется (Фаза 5) |
+| `NLogParser` | Высокопроизводительный парсер логов NLog | ✅ Реализован (Фаза 2) |
+| `InMemorySessionStorage` | Хранение сессий в памяти с TTL | ✅ Реализован (Фаза 2) |
+| `DirectoryScanner` | Поиск лог-файлов в директории | ✅ Реализован (Фаза 2) |
+| `JsonExporter` | Потоковый экспорт в JSON | ✅ Реализован (Фаза 3) |
+| `CsvExporter` | Потоковый экспорт в CSV | ✅ Реализован (Фаза 3) |
+| `RecentLogsFileRepository` | Хранение истории в JSON | ✅ Реализован (Фаза 3) |
 | `FileWatcherService` | Мониторинг изменений файлов | Планируется (Фаза 6) |
-| `RecentLogsFileRepository` | Хранение истории в JSON | Планируется (Фаза 5) |
 
 ### Application Layer Services
 
@@ -304,13 +304,13 @@ nLogMonitor/
 │   │   │   └── NLogParser.cs              # ✓ Реализован (Фаза 2)
 │   │   ├── Storage/
 │   │   │   ├── InMemorySessionStorage.cs  # ✓ Реализован (Фаза 2)
-│   │   │   └── RecentLogsFileRepository.cs # Планируется (Фаза 5)
+│   │   │   └── RecentLogsFileRepository.cs # ✓ Реализован (Фаза 3)
 │   │   ├── FileSystem/
 │   │   │   ├── DirectoryScanner.cs        # ✓ Реализован (Фаза 2)
 │   │   │   └── FileWatcherService.cs      # Планируется (Фаза 6)
 │   │   ├── Export/
-│   │   │   ├── JsonExporter.cs            # Планируется (Фаза 5)
-│   │   │   └── CsvExporter.cs             # Планируется (Фаза 5)
+│   │   │   ├── JsonExporter.cs            # ✓ Реализован (Фаза 3)
+│   │   │   └── CsvExporter.cs             # ✓ Реализован (Фаза 3)
 │   │   └── nLogMonitor.Infrastructure.csproj
 │   │
 │   ├── nLogMonitor.Api/              # Presentation Layer (Web API)
@@ -399,7 +399,7 @@ Export Request → LogService → ExportService → byte[] (JSON/CSV) → File D
 
 ---
 
-## Реализованные компоненты (Фаза 2)
+## Реализованные компоненты (Фаза 2-3)
 
 ### NLogParser
 

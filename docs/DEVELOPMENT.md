@@ -135,13 +135,17 @@ nLogMonitor/
 │   │   ├── composables/          # Vue composables
 │   │   └── types/                # TypeScript types
 │   └── public/
-├── tests/                        # Unit/Integration tests
-│   ├── nLogMonitor.Infrastructure.Tests/
+├── tests/                        # Unit/Integration tests (160 тестов)
+│   ├── nLogMonitor.Infrastructure.Tests/  # 76 тестов
 │   │   ├── Parsing/              # NLogParserTests
-│   │   ├── Storage/              # InMemorySessionStorageTests
-│   │   └── FileSystem/           # DirectoryScannerTests
-│   └── nLogMonitor.Application.Tests/
-│       └── Services/             # LogServiceTests
+│   │   ├── Storage/              # InMemorySessionStorageTests, RecentLogsFileRepositoryTests
+│   │   ├── FileSystem/           # DirectoryScannerTests
+│   │   └── Export/               # JsonExporterTests, CsvExporterTests
+│   ├── nLogMonitor.Application.Tests/     # 28 тестов
+│   │   └── Services/             # LogServiceTests
+│   └── nLogMonitor.Api.Tests/             # 56 тестов
+│       ├── Controllers/          # LogsControllerTests
+│       └── Validators/           # FilterOptionsValidatorTests
 └── docs/                         # Documentation
 ```
 
@@ -178,9 +182,10 @@ nLogMonitor/
 
 | Проект | Тестов | Описание |
 |--------|--------|----------|
-| `nLogMonitor.Infrastructure.Tests` | 55 | Тесты парсера, хранилища, файловой системы |
+| `nLogMonitor.Infrastructure.Tests` | 76 | Тесты парсера, хранилища, файловой системы, экспортеров |
 | `nLogMonitor.Application.Tests` | 28 | Тесты LogService (бизнес-логика) |
-| **Всего** | **83** | |
+| `nLogMonitor.Api.Tests` | 56 | Тесты контроллеров и валидаторов |
+| **Всего** | **160** | |
 
 **Фреймворк:** NUnit 3.x + Moq
 
@@ -215,22 +220,35 @@ dotnet test --filter "Category=UnitTest"
 tests/
 ├── nLogMonitor.Infrastructure.Tests/
 │   ├── Parsing/
-│   │   └── NLogParserTests.cs      # 30+ тестов парсера NLog
+│   │   └── NLogParserTests.cs           # 17 тестов парсера NLog
 │   ├── Storage/
-│   │   └── InMemorySessionStorageTests.cs  # Тесты хранилища сессий
-│   └── FileSystem/
-│       └── DirectoryScannerTests.cs  # Тесты сканера директорий
-└── nLogMonitor.Application.Tests/
-    └── Services/
-        └── LogServiceTests.cs       # 28 тестов бизнес-логики
+│   │   ├── InMemorySessionStorageTests.cs  # 19 тестов хранилища сессий
+│   │   └── RecentLogsFileRepositoryTests.cs # 18 тестов репозитория недавних
+│   ├── FileSystem/
+│   │   └── DirectoryScannerTests.cs     # 20 тестов сканера директорий
+│   └── Export/
+│       ├── JsonExporterTests.cs         # Тесты JSON экспортера
+│       └── CsvExporterTests.cs          # Тесты CSV экспортера
+├── nLogMonitor.Application.Tests/
+│   └── Services/
+│       └── LogServiceTests.cs           # 28 тестов бизнес-логики
+└── nLogMonitor.Api.Tests/
+    ├── Controllers/
+    │   └── LogsControllerTests.cs       # 17 тестов контроллера логов
+    └── Validators/
+        └── FilterOptionsValidatorTests.cs # 39 тестов валидатора
 ```
 
 ### Что покрывают тесты
 
 - **NLogParserTests:** Парсинг разных форматов, многострочные записи, edge cases, производительность
 - **InMemorySessionStorageTests:** CRUD операций, TTL/sliding expiration, очистка сессий, connection binding
+- **RecentLogsFileRepositoryTests:** Хранение, лимиты, персистентность, thread-safety
 - **DirectoryScannerTests:** Поиск файлов, сортировка по имени, фильтрация по расширениям
+- **JsonExporterTests / CsvExporterTests:** Экспорт с фильтрацией, форматирование, кодировки
 - **LogServiceTests:** Открытие файлов/директорий, фильтрация, пагинация, обработка ошибок
+- **LogsControllerTests:** Маппинг DTO, обработка ошибок, интеграция с сервисом
+- **FilterOptionsValidatorTests:** Валидация всех параметров фильтрации, граничные случаи
 
 ### Frontend тесты
 
