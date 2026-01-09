@@ -63,14 +63,14 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 ## Key Patterns
 
 - **IAsyncEnumerable** — для streaming парсинга больших файлов
-- **TTL сессии** — автоматическое удаление через 1 час (настройка в appsettings.json)
-- **SignalR** — real-time обновления при изменении файла (Фаза 6)
+- **SignalR session lifecycle** — сессия живёт пока открыта вкладка (SignalR connected), удаляется при закрытии (Фаза 6)
+- **Fallback TTL** — 5 минут как страховка для потерянных сессий (краш браузера, потеря сети)
 - **Virtual scrolling** — для таблицы с миллионами записей (Frontend, Фаза 4-5)
 
 ## Configuration
 
 Ключевые настройки в `src/nLogMonitor.Api/appsettings.json`:
-- `SessionSettings.TimeToLiveMinutes: 60` — TTL сессии
+- `SessionSettings.FallbackTtlMinutes: 5` — fallback TTL для потерянных сессий
 - `FileSettings.MaxFileSizeMB: 100` — лимит размера файла
 - `FileSettings.AllowedExtensions: [".log", ".txt"]`
 - `Cors.AllowedOrigins` — разрешённые origins для frontend
