@@ -103,6 +103,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - **Backend:** .NET 10, ASP.NET Core, SignalR, FluentValidation, NLog
 - **Frontend:** Vue 3, TypeScript 5, Vite, Pinia, TanStack Table, Tailwind CSS, shadcn-vue
 - **Desktop:** Photino.NET
+- **Testing:** NUnit 3.x, Moq, coverlet (code coverage)
 - **Infrastructure:** Docker, docker-compose, Nginx
 
 ## Roadmap (планируемые доработки)

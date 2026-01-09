@@ -122,6 +122,9 @@ fileName="${var:logDirectory}/${shortdate}.log"
 | API Docs | Swagger/OpenAPI | Swashbuckle |
 | Real-time | SignalR | Built-in |
 | Rate Limiting | AspNetCoreRateLimit | 5.x |
+| Testing | NUnit | 3.x |
+| Mocking | Moq | 4.x |
+| Code Coverage | coverlet | 6.x |
 
 ### Frontend (Vue 3)
 | Компонент | Технология | Версия |
@@ -281,45 +284,45 @@ NLogMonitor/
 ## План разработки
 
 ### Фаза 1: Базовая инфраструктура
-- [ ] **1.1 Создание solution и проектов**
-  - [ ] Создать NLogMonitor.sln — корневой solution файл для всего проекта
-  - [ ] Создать NLogMonitor.Domain (classlib) — слой доменных сущностей без внешних зависимостей
-  - [ ] Создать NLogMonitor.Application (classlib) — слой бизнес-логики, интерфейсов и DTO
-  - [ ] Создать NLogMonitor.Infrastructure (classlib) — реализации интерфейсов, работа с файлами и хранилищем
-  - [ ] Создать NLogMonitor.Api (webapi) — ASP.NET Core Web API проект
-  - [ ] Настроить project references между слоями — Domain ← Application ← Infrastructure ← Api
+- [x] **1.1 Создание solution и проектов**
+  - [x] Создать NLogMonitor.sln — корневой solution файл для всего проекта
+  - [x] Создать NLogMonitor.Domain (classlib) — слой доменных сущностей без внешних зависимостей
+  - [x] Создать NLogMonitor.Application (classlib) — слой бизнес-логики, интерфейсов и DTO
+  - [x] Создать NLogMonitor.Infrastructure (classlib) — реализации интерфейсов, работа с файлами и хранилищем
+  - [x] Создать NLogMonitor.Api (webapi) — ASP.NET Core Web API проект
+  - [x] Настроить project references между слоями — Domain ← Application ← Infrastructure ← Api
 
-- [ ] **1.2 Domain Layer**
-  - [ ] Создать LogEntry entity — основная сущность записи лога с полями: Id, Timestamp, Level, Message, Logger, ProcessId, ThreadId, Exception
-  - [ ] Создать LogLevel enum — уровни логирования: Trace, Debug, Info, Warn, Error, Fatal
-  - [ ] Создать LogSession entity — сессия работы с файлом: Id, FileName, FilePath, FileSize, CreatedAt, ExpiresAt, Entries
-  - [ ] Создать RecentLogEntry entity — запись истории открытых файлов: Path, IsDirectory, OpenedAt
+- [x] **1.2 Domain Layer**
+  - [x] Создать LogEntry entity — основная сущность записи лога с полями: Id, Timestamp, Level, Message, Logger, ProcessId, ThreadId, Exception
+  - [x] Создать LogLevel enum — уровни логирования: Trace, Debug, Info, Warn, Error, Fatal
+  - [x] Создать LogSession entity — сессия работы с файлом: Id, FileName, FilePath, FileSize, CreatedAt, ExpiresAt, Entries
+  - [x] Создать RecentLogEntry entity — запись истории открытых файлов: Path, IsDirectory, OpenedAt
 
-- [ ] **1.3 Application Layer - интерфейсы**
-  - [ ] Определить ILogParser interface — контракт парсинга логов: ParseAsync для потокового чтения, CanParse для проверки формата
-  - [ ] Определить ISessionStorage interface — хранилище сессий в памяти: SaveAsync, GetAsync, DeleteAsync
-  - [ ] Определить ILogService interface — основной сервис: OpenFileAsync для открытия файла, GetLogsAsync для получения с фильтрацией
-  - [ ] Определить IFileWatcherService interface — мониторинг изменений файла: StartWatching, StopWatching
-  - [ ] Определить ILogExporter interface — экспорт логов: ExportAsync в различные форматы
-  - [ ] Определить IRecentLogsRepository interface — работа с историей: GetAllAsync, AddAsync
+- [x] **1.3 Application Layer - интерфейсы**
+  - [x] Определить ILogParser interface — контракт парсинга логов: ParseAsync для потокового чтения, CanParse для проверки формата
+  - [x] Определить ISessionStorage interface — хранилище сессий в памяти: SaveAsync, GetAsync, DeleteAsync
+  - [x] Определить ILogService interface — основной сервис: OpenFileAsync для открытия файла, GetLogsAsync для получения с фильтрацией
+  - [x] Определить IFileWatcherService interface — мониторинг изменений файла: StartWatching, StopWatching
+  - [x] Определить ILogExporter interface — экспорт логов: ExportAsync в различные форматы
+  - [x] Определить IRecentLogsRepository interface — работа с историей: GetAllAsync, AddAsync
 
-- [ ] **1.4 Application Layer - DTOs**
-  - [ ] Создать LogEntryDto — DTO для передачи записи лога на фронтенд
-  - [ ] Создать FilterOptionsDto — параметры фильтрации: SearchText, MinLevel, MaxLevel, FromDate, ToDate, Logger
-  - [ ] Создать PagedResultDto<T> — обёртка для пагинации: Items, TotalCount, Page, PageSize, TotalPages
-  - [ ] Создать OpenFileResultDto — результат открытия файла: SessionId, FileName, FilePath, TotalEntries, LevelCounts
-  - [ ] Создать RecentLogDto — DTO для отображения недавних файлов
+- [x] **1.4 Application Layer - DTOs**
+  - [x] Создать LogEntryDto — DTO для передачи записи лога на фронтенд
+  - [x] Создать FilterOptionsDto — параметры фильтрации: SearchText, MinLevel, MaxLevel, FromDate, ToDate, Logger
+  - [x] Создать PagedResultDto<T> — обёртка для пагинации: Items, TotalCount, Page, PageSize, TotalPages
+  - [x] Создать OpenFileResultDto — результат открытия файла: SessionId, FileName, FilePath, TotalEntries, LevelCounts
+  - [x] Создать RecentLogDto — DTO для отображения недавних файлов
 
-- [ ] **1.5 Настройка API проекта**
-  - [ ] Настроить DI в Program.cs — регистрация сервисов и интерфейсов через Microsoft.Extensions.DependencyInjection
-  - [ ] Добавить NuGet пакеты — FluentValidation для валидации, NLog для логирования, Swashbuckle для Swagger
-  - [ ] Настроить Swagger — автогенерация документации API на /swagger
-  - [ ] Настроить CORS для development — разрешить запросы с localhost:5173 (Vite dev server)
-  - [ ] Настроить NLog — конфигурация логирования в файл и консоль
-  - [ ] Настроить appsettings.json — параметры приложения: TTL сессии, пути к файлам, лимиты
-  - [ ] Первый запуск и проверка Swagger UI — убедиться что API запускается и Swagger доступен
+- [x] **1.5 Настройка API проекта**
+  - [x] Настроить DI в Program.cs — регистрация сервисов и интерфейсов через Microsoft.Extensions.DependencyInjection
+  - [x] Добавить NuGet пакеты — FluentValidation для валидации, NLog для логирования, Swashbuckle для Swagger
+  - [x] Настроить Swagger — автогенерация документации API на /swagger
+  - [x] Настроить CORS для development — разрешить запросы с localhost:5173 (Vite dev server)
+  - [x] Настроить NLog — конфигурация логирования в файл и консоль
+  - [x] Настроить appsettings.json — параметры приложения: TTL сессии, пути к файлам, лимиты
+  - [x] Первый запуск и проверка Swagger UI — убедиться что API запускается и Swagger доступен
 
-**Результат фазы:** Запускаемое API с Swagger UI, базовая структура проекта.
+**Результат фазы:** Запускаемое API с Swagger UI, базовая структура проекта. ✅ ЗАВЕРШЕНО
 
 ---
 
