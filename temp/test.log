@@ -1,0 +1,7 @@
+2024-01-15 10:30:45.1234|INFO|Application started|MyApp.Program|1234|1
+2024-01-15 10:30:46.5678|DEBUG|Loading configuration|MyApp.Config|1234|2
+2024-01-15 10:30:47.0000|WARN|Memory usage high|MyApp.Monitor|1234|3
+2024-01-15 10:30:48.1234|ERROR|Database connection failed
+   at MyApp.Database.Connect() in C:\src\Database.cs:line 42
+   at MyApp.Program.Main() in C:\src\Program.cs:line 15|MyApp.Database|1234|4
+2024-01-15 10:30:49.5678|INFO|Retrying connection|MyApp.Database|1234|5

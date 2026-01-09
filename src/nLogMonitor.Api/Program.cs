@@ -1,3 +1,14 @@
+using FluentValidation;
+using nLogMonitor.Api.Middleware;
+using nLogMonitor.Api.Validators;
+using nLogMonitor.Application.Configuration;
+using nLogMonitor.Application.DTOs;
+using nLogMonitor.Application.Interfaces;
+using nLogMonitor.Application.Services;
+using nLogMonitor.Infrastructure.Export;
+using nLogMonitor.Infrastructure.FileSystem;
+using nLogMonitor.Infrastructure.Parsing;
+using nLogMonitor.Infrastructure.Storage;
 using NLog;
 using NLog.Web;
 
@@ -39,14 +50,35 @@ try
     // SignalR for real-time updates
     builder.Services.AddSignalR();
 
-    // TODO: Register application services (will be added in later phases)
-    // builder.Services.AddScoped<ILogParser, NLogParser>();
-    // builder.Services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
-    // builder.Services.AddScoped<ILogService, LogService>();
+    // FluentValidation
+    builder.Services.AddScoped<IValidator<FilterOptionsDto>, FilterOptionsValidator>();
+
+    // Configuration
+    builder.Services.Configure<FileSettings>(
+        builder.Configuration.GetSection(FileSettings.SectionName));
+    builder.Services.Configure<SessionSettings>(
+        builder.Configuration.GetSection(SessionSettings.SectionName));
+    builder.Services.Configure<RecentLogsSettings>(
+        builder.Configuration.GetSection(RecentLogsSettings.SectionName));
+
+    // Application Services
+    builder.Services.AddScoped<ILogParser, NLogParser>();
+    builder.Services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
+    builder.Services.AddScoped<ILogService, LogService>();
+    builder.Services.AddScoped<IDirectoryScanner, DirectoryScanner>();
+    builder.Services.AddSingleton<IRecentLogsRepository, RecentLogsFileRepository>();
+
+    // Exporters
+    builder.Services.AddScoped<ILogExporter, JsonExporter>();
+    builder.Services.AddScoped<ILogExporter, CsvExporter>();
+
+    // TODO: FileWatcherService will be added in Phase 6
     // builder.Services.AddSingleton<IFileWatcherService, FileWatcherService>();
-    // builder.Services.AddSingleton<IRecentLogsRepository, RecentLogsFileRepository>();
 
     var app = builder.Build();
+
+    // Global exception handling middleware (should be first)
+    app.UseExceptionHandling();
 
     // Configure the HTTP request pipeline
     if (app.Environment.IsDevelopment())

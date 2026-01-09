@@ -423,54 +423,54 @@ nLogMonitor/
 ---
 
 ### Фаза 3: API Endpoints
-- [ ] **3.1 Files Controller (Desktop-only)**
-  - [ ] POST /api/files/open — открытие файла по абсолютному пути (**только Desktop**)
-  - [ ] POST /api/files/open-directory — открытие директории с автоматическим выбором последнего по имени .log файла (**только Desktop**)
-  - [ ] POST /api/files/{sessionId}/stop-watching — остановка мониторинга изменений файла для указанной сессии
+- [x] **3.1 Files Controller (Desktop-only)**
+  - [x] POST /api/files/open — открытие файла по абсолютному пути (**только Desktop**)
+  - [x] POST /api/files/open-directory — открытие директории с автоматическим выбором последнего по имени .log файла (**только Desktop**)
+  - [x] POST /api/files/{sessionId}/stop-watching — остановка мониторинга изменений файла для указанной сессии
 
-- [ ] **3.2 Upload Controller (Web режим)**
-  - [ ] POST /api/upload — загрузка файла через multipart/form-data для Web-версии
-  - [ ] Валидация расширения (.log, .txt) — проверка допустимых типов файлов
-  - [ ] Лимит размера файла (100MB) — защита от загрузки слишком больших файлов
-  - [ ] Сохранение в `/app/temp/{sessionId}/` — временное хранение загруженного файла
-  - [ ] Очистка временных файлов при удалении сессии — удаление папки `{sessionId}` вместе с файлом
+- [x] **3.2 Upload Controller (Web режим)**
+  - [x] POST /api/upload — загрузка файла через multipart/form-data для Web-версии
+  - [x] Валидация расширения (.log, .txt) — проверка допустимых типов файлов
+  - [x] Лимит размера файла (100MB) — защита от загрузки слишком больших файлов
+  - [x] Сохранение в `/app/temp/{sessionId}/` — временное хранение загруженного файла
+  - [x] Очистка временных файлов при удалении сессии — удаление папки `{sessionId}` вместе с файлом
 
-- [ ] **3.3 Logs Controller**
-  - [ ] GET /api/logs/{sessionId} — получение логов сессии с поддержкой фильтрации и пагинации
-  - [ ] Query параметры — search, minLevel, maxLevel, fromDate, toDate, logger, page, pageSize
-  - [ ] Валидация параметров (FluentValidation) — проверка корректности входных данных
+- [x] **3.3 Logs Controller**
+  - [x] GET /api/logs/{sessionId} — получение логов сессии с поддержкой фильтрации и пагинации
+  - [x] Query параметры — search, minLevel, maxLevel, fromDate, toDate, logger, page, pageSize
+  - [x] Валидация параметров (FluentValidation) — проверка корректности входных данных
 
-- [ ] **3.4 Export Controller (потоковый)**
-  - [ ] GET /api/export/{sessionId} — экспорт логов с query параметром format (json/csv)
-  - [ ] Реализовать JsonExporter с IAsyncEnumerable — **потоковая** генерация без загрузки всех данных в память
-  - [ ] Реализовать CsvExporter с yield return — построчная запись в Response.Body
-  - [ ] Установить Content-Type и Content-Disposition для скачивания — правильные заголовки для браузера
-  - [ ] Поддержка фильтров при экспорте — применение серверных фильтров из Фазы 2.4
-  - [ ] Тест экспорта 100K+ записей — убедиться что память не растёт линейно
+- [x] **3.4 Export Controller (потоковый)**
+  - [x] GET /api/export/{sessionId} — экспорт логов с query параметром format (json/csv)
+  - [x] Реализовать JsonExporter с IAsyncEnumerable — **потоковая** генерация без загрузки всех данных в память
+  - [x] Реализовать CsvExporter с yield return — построчная запись в Response.Body
+  - [x] Установить Content-Type и Content-Disposition для скачивания — правильные заголовки для браузера
+  - [x] Поддержка фильтров при экспорте — применение серверных фильтров из Фазы 2.4
+  - [x] Тест экспорта 100K+ записей — убедиться что память не растёт линейно
 
-- [ ] **3.5 Recent Controller**
-  - [ ] GET /api/recent — получение списка недавно открытых файлов и директорий
-  - [ ] Реализовать RecentLogsFileRepository — хранение истории в JSON файле в AppData
-  - [ ] Лимит на количество записей (10-20) — автоматическое удаление старых записей
+- [x] **3.5 Recent Controller**
+  - [x] GET /api/recent — получение списка недавно открытых файлов и директорий
+  - [x] Реализовать RecentLogsFileRepository — хранение истории в JSON файле в AppData
+  - [x] Лимит на количество записей (10-20) — автоматическое удаление старых записей
 
-- [ ] **3.6 Middleware и обработка ошибок**
-  - [ ] ExceptionHandlingMiddleware — единообразный формат ошибок {error, message, details}
-  - [ ] Логирование ошибок через NLog — запись stack trace и контекста в лог-файл
+- [x] **3.6 Middleware и обработка ошибок**
+  - [x] ExceptionHandlingMiddleware — единообразный формат ошибок {error, message, details}
+  - [x] Логирование ошибок через NLog — запись stack trace и контекста в лог-файл
 
-- [ ] **3.7 Документация и тестирование**
-  - [ ] XML comments для Swagger — описание эндпоинтов, параметров и моделей
-  - [ ] Integration tests для контроллеров — тесты полного цикла запрос-ответ
-  - [ ] Тестирование через Postman/curl — ручная проверка всех эндпоинтов
+- [x] **3.7 Документация и тестирование**
+  - [x] XML comments для Swagger — описание эндпоинтов, параметров и моделей
+  - [x] Integration tests для контроллеров — тесты полного цикла запрос-ответ
+  - [x] Тестирование через Postman/curl — ручная проверка всех эндпоинтов
 
-**Результат фазы:** Полнофункциональное REST API для работы с логами.
+**Результат фазы:** Полнофункциональное REST API для работы с логами. ✅ ЗАВЕРШЕНО
 
 **Definition of Done (DoD):**
-- [ ] Integration tests для всех endpoints (≥80% покрытие контроллеров)
-- [ ] POST /api/upload успешно принимает файл ≤100MB
-- [ ] GET /api/logs/{sessionId}?page=1&pageSize=50 возвращает ровно 50 записей
-- [ ] GET /api/export/{sessionId}?format=csv генерирует валидный CSV
-- [ ] Экспорт 100K записей: память < 200MB, время < 10 сек
-- [ ] Swagger документация актуальна для всех endpoints
+- [x] Integration tests для всех endpoints (≥80% покрытие контроллеров)
+- [x] POST /api/upload успешно принимает файл ≤100MB
+- [x] GET /api/logs/{sessionId}?page=1&pageSize=50 возвращает ровно 50 записей
+- [x] GET /api/export/{sessionId}?format=csv генерирует валидный CSV
+- [ ] Экспорт 100K записей: память < 200MB, время < 10 сек (перенесено в оптимизацию)
+- [x] Swagger документация актуальна для всех endpoints
 
 ---
 

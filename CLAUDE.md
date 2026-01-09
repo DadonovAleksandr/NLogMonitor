@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend (планируется). Работает в двух режимах: Web (Docker) и Desktop (Photino).
 
-**Текущий статус:** Фаза 2 завершена — парсинг и хранение логов. Следующая: Фаза 3 (API Endpoints). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 3 завершена — API Endpoints. Следующая: Фаза 4 (Frontend базовый Vue 3). Полный план — см. `PLAN.md`.
 
 ## Build & Run Commands
 
@@ -16,10 +16,11 @@ dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — 83 теста
-dotnet test                               # Все тесты (83: Infrastructure 55 + Application 28)
-dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера и хранилища (55)
+# Tests (NUnit) — 160 тестов
+dotnet test                               # Все тесты (160: Infrastructure 76 + Application 28 + Api 56)
+dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера и хранилища (76)
 dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28)
+dotnet test tests/nLogMonitor.Api.Tests           # Тесты контроллеров и валидаторов (56)
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
 # Lint / Format
@@ -51,9 +52,19 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий)
 - **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
 
+### Новые файлы (Фаза 3)
+- **nLogMonitor.Api/Controllers/** — FilesController, UploadController, LogsController, ExportController, RecentController
+- **nLogMonitor.Api/Middleware/** — ExceptionHandlingMiddleware
+- **nLogMonitor.Api/Models/** — ApiErrorResponse, OpenFileRequest, OpenDirectoryRequest
+- **nLogMonitor.Api/Validators/** — FilterOptionsValidator
+- **nLogMonitor.Infrastructure/Export/** — JsonExporter, CsvExporter
+- **nLogMonitor.Infrastructure/Storage/** — RecentLogsFileRepository
+- **nLogMonitor.Application/Configuration/** — FileSettings, RecentLogsSettings
+
 ### Структура tests/
-- **nLogMonitor.Infrastructure.Tests** — 55 тестов: NLogParserTests, InMemorySessionStorageTests, DirectoryScannerTests
+- **nLogMonitor.Infrastructure.Tests** — 76 тестов: NLogParserTests, InMemorySessionStorageTests, DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests
 - **nLogMonitor.Application.Tests** — 28 тестов: LogServiceTests (фильтрация, пагинация, поиск, статистика)
+- **nLogMonitor.Api.Tests** — 56 тестов: FilesControllerTests, UploadControllerTests, LogsControllerTests, ExportControllerTests, RecentControllerTests, FilterOptionsValidatorTests, ExceptionHandlingMiddlewareTests
 
 ## NLog Format
 
@@ -84,15 +95,17 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - `FileSettings.AllowedExtensions: [".log", ".txt"]`
 - `Cors.AllowedOrigins` — разрешённые origins для frontend
 
-## API Endpoints (планируемые)
+## API Endpoints (работающие)
 
 - `POST /api/files/open` — открытие файла по пути (Desktop)
 - `POST /api/files/open-directory` — открытие директории
+- `POST /api/files/{sessionId}/stop-watching` — остановка мониторинга (placeholder)
 - `POST /api/upload` — загрузка файла (Web, max 100MB)
 - `GET /api/logs/{sessionId}` — логи с фильтрацией и пагинацией
 - `GET /api/export/{sessionId}?format=json|csv` — экспорт
 - `GET /api/recent` — недавние файлы
-- `GET /health` — health check (уже работает)
+- `DELETE /api/recent` — очистка недавних
+- `GET /health` — health check
 
 ## Tech Stack
 
