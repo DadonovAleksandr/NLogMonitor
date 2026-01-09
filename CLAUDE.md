@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend (планируется). Работает в двух режимах: Web (Docker) и Desktop (Photino).
 
-**Текущий статус:** Фаза 1 завершена — базовая инфраструктура проекта. Следующая: Фаза 2 (Парсинг и хранение логов). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 2 завершена — парсинг и хранение логов. Следующая: Фаза 3 (API Endpoints). Полный план — см. `PLAN.md`.
 
 ## Build & Run Commands
 
@@ -16,9 +16,10 @@ dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — когда будут созданы
-dotnet test                               # Все тесты
-dotnet test tests/nLogMonitor.Application.Tests  # Конкретный проект
+# Tests (NUnit) — 83 теста
+dotnet test                               # Все тесты (83: Infrastructure 55 + Application 28)
+dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера и хранилища (55)
+dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28)
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
 # Lint / Format
@@ -46,9 +47,13 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 
 ### Текущая структура src/
 - **nLogMonitor.Domain** — сущности: LogEntry, LogSession, LogLevel enum, RecentLogEntry
-- **nLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto
-- **nLogMonitor.Infrastructure** — пока пустой, будет содержать реализации
+- **nLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository, IDirectoryScanner; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto; Services/LogService.cs; Configuration/SessionSettings.cs; Exceptions/NoLogFilesFoundException.cs
+- **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий)
 - **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
+
+### Структура tests/
+- **nLogMonitor.Infrastructure.Tests** — 55 тестов: NLogParserTests, InMemorySessionStorageTests, DirectoryScannerTests
+- **nLogMonitor.Application.Tests** — 28 тестов: LogServiceTests (фильтрация, пагинация, поиск, статистика)
 
 ## NLog Format
 

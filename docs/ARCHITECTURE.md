@@ -8,6 +8,7 @@
 - [Диаграммы](#-диаграммы)
 - [Структура проекта](#-структура-проекта)
 - [Потоки данных](#-потоки-данных)
+- [Реализованные компоненты (Фаза 2)](#реализованные-компоненты-фаза-2)
 - [UI референс](#-ui-референс)
 
 ---
@@ -172,14 +173,21 @@ public record OpenFileResultDto(
 
 Реализации интерфейсов.
 
-| Компонент | Назначение |
-|-----------|-----------|
-| `NLogParser` | Regex-парсинг логов NLog |
-| `InMemorySessionStorage` | Хранение в памяти с TTL |
-| `JsonExporter` | Экспорт в JSON |
-| `CsvExporter` | Экспорт в CSV |
-| `FileWatcherService` | Мониторинг изменений файлов |
-| `RecentLogsFileRepository` | Хранение истории в JSON |
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `NLogParser` | Высокопроизводительный парсер логов NLog | Реализован (Фаза 2) |
+| `InMemorySessionStorage` | Хранение сессий в памяти с TTL | Реализован (Фаза 2) |
+| `DirectoryScanner` | Поиск лог-файлов в директории | Реализован (Фаза 2) |
+| `JsonExporter` | Экспорт в JSON | Планируется (Фаза 5) |
+| `CsvExporter` | Экспорт в CSV | Планируется (Фаза 5) |
+| `FileWatcherService` | Мониторинг изменений файлов | Планируется (Фаза 6) |
+| `RecentLogsFileRepository` | Хранение истории в JSON | Планируется (Фаза 5) |
+
+### Application Layer Services
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `LogService` | Основной сервис для работы с логами | Реализован (Фаза 2) |
 
 ### Presentation Layer
 
@@ -272,9 +280,16 @@ nLogMonitor/
 │   │   │   ├── ILogParser.cs
 │   │   │   ├── ISessionStorage.cs
 │   │   │   ├── ILogService.cs
+│   │   │   ├── IDirectoryScanner.cs
 │   │   │   ├── IFileWatcherService.cs
 │   │   │   ├── ILogExporter.cs
 │   │   │   └── IRecentLogsRepository.cs
+│   │   ├── Services/
+│   │   │   └── LogService.cs              # ✓ Реализован (Фаза 2)
+│   │   ├── Configuration/
+│   │   │   └── SessionSettings.cs         # ✓ Реализован (Фаза 2)
+│   │   ├── Exceptions/
+│   │   │   └── NoLogFilesFoundException.cs # ✓ Реализован (Фаза 2)
 │   │   ├── DTOs/
 │   │   │   ├── LogEntryDto.cs
 │   │   │   ├── FilterOptionsDto.cs
@@ -286,15 +301,16 @@ nLogMonitor/
 │   │
 │   ├── nLogMonitor.Infrastructure/   # Infrastructure Layer
 │   │   ├── Parsing/
-│   │   │   └── NLogParser.cs
+│   │   │   └── NLogParser.cs              # ✓ Реализован (Фаза 2)
 │   │   ├── Storage/
-│   │   │   ├── InMemorySessionStorage.cs
-│   │   │   └── RecentLogsFileRepository.cs
+│   │   │   ├── InMemorySessionStorage.cs  # ✓ Реализован (Фаза 2)
+│   │   │   └── RecentLogsFileRepository.cs # Планируется (Фаза 5)
 │   │   ├── FileSystem/
-│   │   │   └── FileWatcherService.cs
+│   │   │   ├── DirectoryScanner.cs        # ✓ Реализован (Фаза 2)
+│   │   │   └── FileWatcherService.cs      # Планируется (Фаза 6)
 │   │   ├── Export/
-│   │   │   ├── JsonExporter.cs
-│   │   │   └── CsvExporter.cs
+│   │   │   ├── JsonExporter.cs            # Планируется (Фаза 5)
+│   │   │   └── CsvExporter.cs             # Планируется (Фаза 5)
 │   │   └── nLogMonitor.Infrastructure.csproj
 │   │
 │   ├── nLogMonitor.Api/              # Presentation Layer (Web API)
@@ -379,6 +395,168 @@ UI Filters → LogFilterDto → LogService.GetLogsAsync() → PagedResult<LogEnt
 
 ```
 Export Request → LogService → ExportService → byte[] (JSON/CSV) → File Download
+```
+
+---
+
+## Реализованные компоненты (Фаза 2)
+
+### NLogParser
+
+**Расположение:** `src/nLogMonitor.Infrastructure/Parsing/NLogParser.cs`
+
+Высокопроизводительный парсер NLog-файлов с поддержкой многострочных записей.
+
+#### Ключевые особенности
+
+- **IAsyncEnumerable** — streaming парсинг для обработки больших файлов без загрузки в память
+- **Span<char>/ReadOnlySpan<char>** — zero-allocation парсинг для минимизации нагрузки на GC
+- **Поддержка многострочных записей** — корректная обработка stack traces и сообщений с переносами строк
+- **[GeneratedRegex]** — compile-time генерация regex для максимальной производительности
+
+#### Алгоритм парсинга
+
+```
+1. Определение границы записи: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4}
+2. Буферизация строк до следующей границы
+3. Парсинг полей разделителем `|`:
+   - Fast path: поиск с конца строки (threadid|processid|logger фиксированы)
+   - Fallback: regex для edge cases
+4. Yield return каждой записи по мере парсинга
+```
+
+#### Поддерживаемый формат
+
+```
+${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid}
+```
+
+Пример: `2024-01-15 10:30:45.1234|INFO|Application started|MyApp.Program|1234|1`
+
+---
+
+### InMemorySessionStorage
+
+**Расположение:** `src/nLogMonitor.Infrastructure/Storage/InMemorySessionStorage.cs`
+
+Thread-safe хранилище сессий логов в памяти с автоматическим управлением жизненным циклом.
+
+#### Ключевые особенности
+
+- **ConcurrentDictionary<Guid, SessionWrapper>** — потокобезопасное хранение
+- **Sliding expiration** — TTL продлевается при каждом обращении к сессии
+- **Настраиваемый TTL** — по умолчанию 5 минут (fallback, основное управление через SignalR)
+- **Автоматическая очистка** — Timer каждую минуту удаляет просроченные сессии
+- **IDisposable** — корректная остановка таймера и освобождение ресурсов
+
+#### Подготовка к SignalR (Фаза 6)
+
+```csharp
+// Методы для связывания сессий с SignalR соединениями
+Task BindConnectionAsync(string connectionId, Guid sessionId);
+Task UnbindConnectionAsync(string connectionId);
+Task<Guid?> GetSessionByConnectionAsync(string connectionId);
+```
+
+#### Архитектура хранения
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    InMemorySessionStorage                        │
+├─────────────────────────────────────────────────────────────────┤
+│  ConcurrentDictionary<Guid, SessionWrapper>                     │
+│    └── SessionWrapper                                            │
+│          ├── LogSession (данные сессии)                         │
+│          └── LastAccessedAt (для sliding expiration)            │
+├─────────────────────────────────────────────────────────────────┤
+│  ConcurrentDictionary<string, Guid>                             │
+│    └── connectionId → sessionId (для SignalR)                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Timer (cleanup каждую минуту)                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### DirectoryScanner
+
+**Расположение:** `src/nLogMonitor.Infrastructure/FileSystem/DirectoryScanner.cs`
+
+Сканер директорий для поиска лог-файлов.
+
+#### Функциональность
+
+- **FindLastLogFileByNameAsync** — поиск последнего лог-файла по имени (сортировка descending)
+- **GetLogFilesAsync** — получение списка всех лог-файлов в директории
+- **Паттерн поиска:** `*.log`
+
+#### Логика сортировки
+
+Файлы сортируются по имени в обратном порядке (descending). Это оптимально для формата `${shortdate}.log`:
+
+```
+2024-01-15.log  ← возвращается как "последний"
+2024-01-14.log
+2024-01-13.log
+```
+
+---
+
+### LogService
+
+**Расположение:** `src/nLogMonitor.Application/Services/LogService.cs`
+
+Основной сервис для работы с логами, координирует парсинг, хранение и фильтрацию.
+
+#### API методы
+
+| Метод | Описание |
+|-------|----------|
+| `OpenFileAsync(filePath)` | Открытие файла → парсинг → создание сессии |
+| `OpenDirectoryAsync(directoryPath)` | Сканирование → открытие последнего файла |
+| `GetLogsAsync(sessionId, filters, page, pageSize)` | Серверная фильтрация и пагинация |
+| `GetSessionAsync(sessionId)` | Получение метаданных сессии |
+
+#### Серверная фильтрация
+
+Все операции фильтрации выполняются на сервере через LINQ over in-memory collection:
+
+```csharp
+// Поддерживаемые фильтры
+- searchText     → Message.Contains(searchText, OrdinalIgnoreCase)
+- minLevel       → Level >= minLevel
+- maxLevel       → Level <= maxLevel
+- fromDate       → Timestamp >= fromDate
+- toDate         → Timestamp <= toDate
+- logger         → Logger.Contains(logger, OrdinalIgnoreCase)
+
+// Пагинация
+.Skip((page - 1) * pageSize)
+.Take(pageSize)
+```
+
+#### Sequence диаграмма: OpenFileAsync
+
+```
+Client          LogService           NLogParser          SessionStorage
+   │                 │                    │                    │
+   │ OpenFileAsync   │                    │                    │
+   │────────────────>│                    │                    │
+   │                 │ ParseAsync(path)   │                    │
+   │                 │───────────────────>│                    │
+   │                 │                    │──┐                 │
+   │                 │                    │  │ IAsyncEnumerable│
+   │                 │                    │  │ (streaming)     │
+   │                 │                    │<─┘                 │
+   │                 │<───────────────────│                    │
+   │                 │      foreach entry │                    │
+   │                 │      session.Entries.Add(entry)         │
+   │                 │                    │                    │
+   │                 │ SaveAsync(session) │                    │
+   │                 │────────────────────────────────────────>│
+   │                 │<────────────────────────────────────────│
+   │     sessionId   │                    │                    │
+   │<────────────────│                    │                    │
 ```
 
 ---

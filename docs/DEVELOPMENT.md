@@ -8,6 +8,7 @@
 - [Команды разработки](#-команды-разработки)
 - [Тестирование](#-тестирование)
 - [Code Style](#-code-style)
+- [Ключевые компоненты](#️-ключевые-компоненты)
 - [Отладка](#-отладка)
 
 ---
@@ -113,10 +114,19 @@ services:
 nLogMonitor/
 ├── src/                          # Backend source
 │   ├── nLogMonitor.Domain/       # Entities, Enums
-│   ├── nLogMonitor.Application/  # Interfaces, DTOs
+│   │   └── Entities/             # LogEntry, LogSession, LogLevel, RecentLogEntry
+│   ├── nLogMonitor.Application/  # Interfaces, DTOs, Services
+│   │   ├── Configuration/        # SessionSettings, FileSettings
+│   │   ├── DTOs/                 # LogEntryDto, FilterOptionsDto, PagedResultDto, etc.
+│   │   ├── Exceptions/           # NoLogFilesFoundException
+│   │   ├── Interfaces/           # ILogParser, ISessionStorage, ILogService, etc.
+│   │   └── Services/             # LogService
 │   ├── nLogMonitor.Infrastructure/ # Implementations
+│   │   ├── Parsing/              # NLogParser
+│   │   ├── Storage/              # InMemorySessionStorage
+│   │   └── FileSystem/           # DirectoryScanner
 │   ├── nLogMonitor.Api/          # Controllers, Hubs
-│   └── nLogMonitor.Desktop/      # Photino shell
+│   └── nLogMonitor.Desktop/      # Photino shell (планируется)
 ├── client/                       # Frontend source (Vue 3)
 │   ├── src/
 │   │   ├── components/           # Vue components
@@ -126,6 +136,12 @@ nLogMonitor/
 │   │   └── types/                # TypeScript types
 │   └── public/
 ├── tests/                        # Unit/Integration tests
+│   ├── nLogMonitor.Infrastructure.Tests/
+│   │   ├── Parsing/              # NLogParserTests
+│   │   ├── Storage/              # InMemorySessionStorageTests
+│   │   └── FileSystem/           # DirectoryScannerTests
+│   └── nLogMonitor.Application.Tests/
+│       └── Services/             # LogServiceTests
 └── docs/                         # Documentation
 ```
 
@@ -158,36 +174,63 @@ nLogMonitor/
 
 ## 🧪 Тестирование
 
-### Backend тесты
+### Тестовые проекты
+
+| Проект | Тестов | Описание |
+|--------|--------|----------|
+| `nLogMonitor.Infrastructure.Tests` | 55 | Тесты парсера, хранилища, файловой системы |
+| `nLogMonitor.Application.Tests` | 28 | Тесты LogService (бизнес-логика) |
+| **Всего** | **83** | |
+
+**Фреймворк:** NUnit 3.x + Moq
+
+### Команды запуска тестов
 
 ```bash
 # Все тесты
 dotnet test
 
-# С покрытием
+# С подробным выводом
+dotnet test -v normal
+
+# С покрытием (coverlet)
 dotnet test --collect:"XPlat Code Coverage"
 
-# Конкретный проект
+# Конкретный тестовый проект
+dotnet test tests/nLogMonitor.Infrastructure.Tests
 dotnet test tests/nLogMonitor.Application.Tests
 
-# Фильтрация по имени
+# Фильтрация по имени теста
 dotnet test --filter "FullyQualifiedName~LogService"
+dotnet test --filter "FullyQualifiedName~NLogParser"
+dotnet test --filter "Name~ParseAsync"
+
+# Фильтрация по категории (если используются атрибуты)
+dotnet test --filter "Category=UnitTest"
 ```
 
-Структура тестов:
+### Структура тестов
 
 ```
 tests/
-├── nLogMonitor.Domain.Tests/
-│   └── Entities/
-│       └── LogEntryTests.cs
-├── nLogMonitor.Application.Tests/
-│   └── Services/
-│       └── LogServiceTests.cs
-└── nLogMonitor.Infrastructure.Tests/
-    └── Parser/
-        └── NLogParserTests.cs
+├── nLogMonitor.Infrastructure.Tests/
+│   ├── Parsing/
+│   │   └── NLogParserTests.cs      # 30+ тестов парсера NLog
+│   ├── Storage/
+│   │   └── InMemorySessionStorageTests.cs  # Тесты хранилища сессий
+│   └── FileSystem/
+│       └── DirectoryScannerTests.cs  # Тесты сканера директорий
+└── nLogMonitor.Application.Tests/
+    └── Services/
+        └── LogServiceTests.cs       # 28 тестов бизнес-логики
 ```
+
+### Что покрывают тесты
+
+- **NLogParserTests:** Парсинг разных форматов, многострочные записи, edge cases, производительность
+- **InMemorySessionStorageTests:** CRUD операций, TTL/sliding expiration, очистка сессий, connection binding
+- **DirectoryScannerTests:** Поиск файлов, сортировка по имени, фильтрация по расширениям
+- **LogServiceTests:** Открытие файлов/директорий, фильтрация, пагинация, обработка ошибок
 
 ### Frontend тесты
 
@@ -269,6 +312,85 @@ npx husky add .husky/pre-commit "npx lint-staged"
   }
 }
 ```
+
+---
+
+## 🏗️ Ключевые компоненты
+
+Краткое описание основных классов для разработчиков.
+
+### NLogParser
+
+**Путь:** `src/nLogMonitor.Infrastructure/Parsing/NLogParser.cs`
+
+Высокопроизводительный парсер NLog-файлов с поддержкой многострочных записей.
+
+**Особенности:**
+- Поддержка формата: `${longdate}|${level}|${message}|${logger}|${processid}|${threadid}`
+- Поиск разделителей **с конца строки** (logger, processid, threadid фиксированы)
+- Поддержка многострочных сообщений (message может содержать `\n` и `|`)
+- Два режима парсинга: быстрый (Span-based) и fallback (regex)
+- `IAsyncEnumerable<LogEntry>` для streaming больших файлов
+- 64KB буфер для оптимального I/O
+
+```csharp
+// Пример использования
+await foreach (var entry in parser.ParseAsync(filePath, cancellationToken))
+{
+    // Обработка LogEntry
+}
+```
+
+### InMemorySessionStorage
+
+**Путь:** `src/nLogMonitor.Infrastructure/Storage/InMemorySessionStorage.cs`
+
+In-memory хранилище сессий логов с автоматической очисткой по TTL.
+
+**Особенности:**
+- Thread-safe на базе `ConcurrentDictionary`
+- Sliding expiration (TTL продлевается при каждом доступе)
+- Автоматическая очистка просроченных сессий по таймеру
+- Binding SignalR connectionId -> sessionId
+- Настраиваемый TTL и интервал очистки через `SessionSettings`
+
+```csharp
+// Конфигурация (appsettings.json)
+"SessionSettings": {
+    "FallbackTtlMinutes": 5,
+    "CleanupIntervalMinutes": 1
+}
+```
+
+### LogService
+
+**Путь:** `src/nLogMonitor.Application/Services/LogService.cs`
+
+Основной сервис бизнес-логики для работы с логами.
+
+**Методы:**
+- `OpenFileAsync(filePath)` — открытие файла, парсинг, создание сессии
+- `OpenDirectoryAsync(directoryPath)` — поиск последнего лог-файла и его открытие
+- `GetLogsAsync(sessionId, filters, pagination)` — получение логов с фильтрацией и пагинацией
+- `GetSessionAsync(sessionId)` — получение метаданных сессии
+
+**Особенности:**
+- Серверная фильтрация (LINQ over in-memory collection)
+- Подсчёт записей по уровням (`LevelCounts`)
+- Логирование всех операций
+
+### DirectoryScanner
+
+**Путь:** `src/nLogMonitor.Infrastructure/FileSystem/DirectoryScanner.cs`
+
+Сканер директорий для поиска лог-файлов.
+
+**Методы:**
+- `FindLastLogFileByNameAsync(directoryPath)` — поиск последнего файла по имени (сортировка Z-A)
+
+**Особенности:**
+- Фильтрация по расширениям (`.log`, `.txt` по умолчанию)
+- Поддержка настройки через `FileSettings`
 
 ---
 
