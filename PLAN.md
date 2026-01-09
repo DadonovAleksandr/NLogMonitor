@@ -474,6 +474,100 @@ nLogMonitor/
 
 ---
 
+### Фаза 3.1: Исправления и улучшения Фазы 3
+
+> **Контекст:** Код-ревью выявило 10 замечаний по безопасности, архитектуре и качеству кода. Данная фаза устраняет критические и важные проблемы перед переходом к Frontend.
+
+#### 3.1.1 Безопасность (Критические)
+
+- [ ] **Path Traversal в Upload**
+  - [ ] Заменить `file.FileName` на `Path.GetFileName(file.FileName)` для извлечения только имени файла
+  - [ ] Добавить валидацию результирующего пути через `Path.GetFullPath()` — проверка что путь не выходит за пределы temp-директории
+  - [ ] Добавить unit-тест на попытку path traversal (`../../../etc/passwd.log`)
+  - **Файл:** `src/nLogMonitor.Api/Controllers/UploadController.cs:120`
+
+- [ ] **Desktop-only эндпоинты в Web-режиме**
+  - [ ] Добавить `AppMode` в конфигурацию (`appsettings.json`) — enum: `Web`, `Desktop`
+  - [ ] Создать `DesktopOnlyAttribute` (ActionFilterAttribute) — возвращает 404/403 если режим не Desktop
+  - [ ] Применить `[DesktopOnly]` к `FilesController.OpenFile` и `FilesController.OpenDirectory`
+  - [ ] Добавить unit-тесты для проверки блокировки в Web-режиме
+  - **Файлы:** `src/nLogMonitor.Api/Controllers/FilesController.cs:45,101`, `src/nLogMonitor.Api/Program.cs`
+
+#### 3.1.2 Архитектура (Важные)
+
+- [ ] **Несоответствие Guid (temp-каталог vs sessionId)**
+  - [ ] Модифицировать `ILogService.OpenFileAsync` — добавить опциональный параметр `Guid? sessionId`
+  - [ ] В `UploadController` передавать сгенерированный `sessionId` в `LogService`
+  - [ ] Альтернатива: добавить `TempDirectory` property в `LogSession` для связи
+  - [ ] Добавить unit-тест на соответствие sessionId и temp-директории
+  - **Файлы:** `src/nLogMonitor.Api/Controllers/UploadController.cs:110`, `src/nLogMonitor.Application/Services/LogService.cs:49`
+
+- [ ] **stop-watching возвращает 204 без действия**
+  - [ ] Изменить HTTP статус на `501 Not Implemented` с информативным сообщением
+  - [ ] Вернуть `ApiErrorResponse` с описанием: "File watching planned for Phase 6"
+  - [ ] Обновить XML-документацию метода
+  - **Файл:** `src/nLogMonitor.Api/Controllers/FilesController.cs:149`
+
+- [ ] **Экспорт не потоковый (3 прохода по данным)**
+  - [ ] Убрать `filteredEntries.Count()` — не нужен для streaming
+  - [ ] Переписать `JsonExporter` на `IAsyncEnumerable` + `Utf8JsonWriter` для потоковой записи
+  - [ ] Переписать `CsvExporter` на `IAsyncEnumerable` + прямую запись в `Stream`
+  - [ ] Использовать `FileCallbackResult` или `PushStreamContent` в контроллере
+  - [ ] Добавить benchmark-тест: экспорт 100K записей, замер памяти
+  - **Файлы:** `src/nLogMonitor.Api/Controllers/ExportController.cs:95`, `src/nLogMonitor.Infrastructure/Export/JsonExporter.cs`, `src/nLogMonitor.Infrastructure/Export/CsvExporter.cs`
+
+#### 3.1.3 Обработка ошибок (Средние)
+
+- [ ] **DirectoryNotFoundException не мапится в middleware**
+  - [ ] Добавить case для `DirectoryNotFoundException` в `ExceptionHandlingMiddleware`
+  - [ ] Возвращать HTTP 404 с типом ошибки "NotFound"
+  - [ ] Добавить unit-тест для проверки маппинга
+  - **Файлы:** `src/nLogMonitor.Infrastructure/FileSystem/DirectoryScanner.cs:15`, `src/nLogMonitor.Api/Middleware/ExceptionHandlingMiddleware.cs:71`
+
+- [ ] **Формат ошибок разъезжается в ExportController**
+  - [ ] Заменить `BadRequest(string)` на `BadRequest(new ApiErrorResponse(...))`
+  - [ ] Заменить `NotFound()` на `NotFound(new ApiErrorResponse(...))`
+  - [ ] Проверить все контроллеры на консистентность формата ошибок
+  - **Файл:** `src/nLogMonitor.Api/Controllers/ExportController.cs:78,87`
+
+#### 3.1.4 Тестирование (Важные)
+
+- [ ] **Интеграционные тесты для контроллеров**
+  - [ ] Создать `FilesControllerTests` с `WebApplicationFactory<Program>`
+  - [ ] Создать `UploadControllerTests` — тесты загрузки, валидации расширений, лимита размера
+  - [ ] Создать `ExportControllerTests` — тесты JSON/CSV экспорта, несуществующей сессии
+  - [ ] Создать `RecentControllerTests` — тесты получения и очистки истории
+  - [ ] Добавить тест на path traversal в Upload (security test)
+  - **Файлы:** `tests/nLogMonitor.Api.Tests/Controllers/`
+
+#### 3.1.5 Конфигурация (Низкие)
+
+- [ ] **RequestSizeLimit расходится с FileSettings.MaxFileSizeMB**
+  - [ ] Изменить `[RequestSizeLimit]` на `110 * 1024 * 1024` (110 MiB) — запас на multipart overhead
+  - [ ] Или убрать атрибут и настроить через `FormOptions` в `Program.cs`
+  - [ ] Добавить комментарий объясняющий связь с `FileSettings.MaxFileSizeMB`
+  - **Файлы:** `src/nLogMonitor.Api/Controllers/UploadController.cs:16`, `src/nLogMonitor.Application/Configuration/FileSettings.cs:16`
+
+- [ ] **XML-комментарии не подключены к Swagger**
+  - [ ] Добавить `<GenerateDocumentationFile>true</GenerateDocumentationFile>` в .csproj
+  - [ ] Добавить `<NoWarn>$(NoWarn);1591</NoWarn>` для подавления предупреждений
+  - [ ] Добавить `options.IncludeXmlComments(...)` в конфигурацию Swagger
+  - [ ] Проверить отображение описаний в Swagger UI
+  - **Файлы:** `src/nLogMonitor.Api/nLogMonitor.Api.csproj`, `src/nLogMonitor.Api/Program.cs:32`
+
+**Результат фазы:** Устранены критические уязвимости, улучшена консистентность API, добавлены недостающие тесты.
+
+**Definition of Done (DoD):**
+- [ ] Path traversal: тест с `../../../` проходит (возвращает ошибку)
+- [ ] Desktop-only: `/api/files/open` возвращает 404 в Web-режиме
+- [ ] Экспорт: 100K записей экспортируются без роста памяти > 50MB
+- [ ] Все контроллеры возвращают `ApiErrorResponse` для ошибок
+- [ ] Integration tests: ≥10 новых тестов для Files/Upload/Export/Recent
+- [ ] `DirectoryNotFoundException` → HTTP 404
+- [ ] XML-комментарии отображаются в Swagger UI
+
+---
+
 ### Фаза 4: Frontend базовый (Vue 3)
 - [ ] **4.1 Инициализация проекта**
   - [ ] Создать Vite + Vue 3 + TypeScript проект — `npm create vite@latest client -- --template vue-ts`

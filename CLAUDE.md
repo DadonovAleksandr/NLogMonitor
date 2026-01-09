@@ -6,7 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend (планируется). Работает в двух режимах: Web (Docker) и Desktop (Photino).
 
-**Текущий статус:** Фаза 3 завершена — API Endpoints. Следующая: Фаза 4 (Frontend базовый Vue 3). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 3.1 — Исправления и улучшения после код-ревью. Следующая: Фаза 4 (Frontend базовый Vue 3). Полный план — см. `PLAN.md`.
+
+### Известные проблемы (Фаза 3.1)
+| Критичность | Проблема | Файл |
+|-------------|----------|------|
+| Критическая | Path traversal в Upload (file.FileName без санитизации) | `UploadController.cs:120` |
+| Критическая | Desktop-only эндпоинты доступны в Web-режиме | `FilesController.cs:45` |
+| Важная | Экспорт не потоковый (3 прохода, MemoryStream) | `ExportController.cs:95` |
+| Важная | Guid temp-каталога ≠ sessionId | `UploadController.cs:110` |
+| Средняя | DirectoryNotFoundException → 500 вместо 404 | `ExceptionHandlingMiddleware.cs` |
+| Средняя | stop-watching возвращает 204 без действия | `FilesController.cs:149` |
+| Низкая | RequestSizeLimit ≠ FileSettings.MaxFileSizeMB | `UploadController.cs:16` |
 
 ## Build & Run Commands
 
