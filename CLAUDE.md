@@ -6,32 +6,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (Docker) и Desktop (Photino).
 
+**Текущий статус:** Фаза 1 завершена — базовая инфраструктура проекта (Clean Architecture, решение, проекты).
+
 ## Build & Run Commands
 
 ```bash
-# Docker (рекомендуется)
+# Backend
+dotnet restore                            # Восстановить зависимости
+dotnet build                              # Сборка всего solution
+dotnet run --project src/NLogMonitor.Api  # Запуск API (localhost:5000)
+dotnet watch run --project src/NLogMonitor.Api  # Hot reload
+
+# Tests (NUnit)
+dotnet test                               # Все тесты
+dotnet test tests/NLogMonitor.Application.Tests  # Конкретный проект
+dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест по имени
+
+# Frontend (после создания client/)
+cd client && npm install                  # Установить зависимости
+npm run dev                               # Dev сервер (localhost:5173)
+npm run build                             # Production сборка
+npm run test                              # Frontend тесты
+
+# Docker (после настройки)
 docker-compose up -d --build              # Production запуск
 docker-compose logs -f api                # Просмотр логов API
 docker-compose down                       # Остановка
 
-# Backend (локально)
-dotnet restore                            # Восстановить зависимости
-dotnet build                              # Сборка
-dotnet run --project src/NLogMonitor.Api  # Запуск API (localhost:5000)
-dotnet watch run --project src/NLogMonitor.Api  # Hot reload
-
-# Frontend (локально)
-cd client && npm install                  # Установить зависимости
-npm run dev                               # Dev сервер (localhost:5173)
-npm run build                             # Production сборка
-
-# Desktop (Photino)
+# Desktop Photino (после создания NLogMonitor.Desktop)
 dotnet publish src/NLogMonitor.Desktop -c Release -r win-x64 --self-contained
-
-# Tests
-dotnet test                               # Все backend тесты
-dotnet test tests/NLogMonitor.Application.Tests  # Конкретный проект
-cd client && npm run test                 # Frontend тесты
 ```
 
 ## Architecture
@@ -106,18 +109,20 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - **Testing:** NUnit 3.x, Moq, coverlet (code coverage)
 - **Infrastructure:** Docker, docker-compose, Nginx
 
-## Roadmap (планируемые доработки)
+## Development Status
 
-### Фаза 11: Удалённый доступ по SSH
-**Текущее ограничение:** Работа только с локальными файлами.
-**План:** Подключение к удалённым машинам по SSH (SSH.NET), чтение логов через SFTP, мониторинг через `tail -f`.
+Проект в активной разработке. Полный план — см. `PLAN.md`.
 
-### Фаза 12: Компактный режим (Dashboard)
-**Текущее ограничение:** Отображение одного файла в детальном виде.
-**План:** Dashboard со списком всех отслеживаемых лог-файлов:
-- Краткая статистика: общее кол-во событий, счётчики по уровням
-- Цветовая индикация "здоровья" файла:
-  - 🔴 Красный — есть Error/Fatal
-  - 🟡 Жёлтый — есть Warn
-  - 🟢 Зелёный — только Info/Debug/Trace
-- Быстрый переход к детальному просмотру
+**Завершённые фазы:**
+- [x] Фаза 1: Базовая инфраструктура (Clean Architecture, solution structure)
+
+**Следующие фазы:**
+- [ ] Фаза 2: Парсинг и хранение логов
+- [ ] Фаза 3: REST API
+- [ ] Фаза 4-5: Frontend (Vue 3)
+- [ ] Фаза 6: Оптимизация производительности
+- [ ] Фаза 7: Docker и CI/CD
+
+**Будущие возможности (Фазы 11-12):**
+- Удалённый доступ по SSH (SSH.NET, SFTP, `tail -f`)
+- Dashboard с мониторингом нескольких лог-файлов
