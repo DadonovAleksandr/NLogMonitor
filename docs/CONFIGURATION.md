@@ -42,12 +42,13 @@ nLogMonitor использует иерархическую систему ко�
 
   "FileSettings": {
     "MaxFileSizeMB": 100,
-    "AllowedExtensions": [".log", ".txt"]
+    "AllowedExtensions": [".log", ".txt"],
+    "TempDirectory": "./temp"
   },
 
   "RecentLogsSettings": {
-    "MaxRecentCount": 20,
-    "StorageFileName": "recent-logs.json"
+    "MaxEntries": 20,
+    "CustomStoragePath": null
   },
 
   "Cors": {
@@ -65,12 +66,11 @@ nLogMonitor использует иерархическую систему ко�
       "Default": "Debug",
       "Microsoft.AspNetCore": "Information"
     }
-  },
-  "Api": {
-    "EnableSwagger": true
   }
 }
 ```
+
+> **Примечание:** Swagger автоматически включён в Development окружении (`IsDevelopment()`). Отдельная настройка `Api.EnableSwagger` не используется.
 
 ### appsettings.Production.json
 
@@ -119,6 +119,7 @@ public class SessionSettings
 |----------|-----|--------------|----------|
 | `MaxFileSizeMB` | int | 100 | Максимальный размер файла в мегабайтах для загрузки/открытия. |
 | `AllowedExtensions` | string[] | `[".log", ".txt"]` | Разрешённые расширения файлов логов. |
+| `TempDirectory` | string | `"./temp"` | Директория для временного хранения загруженных файлов. |
 
 ### RecentLogsSettings
 
@@ -126,8 +127,8 @@ public class SessionSettings
 
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
-| `MaxRecentCount` | int | 20 | Максимальное количество записей в истории недавних файлов. |
-| `StorageFileName` | string | `recent-logs.json` | Имя файла для хранения истории. |
+| `MaxEntries` | int | 20 | Максимальное количество записей в истории недавних файлов. |
+| `CustomStoragePath` | string | `null` | Пользовательский путь к файлу хранения. Если не задан, используется `{LocalApplicationData}/nLogMonitor/recent.json`. |
 
 ### Cors
 
@@ -209,7 +210,9 @@ const config = {
 | `SessionSettings__FallbackTtlMinutes` | int | 5 | Fallback TTL сессий (страховка) |
 | `SessionSettings__CleanupIntervalMinutes` | int | 1 | Интервал очистки |
 | `FileSettings__MaxFileSizeMB` | int | 100 | Макс. размер файла в МБ |
-| `RecentLogsSettings__MaxRecentCount` | int | 20 | Макс. количество недавних файлов |
+| `FileSettings__TempDirectory` | string | ./temp | Директория для временных файлов |
+| `RecentLogsSettings__MaxEntries` | int | 20 | Макс. количество недавних файлов |
+| `RecentLogsSettings__CustomStoragePath` | string | null | Путь к файлу истории |
 | `Cors__AllowedOrigins__0` | string | - | CORS origin |
 
 ### Пример docker-compose.yml

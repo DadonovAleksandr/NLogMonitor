@@ -141,10 +141,16 @@ file: <binary>
 {
   "sessionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "fileName": "app.log",
-  "fileSize": 1048576,
+  "filePath": "/app/temp/app.log",
   "totalEntries": 15420,
-  "createdAt": "2024-01-15T10:30:00Z",
-  "expiresAt": "2024-01-15T11:30:00Z"
+  "levelCounts": {
+    "Trace": 1000,
+    "Debug": 5000,
+    "Info": 8000,
+    "Warn": 1000,
+    "Error": 400,
+    "Fatal": 20
+  }
 }
 ```
 
@@ -170,16 +176,18 @@ file: <binary>
 |----------|-----|--------------|----------|
 | `sessionId` | Guid | required | ID сессии |
 | `page` | int | 1 | Номер страницы |
-| `pageSize` | int | 100 | Записей на странице (max: 1000) |
-| `levels` | string[] | all | Уровни логов (Trace,Debug,Info,Warn,Error,Fatal) |
+| `pageSize` | int | 50 | Записей на странице (max: 500) |
+| `minLevel` | string | - | Минимальный уровень (Trace, Debug, Info, Warn, Error, Fatal) |
+| `maxLevel` | string | - | Максимальный уровень (Trace, Debug, Info, Warn, Error, Fatal) |
 | `search` | string | - | Поисковый запрос |
+| `logger` | string | - | Фильтр по имени логгера |
 | `fromDate` | DateTime | - | Начальная дата |
 | `toDate` | DateTime | - | Конечная дата |
 
 **Request:**
 
 ```http
-GET /api/logs/3fa85f64-5717-4562-b3fc-2c963f66afa6?page=1&pageSize=50&levels=Error,Fatal&search=connection HTTP/1.1
+GET /api/logs/3fa85f64-5717-4562-b3fc-2c963f66afa6?page=1&pageSize=50&minLevel=Error&search=connection HTTP/1.1
 ```
 
 **Response:** `200 OK`
@@ -252,13 +260,15 @@ GET /api/logs/3fa85f64-5717-4562-b3fc-2c963f66afa6?page=1&pageSize=50&levels=Err
 | Параметр | Тип | По умолчанию | Описание |
 |----------|-----|--------------|----------|
 | `format` | string | json | Формат: `json` или `csv` |
-| `levels` | string[] | all | Фильтр по уровням |
+| `minLevel` | string | - | Минимальный уровень (Trace, Debug, Info, Warn, Error, Fatal) |
+| `maxLevel` | string | - | Максимальный уровень (Trace, Debug, Info, Warn, Error, Fatal) |
 | `search` | string | - | Поисковый запрос |
+| `logger` | string | - | Фильтр по имени логгера |
 
 **Request:**
 
 ```http
-GET /api/export/3fa85f64-5717-4562-b3fc-2c963f66afa6?format=csv&levels=Error,Fatal HTTP/1.1
+GET /api/export/3fa85f64-5717-4562-b3fc-2c963f66afa6?format=csv&minLevel=Error HTTP/1.1
 ```
 
 **Response:** `200 OK`
@@ -390,16 +400,15 @@ interface PagedResult<T> {
 }
 ```
 
-### UploadResponse
+### OpenFileResultDto
 
 ```typescript
-interface UploadResponse {
+interface OpenFileResultDto {
   sessionId: string;
   fileName: string;
-  fileSize: number;
+  filePath: string;
   totalEntries: number;
-  createdAt: string;
-  expiresAt: string;
+  levelCounts: Record<LogLevel, number>;
 }
 ```
 
@@ -455,7 +464,7 @@ curl -X POST http://localhost:5000/api/upload \
   -F "file=@/path/to/app.log"
 
 # Получение логов
-curl "http://localhost:5000/api/logs/SESSION_ID?page=1&pageSize=50&levels=Error,Fatal"
+curl "http://localhost:5000/api/logs/SESSION_ID?page=1&pageSize=50&minLevel=Error"
 
 # Экспорт в CSV
 curl -o logs.csv "http://localhost:5000/api/export/SESSION_ID?format=csv"
@@ -476,7 +485,7 @@ const { sessionId } = await response.json();
 
 // Получение логов
 const logsResponse = await fetch(
-  `/api/logs/${sessionId}?page=1&pageSize=100&levels=Error,Fatal`
+  `/api/logs/${sessionId}?page=1&pageSize=50&minLevel=Error`
 );
 const { items, totalCount } = await logsResponse.json();
 ```
@@ -501,7 +510,7 @@ const upload = async (file: File) => {
 // Получение логов
 const getLogs = async (
   sessionId: string,
-  params: { page: number; pageSize: number; levels?: LogLevel[] }
+  params: { page: number; pageSize: number; minLevel?: LogLevel; maxLevel?: LogLevel }
 ) => {
   const { data } = await api.get<PagedResult<LogEntry>>(
     `/logs/${sessionId}`,
