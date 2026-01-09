@@ -62,11 +62,11 @@
 | **Экспорт** | JSON и CSV форматы с потоковой генерацией (Utf8JsonWriter) |
 | **DesktopOnlyAttribute** | Защита Desktop-only эндпоинтов в Web-режиме |
 | **Path traversal защита** | Санитизация имён файлов при Upload |
-| **Unit/Integration тесты** | 214 тестов (NUnit) — парсер, хранилище, сервисы, контроллеры |
+| **Unit/Integration тесты** | 240 тестов (NUnit) — парсер, хранилище, сервисы, контроллеры |
 
 ```bash
 # Проверка работоспособности
-dotnet test                       # 214 тестов (106 + 28 + 80)
+dotnet test                       # 240 тестов (113 + 28 + 99)
 curl http://localhost:5000/health  # {"status":"healthy",...}
 ```
 
