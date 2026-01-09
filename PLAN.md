@@ -360,11 +360,11 @@ nLogMonitor/
 **Результат фазы:** Запускаемое API с Swagger UI, базовая структура проекта. ✅ ЗАВЕРШЕНО
 
 **Definition of Done (DoD):**
-- [ ] `dotnet build` без ошибок и warnings
-- [ ] `dotnet run --project src/nLogMonitor.Api` запускает сервер
-- [ ] GET /health возвращает 200 OK
-- [ ] Swagger UI доступен на /swagger
-- [ ] Все entities и interfaces созданы согласно списку
+- [x] `dotnet build` без ошибок и warnings
+- [x] `dotnet run --project src/nLogMonitor.Api` запускает сервер
+- [x] GET /health возвращает 200 OK
+- [x] Swagger UI доступен на /swagger
+- [x] Все entities и interfaces созданы согласно списку
 
 ---
 
