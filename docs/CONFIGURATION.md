@@ -34,26 +34,23 @@ nLogMonitor использует иерархическую систему ко�
   },
   "AllowedHosts": "*",
 
-  "SessionStorage": {
-    "DefaultTtlMinutes": 60,
-    "MaxFileSizeMb": 100,
-    "CleanupIntervalMinutes": 15
+  "SessionSettings": {
+    "FallbackTtlMinutes": 5,
+    "CleanupIntervalMinutes": 1
   },
 
-  "Parser": {
-    "DefaultPattern": "${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid}",
-    "MaxLineLength": 10000,
-    "EnableMultilineMessages": true
+  "FileSettings": {
+    "MaxFileSizeMB": 100,
+    "AllowedExtensions": [".log", ".txt"]
   },
 
-  "Api": {
-    "DefaultPageSize": 100,
-    "MaxPageSize": 1000,
-    "EnableSwagger": true
+  "RecentLogsSettings": {
+    "MaxRecentCount": 20,
+    "StorageFileName": "recent-logs.json"
   },
 
   "Cors": {
-    "AllowedOrigins": ["http://localhost:5173"]
+    "AllowedOrigins": ["http://localhost:5173", "http://localhost:3000"]
   }
 }
 ```
@@ -83,11 +80,8 @@ nLogMonitor использует иерархическую систему ко�
       "Default": "Warning"
     }
   },
-  "Api": {
-    "EnableSwagger": false
-  },
-  "SessionStorage": {
-    "DefaultTtlMinutes": 120
+  "SessionSettings": {
+    "FallbackTtlMinutes": 10
   }
 }
 ```
@@ -161,13 +155,10 @@ const config = {
 |------------|-----|--------------|----------|
 | `ASPNETCORE_ENVIRONMENT` | string | Production | Окружение (Development, Production) |
 | `ASPNETCORE_URLS` | string | http://+:5000 | URL для прослушивания |
-| `SessionStorage__DefaultTtlMinutes` | int | 60 | TTL сессий в минутах |
-| `SessionStorage__MaxFileSizeMb` | int | 100 | Макс. размер файла в МБ |
-| `SessionStorage__CleanupIntervalMinutes` | int | 15 | Интервал очистки |
-| `Parser__EnableMultilineMessages` | bool | true | Поддержка многострочных сообщений |
-| `Api__DefaultPageSize` | int | 100 | Размер страницы по умолчанию |
-| `Api__MaxPageSize` | int | 1000 | Максимальный размер страницы |
-| `Api__EnableSwagger` | bool | true | Включить Swagger UI |
+| `SessionSettings__FallbackTtlMinutes` | int | 5 | Fallback TTL сессий (страховка) |
+| `SessionSettings__CleanupIntervalMinutes` | int | 1 | Интервал очистки |
+| `FileSettings__MaxFileSizeMB` | int | 100 | Макс. размер файла в МБ |
+| `RecentLogsSettings__MaxRecentCount` | int | 20 | Макс. количество недавних файлов |
 | `Cors__AllowedOrigins__0` | string | - | CORS origin |
 
 ### Пример docker-compose.yml
@@ -177,9 +168,8 @@ services:
   app:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - SessionStorage__DefaultTtlMinutes=120
-      - SessionStorage__MaxFileSizeMb=200
-      - Api__EnableSwagger=false
+      - SessionSettings__FallbackTtlMinutes=10
+      - FileSettings__MaxFileSizeMB=200
       - Cors__AllowedOrigins__0=https://myapp.com
 ```
 
@@ -257,32 +247,18 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 
 ```json
 {
-  "SessionStorage": {
-    "MaxFileSizeMb": 200,
-    "DefaultTtlMinutes": 30
+  "SessionSettings": {
+    "FallbackTtlMinutes": 10
   },
-  "Parser": {
-    "MaxLineLength": 50000,
-    "BufferSize": 65536
-  },
-  "Api": {
-    "DefaultPageSize": 50,
-    "MaxPageSize": 500
+  "FileSettings": {
+    "MaxFileSizeMB": 200
   }
 }
 ```
 
 ### Memory Limits
 
-```json
-{
-  "MemorySettings": {
-    "MaxConcurrentSessions": 10,
-    "MaxEntriesPerSession": 1000000,
-    "GCThresholdMb": 500
-  }
-}
-```
+> Примечание: Память управляется через TTL сессий. Основной механизм удаления — через SignalR disconnect (см. Фаза 6 в PLAN.md). FallbackTtlMinutes используется как страховка.
 
 ---
 

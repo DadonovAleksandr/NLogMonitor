@@ -265,8 +265,8 @@ deploy:
 |------------|--------------|----------|
 | `ASPNETCORE_ENVIRONMENT` | `Production` | Окружение |
 | `ASPNETCORE_URLS` | `http://+:5000` | URL для прослушивания |
-| `SessionStorage__DefaultTtlMinutes` | `60` | TTL сессий (мин) |
-| `SessionStorage__MaxFileSizeMb` | `100` | Макс. размер файла |
+| `SessionSettings__FallbackTtlMinutes` | `5` | Fallback TTL сессий (страховка) |
+| `FileSettings__MaxFileSizeMB` | `100` | Макс. размер файла |
 | `Logging__LogLevel__Default` | `Information` | Уровень логов |
 
 ### Пример .env файла
@@ -275,8 +275,8 @@ deploy:
 # .env
 ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://+:5000
-SessionStorage__DefaultTtlMinutes=120
-SessionStorage__MaxFileSizeMb=200
+SessionSettings__FallbackTtlMinutes=10
+FileSettings__MaxFileSizeMB=200
 ```
 
 ---

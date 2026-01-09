@@ -55,13 +55,13 @@ nLogMonitor построен на принципах **Clean Architecture**, о�
 // Entities
 public class LogEntry
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
     public DateTime Timestamp { get; set; }
     public LogLevel Level { get; set; }
-    public required string Message { get; set; }
-    public required string Logger { get; set; }
-    public int? ProcessId { get; set; }
-    public int? ThreadId { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Logger { get; set; } = string.Empty;
+    public int ProcessId { get; set; }
+    public int ThreadId { get; set; }
     public string? Exception { get; set; }
 }
 
@@ -129,7 +129,10 @@ public interface IFileWatcherService
 
 public interface ILogExporter
 {
-    Task<byte[]> ExportAsync(IEnumerable<LogEntry> entries, string format, CancellationToken ct = default);
+    string Format { get; }
+    string ContentType { get; }
+    string FileExtension { get; }
+    Task<Stream> ExportAsync(IEnumerable<LogEntry> entries, CancellationToken cancellationToken = default);
 }
 
 public interface IRecentLogsRepository

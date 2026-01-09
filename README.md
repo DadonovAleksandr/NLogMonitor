@@ -1,7 +1,7 @@
 # 📊 nLogMonitor
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://react.dev/)
+[![Vue](https://img.shields.io/badge/Vue-3.x-4FC08D?logo=vuedotjs)](https://vuejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 <!-- Добавьте после настройки CI/CD:
@@ -177,7 +177,7 @@ GET /api/export/{sessionId}?format=csv
 
 | Технология | Версия | Назначение |
 |------------|--------|------------|
-| ASP.NET Core | 9.0 | Web API |
+| ASP.NET Core | 10.0 | Web API |
 | FluentValidation | 11.x | Валидация |
 | NLog | 5.x | Логирование |
 | Swagger | 6.x | API документация |
@@ -186,13 +186,13 @@ GET /api/export/{sessionId}?format=csv
 
 | Технология | Версия | Назначение |
 |------------|--------|------------|
-| React | 18.x | UI фреймворк |
+| Vue | 3.x | UI фреймворк |
 | TypeScript | 5.x | Типизация |
 | Vite | 5.x | Сборщик |
-| Zustand | 4.x | State management |
-| TanStack Table | 8.x | Таблица |
+| Pinia | 2.x | State management |
+| TanStack Table Vue | 8.x | Таблица |
 | Tailwind CSS | 3.x | Стилизация |
-| shadcn/ui | latest | UI компоненты |
+| shadcn-vue | latest | UI компоненты |
 
 ---
 

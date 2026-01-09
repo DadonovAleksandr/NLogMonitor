@@ -365,14 +365,14 @@ Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
 
 ```typescript
 interface LogEntry {
-  id: number;
+  id: number;                 // long in C#
   timestamp: string;          // ISO 8601
   level: LogLevel;
   message: string;
   logger: string;
-  processId?: number;
-  threadId?: number;
-  exception?: string;
+  processId: number;
+  threadId: number;
+  exception?: string;         // optional
 }
 
 type LogLevel = 'Trace' | 'Debug' | 'Info' | 'Warn' | 'Error' | 'Fatal';
