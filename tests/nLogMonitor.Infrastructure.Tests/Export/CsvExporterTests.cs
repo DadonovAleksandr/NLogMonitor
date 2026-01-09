@@ -250,10 +250,9 @@ public class CsvExporterTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        // Act & Assert - TaskCanceledException inherits from OperationCanceledException
-        var ex = Assert.ThrowsAsync<TaskCanceledException>(async () =>
+        // Act & Assert - OperationCanceledException (или наследник TaskCanceledException)
+        Assert.ThrowsAsync<OperationCanceledException>(async () =>
             await _exporter.ExportToStreamAsync(entries, stream, cts.Token));
-        Assert.That(ex, Is.InstanceOf<OperationCanceledException>());
     }
 
     [Test]

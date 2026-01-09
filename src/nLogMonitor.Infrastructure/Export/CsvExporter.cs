@@ -16,14 +16,14 @@ public sealed class CsvExporter : ILogExporter
 
     private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss.ffff";
     private const string Header = "Id,Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception";
-    private static readonly byte[] Utf8Bom = [0xEF, 0xBB, 0xBF];
+
+    // UTF-8 encoding with BOM for Excel compatibility
+    private static readonly Encoding Utf8WithBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
     public async Task ExportToStreamAsync(IEnumerable<LogEntry> entries, Stream outputStream, CancellationToken cancellationToken = default)
     {
-        // Write UTF-8 BOM
-        await outputStream.WriteAsync(Utf8Bom, cancellationToken).ConfigureAwait(false);
-
-        await using var writer = new StreamWriter(outputStream, Encoding.UTF8, bufferSize: 65536, leaveOpen: true);
+        // StreamWriter с UTF8Encoding(true) автоматически запишет BOM при первой записи
+        await using var writer = new StreamWriter(outputStream, Utf8WithBom, bufferSize: 65536, leaveOpen: true);
 
         // Write header
         await writer.WriteLineAsync(Header).ConfigureAwait(false);

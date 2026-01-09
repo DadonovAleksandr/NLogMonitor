@@ -155,12 +155,14 @@ public class FilesController : ControllerBase
     /// <remarks>
     /// This endpoint is planned for Phase 6 implementation.
     /// Currently returns 501 Not Implemented.
+    /// Desktop-only: file watching requires local filesystem access.
     /// </remarks>
     /// <param name="sessionId">Session identifier.</param>
     /// <returns>501 Not Implemented until Phase 6.</returns>
     /// <response code="501">File watching functionality not yet implemented.</response>
-    /// <response code="404">Session not found.</response>
+    /// <response code="404">Session not found or endpoint not available in Web mode.</response>
     [HttpPost("{sessionId:guid}/stop-watching")]
+    [DesktopOnly]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status501NotImplemented)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> StopWatching(Guid sessionId)

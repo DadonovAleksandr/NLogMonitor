@@ -183,6 +183,17 @@ public class UploadController : ControllerBase
         {
             _logger.LogError(ex, "Error processing uploaded file: {FileName}", file.FileName);
 
+            // Cleanup session if it was created (prevents "orphan" sessions pointing to deleted files)
+            try
+            {
+                await _sessionStorage.DeleteAsync(sessionId);
+                _logger.LogDebug("Cleaned up orphan session: {SessionId}", sessionId);
+            }
+            catch (Exception sessionCleanupEx)
+            {
+                _logger.LogWarning(sessionCleanupEx, "Failed to cleanup session: {SessionId}", sessionId);
+            }
+
             // Cleanup temp directory on error
             try
             {

@@ -81,7 +81,7 @@ public class ExceptionHandlingMiddleware
             DirectoryNotFoundException ex => (
                 HttpStatusCode.NotFound,
                 "NotFound",
-                $"Directory not found: {ex.Message}"
+                ex.Message // Message уже содержит путь: "Directory not found: /path"
             ),
 
             NoLogFilesFoundException ex => (
