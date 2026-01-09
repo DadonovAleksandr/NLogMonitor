@@ -159,9 +159,6 @@ npm run dev
 ```bash
 # Windows (CMD или PowerShell)
 start-dev.bat      # Запуск backend + frontend с hot reload
-
-# Linux/macOS
-./start-dev.sh     # Запуск backend + frontend с hot reload
 ```
 
 </details>
@@ -170,15 +167,14 @@ start-dev.bat      # Запуск backend + frontend с hot reload
 <summary><b>📦 Production сборка</b></summary>
 
 ```bash
-# Windows
-build.bat
+# Backend
+dotnet publish src/nLogMonitor.Api -c Release -o publish
 
-# Linux/macOS
-./build.sh
+# Frontend
+cd client
+npm run build
 
-# Запуск (статика frontend + API на одном порту)
-cd publish
-nLogMonitor.Api.exe    # http://localhost:5000
+# Скопировать dist в wwwroot для объединённой сборки
 ```
 
 </details>
@@ -270,10 +266,10 @@ GET /api/export/{sessionId}?format=csv
 
 | Технология | Версия | Назначение |
 |------------|--------|------------|
-| Vue | 3.x | UI фреймворк |
-| TypeScript | 5.x | Типизация |
-| Vite | 5.x | Сборщик |
-| Pinia | 2.x | State management |
+| Vue | 3.5 | UI фреймворк |
+| TypeScript | 5.9 | Типизация |
+| Vite | 7.x | Сборщик |
+| Pinia | 3.x | State management |
 | TanStack Table Vue | 8.x | Таблица |
 | Tailwind CSS | 3.x | Стилизация |
 | shadcn-vue | latest | UI компоненты |
@@ -300,7 +296,6 @@ GET /api/export/{sessionId}?format=csv
 - [ ] Удалённый доступ по SSH (Фаза 11)
 - [ ] Компактный режим Dashboard (Фаза 12)
 - [ ] Поддержка нескольких форматов логов (Serilog, log4net)
-- [ ] Темная тема
 - [ ] Графики и статистика
 
 ---

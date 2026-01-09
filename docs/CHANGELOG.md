@@ -117,15 +117,15 @@
 
 ## [0.5.0] - YYYY-MM-DD
 
-> 🎯 **Фаза 5: UI компоненты**
+> 🎯 **Фаза 5: Расширенные UI компоненты**
 
 ### 🚀 Добавлено
-- [ ] FileUpload компонент (drag & drop)
-- [ ] LogTable с TanStack Table
-- [ ] FilterPanel (фильтры по уровням)
-- [ ] SearchBar с debounce
-- [ ] Pagination компонент
-- [ ] ExportButton (JSON/CSV)
+- [ ] FilterPanel (фильтры по уровням с счётчиками)
+- [ ] SearchBar с debounce 300ms
+- [ ] Pagination компонент (Previous/Next, выбор размера страницы)
+- [ ] ExportButton (dropdown с выбором JSON/CSV)
+- [ ] RecentFiles компонент (история открытых файлов)
+- [ ] Loading spinner и error toast
 - [ ] Responsive дизайн
 
 ---

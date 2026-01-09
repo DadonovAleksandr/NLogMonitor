@@ -196,7 +196,9 @@ export default defineConfig({
 });
 ```
 
-### .env файлы
+### .env файлы (опционально)
+
+> **Примечание:** В текущей реализации `.env` файлы не используются. API URL настраивается через proxy в `vite.config.ts`. При необходимости можно добавить:
 
 ```bash
 # .env (общие)
@@ -211,7 +213,7 @@ VITE_API_URL=
 VITE_ENABLE_DEVTOOLS=false
 ```
 
-### Использование в коде
+### Использование в коде (если .env настроены)
 
 ```typescript
 const config = {

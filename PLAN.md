@@ -129,10 +129,10 @@ fileName="${var:logDirectory}/${shortdate}.log"
 ### Frontend (Vue 3)
 | Компонент | Технология | Версия |
 |-----------|------------|--------|
-| Framework | Vue | 3.x |
-| Language | TypeScript | 5.x |
-| Build Tool | Vite | 5.x |
-| State | Pinia | 2.x |
+| Framework | Vue | 3.5 |
+| Language | TypeScript | 5.9 |
+| Build Tool | Vite | 7.x |
+| State | Pinia | 3.x |
 | UI Library | shadcn-vue | latest |
 | HTTP Client | Axios | 1.x |
 | Table | TanStack Table Vue | 8.x |
@@ -310,9 +310,6 @@ nLogMonitor/
 │   └── nLogMonitor.Api.Tests/
 │
 ├── start-dev.bat                 # Windows: запуск dev mode
-├── start-dev.sh                  # Linux/macOS: запуск dev mode
-├── build.bat                     # Windows: полная сборка
-├── build.sh                      # Linux/macOS: полная сборка
 ├── nLogMonitor.sln
 ├── PLAN.md
 ├── CLAUDE.md
@@ -902,9 +899,6 @@ nLogMonitor/
 # Windows (CMD или PowerShell)
 start-dev.bat                # Запуск backend + frontend с hot reload
 
-# Linux/macOS Bash
-./start-dev.sh               # Запуск backend + frontend с hot reload
-
 # Или вручную в двух терминалах:
 # Терминал 1 (backend):
 dotnet watch run --project src/nLogMonitor.Api
@@ -915,13 +909,12 @@ cd client && npm run dev
 
 ### Команды запуска (Production)
 ```bash
-# Сборка (Windows)
-build.bat                    # Полная сборка: frontend + backend → publish/
+# Сборка
+dotnet publish src/nLogMonitor.Api -c Release -o publish
+cd client && npm run build
+# Скопировать client/dist → publish/wwwroot
 
-# Сборка (Linux/macOS)
-./build.sh                   # Аналогичный скрипт для Unix
-
-# Запуск (после сборки)
+# Запуск
 cd publish
 nLogMonitor.Api.exe          # Windows
 ./nLogMonitor.Api            # Linux/macOS
@@ -930,10 +923,7 @@ nLogMonitor.Api.exe          # Windows
 ### Структура скриптов
 ```
 nLogMonitor/
-├── start-dev.bat           # Windows: запуск dev mode
-├── start-dev.sh            # Linux/macOS: запуск dev mode
-├── build.bat               # Windows: полная сборка
-└── build.sh                # Linux/macOS: полная сборка
+└── start-dev.bat           # Windows: запуск dev mode (backend + frontend)
 ```
 
 ---

@@ -36,7 +36,6 @@ nLogMonitor — кроссплатформенное приложение для
 ```bash
 # Быстрый запуск (Development)
 start-dev.bat                             # Windows: backend + frontend с hot reload
-./start-dev.sh                            # Linux/macOS: backend + frontend с hot reload
 
 # Backend
 dotnet build                              # Сборка solution
@@ -59,7 +58,6 @@ cd client
 npm install                           # Установка зависимостей
 npm run dev                           # Dev server (http://localhost:5173)
 npm run build                         # Production build
-npm run lint                          # Проверка кода
 
 # Проверка работы API
 curl http://localhost:5000/health         # Health check → {"status":"healthy","timestamp":"..."}
@@ -157,7 +155,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 ## Tech Stack
 
 - **Backend:** .NET 10, ASP.NET Core, SignalR, FluentValidation, NLog
-- **Frontend:** Vue 3, TypeScript 5, Vite, Pinia, TanStack Table, Tailwind CSS, shadcn-vue, lucide-vue-next
+- **Frontend:** Vue 3.5, TypeScript 5.9, Vite 7, Pinia 3, TanStack Table 8, Tailwind CSS 3, shadcn-vue, lucide-vue-next
 - **Desktop (план):** Photino.NET
 - **Testing:** NUnit 3.x, Moq, coverlet
 

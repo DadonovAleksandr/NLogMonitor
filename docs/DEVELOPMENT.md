@@ -169,11 +169,8 @@ nLogMonitor/
 | Команда | Описание |
 |---------|----------|
 | `npm run dev` | Dev-сервер с HMR |
-| `npm run build` | Production сборка |
+| `npm run build` | Production сборка (включает vue-tsc проверку типов) |
 | `npm run preview` | Превью production сборки |
-| `npm run lint` | ESLint проверка |
-| `npm run lint:fix` | ESLint с автоисправлением |
-| `npm run type-check` | TypeScript проверка |
 
 ---
 
@@ -259,18 +256,7 @@ tests/
 
 ### Frontend тесты
 
-```bash
-cd client
-
-# Unit тесты
-npm run test
-
-# Watch mode
-npm run test:watch
-
-# Coverage
-npm run test:coverage
-```
+> **Примечание:** Frontend тестирование планируется в Фазе 10 (E2E тесты с Playwright).
 
 ---
 
