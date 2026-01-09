@@ -102,8 +102,8 @@ fileName="${var:logDirectory}/${shortdate}.log"
 │   Entities: LogEntry, LogSession, LogLevel, RecentLogEntry      │
 ├─────────────────────────────────────────────────────────────────┤
 │                    Infrastructure Layer                          │
-│   NLogParser, InMemorySessionStorage, FileWatcherService        │
-│   JsonExporter, CsvExporter, RecentLogsFileRepository           │
+│   NLogParser, InMemorySessionStorage, DirectoryScanner          │
+│   FileWatcherService, JsonExporter, CsvExporter                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -212,7 +212,8 @@ nLogMonitor/
 │   │   │   ├── ISessionStorage.cs
 │   │   │   ├── IFileWatcherService.cs
 │   │   │   ├── ILogExporter.cs
-│   │   │   └── IRecentLogsRepository.cs
+│   │   │   ├── IRecentLogsRepository.cs
+│   │   │   └── IDirectoryScanner.cs
 │   │   ├── DTOs/
 │   │   │   ├── LogEntryDto.cs
 │   │   │   ├── FilterOptionsDto.cs
@@ -224,6 +225,10 @@ nLogMonitor/
 │   │   │   ├── LogService.cs
 │   │   │   ├── ExportService.cs
 │   │   │   └── RecentLogsService.cs
+│   │   ├── Configuration/
+│   │   │   └── SessionSettings.cs
+│   │   ├── Exceptions/
+│   │   │   └── NoLogFilesFoundException.cs
 │   │   └── nLogMonitor.Application.csproj
 │   │
 │   ├── nLogMonitor.Infrastructure/   # Infrastructure Layer
@@ -395,7 +400,7 @@ nLogMonitor/
 - [x] **2.4 Application Service (серверная фильтрация)**
   - [x] Реализовать LogService.OpenFileAsync — открытие файла: чтение → парсинг → создание сессии → сохранение
   - [x] Реализовать LogService.GetLogsAsync — **серверная** фильтрация, поиск и пагинация через LINQ
-  - [x] Построить индекс по Level для быстрой фильтрации — Dictionary<LogLevel, List<int>> (индексы записей)
+  - [ ] Построить индекс по Level для быстрой фильтрации — Dictionary<LogLevel, List<int>> (перенесено в оптимизацию, LINQ достаточно для <1M записей)
   - [x] Полнотекстовый поиск через Contains (case-insensitive) — на сервере, не на клиенте
   - [x] Пагинация через Skip/Take — клиент получает только запрошенную страницу
 

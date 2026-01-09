@@ -17,12 +17,12 @@ public sealed partial class NLogParser : ILogParser
     private readonly ILogger<NLogParser>? _logger;
 
     // Regex for detecting start of a new log entry (date pattern)
-    // Format: 2024-01-15 10:30:45.1234
-    [GeneratedRegex(@"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4}", RegexOptions.Compiled)]
+    // Format: 2024-01-15 10:30:45.1234 (supports .f to .ffff - 1 to 4 digits after decimal)
+    [GeneratedRegex(@"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,4}", RegexOptions.Compiled)]
     private static partial Regex DateStartRegex();
 
     // Fallback regex for full line parsing
-    [GeneratedRegex(@"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4})\|(\w+)\|(.+)\|([^|]+)\|(\d+)\|(\d+)$", RegexOptions.Compiled | RegexOptions.Singleline)]
+    [GeneratedRegex(@"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,4})\|(\w+)\|(.+)\|([^|]+)\|(\d+)\|(\d+)$", RegexOptions.Compiled | RegexOptions.Singleline)]
     private static partial Regex FullLineRegex();
 
     private const char Separator = '|';
@@ -323,8 +323,8 @@ public sealed partial class NLogParser : ILogParser
     {
         timestamp = default;
 
-        // Expected format: yyyy-MM-dd HH:mm:ss.ffff (length = 23 or 24 with timezone info)
-        if (span.Length < 23)
+        // Expected format: yyyy-MM-dd HH:mm:ss.f to yyyy-MM-dd HH:mm:ss.ffff (length 20-24)
+        if (span.Length < 20)
             return false;
 
         // Use standard parsing - .NET handles this format well
