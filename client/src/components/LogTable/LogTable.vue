@@ -144,8 +144,10 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
     </div>
 
     <!-- Data Table -->
-    <div v-else-if="showData" class="flex h-full flex-col overflow-hidden">
-      <Table class="log-table">
+    <div v-else-if="showData" class="flex h-full min-h-0 flex-col">
+      <!-- Scrollable container with proper height constraints -->
+      <div class="flex-1 overflow-auto min-h-0">
+        <Table class="log-table">
         <TableHeader class="sticky top-0 z-20 bg-zinc-900/95 backdrop-blur-sm">
           <TableRow
             v-for="headerGroup in table.getHeaderGroups()"
@@ -166,7 +168,7 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody class="overflow-auto">
+        <TableBody>
           <TableRow
             v-for="row in table.getRowModel().rows"
             :key="row.id"
@@ -206,7 +208,8 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
             </TableCell>
           </TableRow>
         </TableBody>
-      </Table>
+        </Table>
+      </div>
     </div>
   </div>
 </template>

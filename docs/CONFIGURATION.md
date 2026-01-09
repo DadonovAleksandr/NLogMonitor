@@ -196,32 +196,34 @@ export default defineConfig({
 });
 ```
 
-### .env файлы (опционально)
+### .env файлы
 
-> **Примечание:** В текущей реализации `.env` файлы не используются. API URL настраивается через proxy в `vite.config.ts`. При необходимости можно добавить:
+Frontend использует переменную `VITE_API_URL` для определения базового URL API.
 
 ```bash
-# .env (общие)
-VITE_APP_TITLE=nLogMonitor
-
-# .env.development
+# .env.development (по умолчанию)
 VITE_API_URL=http://localhost:5000
-VITE_ENABLE_DEVTOOLS=true
 
-# .env.production
-VITE_API_URL=
-VITE_ENABLE_DEVTOOLS=false
+# .env.production (для production сборки)
+VITE_API_URL=https://api.example.com
 ```
 
-### Использование в коде (если .env настроены)
+### Использование в коде
 
 ```typescript
-const config = {
-  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000',
-  appTitle: import.meta.env.VITE_APP_TITLE,
-  enableDevtools: import.meta.env.VITE_ENABLE_DEVTOOLS === 'true',
-};
+// src/api/client.ts
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+export const apiClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
 ```
+
+> **Примечание:** В `vite.config.ts` также настроен proxy для `/api` → `localhost:5000`. Однако код использует абсолютный `baseURL`, поэтому запросы идут напрямую на указанный адрес, минуя proxy. Proxy полезен при использовании относительных путей (`baseURL: ''`).
 
 ---
 
