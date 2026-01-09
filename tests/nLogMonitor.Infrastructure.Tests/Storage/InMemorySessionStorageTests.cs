@@ -346,6 +346,157 @@ public class InMemorySessionStorageTests
         });
     }
 
+    // === Cleanup callbacks ===
+
+    [Test]
+    public async Task DeleteAsync_WithRegisteredCallback_CallsCallback()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+
+        var callbackCalled = false;
+        await storage.RegisterCleanupCallbackAsync(session.Id, () =>
+        {
+            callbackCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await storage.DeleteAsync(session.Id);
+
+        // Assert
+        Assert.That(callbackCalled, Is.True, "Cleanup callback should be called on DeleteAsync");
+    }
+
+    [Test]
+    public async Task DeleteAsync_WithoutRegisteredCallback_DoesNotThrow()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+        // Не регистрируем callback
+
+        // Act & Assert - не должно выбрасывать исключение
+        Assert.DoesNotThrowAsync(async () => await storage.DeleteAsync(session.Id));
+    }
+
+    [Test]
+    public async Task DeleteAsync_CallbackThrowsException_LogsWarningAndContinues()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+
+        await storage.RegisterCleanupCallbackAsync(session.Id, () =>
+        {
+            throw new InvalidOperationException("Test exception");
+        });
+
+        // Act - должно логировать предупреждение, но не выбрасывать исключение
+        Assert.DoesNotThrowAsync(async () => await storage.DeleteAsync(session.Id));
+
+        // Assert - сессия должна быть удалена
+        var retrieved = await storage.GetAsync(session.Id);
+        Assert.That(retrieved, Is.Null, "Session should be deleted even if callback fails");
+    }
+
+    [Test]
+    public async Task RegisterCleanupCallbackAsync_OverwritesPreviousCallback()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+
+        var firstCallbackCalled = false;
+        var secondCallbackCalled = false;
+
+        await storage.RegisterCleanupCallbackAsync(session.Id, () =>
+        {
+            firstCallbackCalled = true;
+            return Task.CompletedTask;
+        });
+
+        await storage.RegisterCleanupCallbackAsync(session.Id, () =>
+        {
+            secondCallbackCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await storage.DeleteAsync(session.Id);
+
+        // Assert - только второй callback должен быть вызван
+        Assert.That(firstCallbackCalled, Is.False, "First callback should not be called");
+        Assert.That(secondCallbackCalled, Is.True, "Second (overwriting) callback should be called");
+    }
+
+    [Test]
+    public async Task RegisterCleanupCallbackAsync_ForNonExistentSession_DoesNotThrow()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var nonExistentSessionId = Guid.NewGuid();
+
+        // Act & Assert - регистрация callback для несуществующей сессии не должна выбрасывать
+        Assert.DoesNotThrowAsync(async () =>
+            await storage.RegisterCleanupCallbackAsync(nonExistentSessionId, () => Task.CompletedTask));
+    }
+
+    [Test]
+    public async Task UnbindConnectionAsync_WithRegisteredCallback_CallsCallback()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+        var connectionId = "test-connection-cleanup";
+        await storage.BindConnectionAsync(connectionId, session.Id);
+
+        var callbackCalled = false;
+        await storage.RegisterCleanupCallbackAsync(session.Id, () =>
+        {
+            callbackCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await storage.UnbindConnectionAsync(connectionId);
+
+        // Assert
+        Assert.That(callbackCalled, Is.True, "Cleanup callback should be called when unbinding connection");
+    }
+
+    [Test]
+    public async Task DeleteAsync_CallbackIsRemovedAfterExecution()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+
+        var callCount = 0;
+        await storage.RegisterCleanupCallbackAsync(session.Id, () =>
+        {
+            callCount++;
+            return Task.CompletedTask;
+        });
+
+        // Act - удаляем сессию
+        await storage.DeleteAsync(session.Id);
+
+        // Пересохраняем сессию и удаляем снова (callback не должен вызваться)
+        await storage.SaveAsync(session);
+        await storage.DeleteAsync(session.Id);
+
+        // Assert - callback должен быть вызван только один раз
+        Assert.That(callCount, Is.EqualTo(1), "Callback should be called only once and removed after execution");
+    }
+
     // === Helper methods ===
 
     private InMemorySessionStorage CreateStorage()

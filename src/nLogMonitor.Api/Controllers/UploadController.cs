@@ -164,9 +164,10 @@ public class UploadController : ControllerBase
                 OpenedAt = DateTime.UtcNow
             });
 
-            // TODO: Phase 6 - Register cleanup callback in session storage
-            // to delete temp files when session is deleted.
-            // Example: _sessionStorage.RegisterCleanupCallback(createdSessionId, () => DeleteTempDirectory(tempDirectory));
+            // Register cleanup callback to delete temp directory when session is deleted
+            await _sessionStorage.RegisterCleanupCallbackAsync(
+                createdSessionId,
+                () => DeleteTempDirectoryAsync(tempDirectory));
 
             var result = MapToOpenFileResult(session);
 
@@ -211,5 +212,31 @@ public class UploadController : ControllerBase
                 kvp => kvp.Key.ToString(),
                 kvp => kvp.Value)
         };
+    }
+
+    /// <summary>
+    /// Удаляет временную директорию с загруженными файлами.
+    /// </summary>
+    /// <param name="tempDirectory">Путь к временной директории.</param>
+    private Task DeleteTempDirectoryAsync(string tempDirectory)
+    {
+        try
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+                _logger.LogInformation("Temp directory deleted: {TempDirectory}", tempDirectory);
+            }
+            else
+            {
+                _logger.LogDebug("Temp directory not found for deletion: {TempDirectory}", tempDirectory);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete temp directory: {TempDirectory}", tempDirectory);
+        }
+
+        return Task.CompletedTask;
     }
 }

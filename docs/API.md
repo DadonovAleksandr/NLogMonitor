@@ -128,7 +128,8 @@
 {
   "error": "NotImplemented",
   "message": "File watching functionality is planned for Phase 6",
-  "details": null
+  "details": null,
+  "traceId": "00-abc123..."
 }
 ```
 
@@ -155,7 +156,7 @@ file: <binary>
 {
   "sessionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "fileName": "app.log",
-  "filePath": "/app/temp/app.log",
+  "filePath": "/app/temp/{sessionId}/app.log",
   "totalEntries": 15420,
   "levelCounts": {
     "Trace": 1000,
@@ -172,9 +173,7 @@ file: <binary>
 
 | Код | Описание |
 |-----|----------|
-| 400 | Файл не предоставлен или пустой |
-| 413 | Файл превышает максимальный размер |
-| 415 | Неподдерживаемый формат файла |
+| 400 | Файл не предоставлен, пустой, слишком большой или с недопустимым расширением |
 
 ---
 
@@ -289,7 +288,7 @@ GET /api/export/3fa85f64-5717-4562-b3fc-2c963f66afa6?format=csv&minLevel=Error H
 
 ```http
 Content-Type: text/csv
-Content-Disposition: attachment; filename="logs-2024-01-15.csv"
+Content-Disposition: attachment; filename="logs_{sessionId}_20240115_103045.csv"
 
 Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
 2024-01-15T10:30:45.123,Error,Connection failed,MyApp.Database,1234,2,"SocketException..."
@@ -337,15 +336,25 @@ Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
   {
     "path": "C:\\logs\\app\\2024-01-15.log",
     "isDirectory": false,
-    "openedAt": "2024-01-15T10:30:00Z"
+    "openedAt": "2024-01-15T10:30:00Z",
+    "displayName": "2024-01-15.log"
   },
   {
     "path": "C:\\logs\\app",
     "isDirectory": true,
-    "openedAt": "2024-01-14T15:00:00Z"
+    "openedAt": "2024-01-14T15:00:00Z",
+    "displayName": "app"
   }
 ]
 ```
+
+---
+
+#### `DELETE /api/recent`
+
+Очистка списка недавно открытых файлов.
+
+**Response:** `204 No Content`
 
 ---
 
@@ -444,29 +453,25 @@ interface SessionStats {
 
 ## ❌ Коды ошибок
 
-| HTTP Code | Error Code | Описание |
+| HTTP Code | Error Type | Описание |
 |-----------|------------|----------|
-| 400 | `INVALID_REQUEST` | Неверные параметры запроса |
-| 400 | `EMPTY_FILE` | Загружен пустой файл |
-| 404 | `SESSION_NOT_FOUND` | Сессия не найдена |
-| 404 | `SESSION_EXPIRED` | Сессия истекла |
-| 404 | `DESKTOP_ONLY` | Эндпоинт доступен только в Desktop-режиме |
-| 413 | `FILE_TOO_LARGE` | Файл превышает лимит |
-| 415 | `UNSUPPORTED_FORMAT` | Неподдерживаемый формат |
-| 500 | `INTERNAL_ERROR` | Внутренняя ошибка сервера |
-| 501 | `NOT_IMPLEMENTED` | Функционал ещё не реализован |
+| 400 | `BadRequest` | Неверные параметры запроса, пустой файл, недопустимый формат |
+| 404 | `NotFound` | Сессия не найдена, файл/директория не существует, эндпоинт доступен только в Desktop-режиме |
+| 500 | `InternalServerError` | Внутренняя ошибка сервера |
+| 501 | `NotImplemented` | Функционал ещё не реализован |
 
-**Формат ошибки:**
+**Формат ошибки (ApiErrorResponse):**
 
 ```json
 {
-  "error": {
-    "code": "SESSION_NOT_FOUND",
-    "message": "Session with ID '3fa85f64...' not found",
-    "details": null
-  }
+  "error": "NotFound",
+  "message": "Session with ID '3fa85f64...' not found",
+  "details": null,
+  "traceId": "00-abc123..."
 }
 ```
+
+> **Примечание:** Поле `details` заполняется только в Development-окружении (stack trace, inner exception).
 
 ---
 

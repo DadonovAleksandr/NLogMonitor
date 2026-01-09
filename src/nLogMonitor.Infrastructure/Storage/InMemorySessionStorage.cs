@@ -14,6 +14,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, SessionWrapper> _sessions = new();
     private readonly ConcurrentDictionary<string, Guid> _connectionToSession = new();
+    private readonly ConcurrentDictionary<Guid, Func<Task>> _cleanupCallbacks = new();
     private readonly TimeSpan _ttl;
     private readonly Timer _cleanupTimer;
     private readonly ILogger<InMemorySessionStorage> _logger;
@@ -97,7 +98,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     }
 
     /// <inheritdoc />
-    public Task DeleteAsync(Guid sessionId)
+    public async Task DeleteAsync(Guid sessionId)
     {
         if (_sessions.TryRemove(sessionId, out var wrapper))
         {
@@ -105,13 +106,14 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
                 "Session {SessionId} deleted (file: '{FileName}')",
                 sessionId,
                 wrapper.Session.FileName);
+
+            // Вызываем cleanup callback если зарегистрирован
+            await ExecuteCleanupCallbackAsync(sessionId);
         }
         else
         {
             _logger.LogDebug("Session {SessionId} not found for deletion", sessionId);
         }
-
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -124,6 +126,18 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
         _logger.LogDebug("Retrieved {Count} sessions", sessions.Count);
 
         return Task.FromResult<IEnumerable<LogSession>>(sessions);
+    }
+
+    /// <inheritdoc />
+    public Task RegisterCleanupCallbackAsync(Guid sessionId, Func<Task> cleanupCallback)
+    {
+        _cleanupCallbacks.AddOrUpdate(sessionId, cleanupCallback, (_, _) => cleanupCallback);
+
+        _logger.LogDebug(
+            "Cleanup callback registered for session {SessionId}",
+            sessionId);
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -187,6 +201,15 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     /// </summary>
     private void CleanupExpiredSessions(object? state)
     {
+        // Запускаем асинхронную очистку без ожидания (fire-and-forget)
+        _ = CleanupExpiredSessionsAsync();
+    }
+
+    /// <summary>
+    /// Асинхронная очистка просроченных сессий с вызовом cleanup callbacks.
+    /// </summary>
+    private async Task CleanupExpiredSessionsAsync()
+    {
         var now = DateTime.UtcNow;
         var expiredCount = 0;
 
@@ -202,6 +225,9 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
                         kvp.Key,
                         wrapper.Session.FileName,
                         wrapper.Session.ExpiresAt);
+
+                    // Вызываем cleanup callback перед удалением связей
+                    await ExecuteCleanupCallbackAsync(kvp.Key);
 
                     // Удаляем связанные connection mappings
                     var connectionToRemove = _connectionToSession
@@ -221,6 +247,30 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
                 "Cleanup completed: {ExpiredCount} expired sessions removed, {ActiveCount} active sessions remaining",
                 expiredCount,
                 _sessions.Count);
+        }
+    }
+
+    /// <summary>
+    /// Выполняет cleanup callback для сессии и удаляет его из словаря.
+    /// </summary>
+    /// <param name="sessionId">ID сессии.</param>
+    private async Task ExecuteCleanupCallbackAsync(Guid sessionId)
+    {
+        if (_cleanupCallbacks.TryRemove(sessionId, out var callback))
+        {
+            try
+            {
+                _logger.LogDebug("Executing cleanup callback for session {SessionId}", sessionId);
+                await callback();
+                _logger.LogDebug("Cleanup callback completed for session {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Cleanup callback failed for session {SessionId}",
+                    sessionId);
+            }
         }
     }
 
@@ -247,6 +297,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
             _cleanupTimer.Dispose();
             _sessions.Clear();
             _connectionToSession.Clear();
+            _cleanupCallbacks.Clear();
             _logger.LogInformation("InMemorySessionStorage disposed");
         }
 
