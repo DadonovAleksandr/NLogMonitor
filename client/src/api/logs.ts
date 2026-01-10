@@ -10,7 +10,7 @@ export const logsApi = {
     filters?: FilterOptions
   ): Promise<PagedResult<LogEntry>> {
     const params = new URLSearchParams()
-    if (filters?.searchText) params.set('searchText', filters.searchText)
+    if (filters?.searchText) params.set('search', filters.searchText)
 
     // Обработка levels[] (массив конкретных уровней)
     // ВАЖНО: отправляем даже пустой массив (режим NONE)

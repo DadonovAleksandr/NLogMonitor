@@ -108,7 +108,7 @@ npm run build  # Production build
 | `levels` | string[] | Фильтр по уровням (Trace, Debug, Info, Warn, Error, Fatal) |
 | `search` | string | Полнотекстовый поиск по сообщению |
 | `page` | int | Номер страницы (default: 1) |
-| `pageSize` | int | Размер страницы (default: 50, max: 200) |
+| `pageSize` | int | Размер страницы (default: 50, max: 500) |
 
 ## Configuration
 

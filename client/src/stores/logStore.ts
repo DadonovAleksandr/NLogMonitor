@@ -166,8 +166,13 @@ export const useLogStore = defineStore('logs', () => {
 
   /**
    * Добавляет новые логи в текущую коллекцию (для real-time обновлений через SignalR).
-   * Обновляет totalCount и levelCounts для ВСЕХ новых логов.
-   * В UI добавляются только логи, соответствующие текущим фильтрам, и только если пользователь на последней странице.
+   *
+   * ВАЖНО:
+   * - levelCounts обновляются для ВСЕХ новых логов (это глобальные счётчики файла)
+   * - totalCount и totalPages НЕ обновляются здесь — они отражают результат фильтрации
+   *   и должны приходить от сервера при следующем fetchLogs
+   * - В UI добавляются только логи, соответствующие текущим фильтрам
+   * - Размер logs[] ограничен pageSize для предотвращения переполнения страницы
    *
    * @param newLogs - Массив новых LogEntry для добавления
    */
@@ -178,10 +183,8 @@ export const useLogStore = defineStore('logs', () => {
 
     const filterStore = useFilterStore()
 
-    // 1. Всегда обновляем общее количество записей
-    totalCount.value += newLogs.length
-
-    // 2. Всегда обновляем счётчики по уровням (для badge'ей)
+    // 1. Обновляем счётчики по уровням (для badge'ей в FilterPanel)
+    // Это глобальные счётчики файла, не зависящие от фильтров
     newLogs.forEach((log) => {
       const currentLevel = log.level
       if (currentLevel && levelCounts.value[currentLevel] !== undefined) {
@@ -189,19 +192,17 @@ export const useLogStore = defineStore('logs', () => {
       }
     })
 
-    // 3. Запоминаем старое totalPages для проверки "на последней странице"
-    const wasOnLastPage = page.value >= totalPages.value
+    // 2. НЕ обновляем totalCount и totalPages — они отражают результат фильтрации
+    // и должны приходить от сервера. Клиентский пересчёт будет неточным при активных фильтрах.
 
-    // 4. Пересчитываем общее количество страниц
-    totalPages.value = Math.ceil(totalCount.value / pageSize.value)
-
-    // 5. Если пользователь НЕ на последней странице - не добавляем в UI
-    if (!wasOnLastPage) {
+    // 3. Если пользователь НЕ на последней странице — не добавляем в UI
+    // (новые логи будут на последних страницах)
+    if (page.value < totalPages.value) {
       console.info(`Received ${newLogs.length} new log entries, but user is not on last page (page ${page.value}/${totalPages.value})`)
       return
     }
 
-    // 6. Фильтруем логи по текущим фильтрам
+    // 4. Фильтруем логи по текущим фильтрам
     const filteredLogs = newLogs.filter((log) => {
       // Проверяем уровень
       const levelNumeric = stringLevelToNumeric(log.level)
@@ -246,10 +247,18 @@ export const useLogStore = defineStore('logs', () => {
       return true
     })
 
-    // 7. Добавляем отфильтрованные логи в UI
+    // 5. Добавляем отфильтрованные логи в UI с ограничением pageSize
     if (filteredLogs.length > 0) {
       logs.value.push(...filteredLogs)
-      console.info(`Appended ${filteredLogs.length}/${newLogs.length} new log entries matching filters (total: ${totalCount.value})`)
+
+      // Ограничиваем размер массива до pageSize, удаляя старые записи с начала
+      // Это предотвращает переполнение страницы и дубли при навигации
+      if (logs.value.length > pageSize.value) {
+        const overflow = logs.value.length - pageSize.value
+        logs.value.splice(0, overflow)
+      }
+
+      console.info(`Appended ${filteredLogs.length}/${newLogs.length} new log entries matching filters (displayed: ${logs.value.length})`)
     } else if (newLogs.length > 0) {
       console.info(`Received ${newLogs.length} new log entries, but none match current filters`)
     }
