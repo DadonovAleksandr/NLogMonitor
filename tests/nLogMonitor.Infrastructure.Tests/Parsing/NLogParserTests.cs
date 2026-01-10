@@ -286,10 +286,14 @@ public class NLogParserTests
         cts.Cancel();
 
         // Act & Assert
-        Assert.ThrowsAsync<OperationCanceledException>(async () =>
+        // TaskCanceledException наследуется от OperationCanceledException,
+        // в .NET 10 StreamReader.ReadLineAsync выбрасывает TaskCanceledException
+        // Используем CatchAsync который ловит и подтипы
+        var exception = Assert.CatchAsync<OperationCanceledException>(async () =>
         {
             await _parser.ParseAsync(stream, cts.Token).ToListAsync();
         });
+        Assert.That(exception, Is.Not.Null);
     }
 
     // === Large file simulation ===
