@@ -118,13 +118,10 @@ public sealed partial class NLogParser : ILogParser
         long entryId = 0;
         var dateRegex = DateStartRegex();
 
-        while (!reader.EndOfStream)
+        string? line;
+        while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) is not null)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-            if (line is null)
-                break;
 
             // Check if this line starts a new log entry
             if (dateRegex.IsMatch(line))
