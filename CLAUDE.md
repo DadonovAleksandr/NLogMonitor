@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (скрипты запуска) и Desktop (Photino).
 
-**Текущий статус:** Фаза 6 ✅ ЗАВЕРШЕНО. Следующая: Фаза 7 (частично завершено: start-dev.bat, build.bat готовы). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 7 ✅ ЗАВЕРШЕНО. Следующая: Фаза 8 (Client-side Logging). Полный план — см. `PLAN.md`.
 
 ### Выполнено в Фазе 3.1
 - ✅ Path traversal защита (санитизация file.FileName)
@@ -64,11 +64,30 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ Race condition fix: подписка на события FileSystemWatcher ДО включения мониторинга
 - ✅ Truncation handling: обработка случаев, когда файл усечён (новый размер < LastReadPosition)
 
+### Выполнено в Фазе 7 (Скрипты запуска и конфигурация)
+- ✅ Shell скрипты для Linux/macOS: start-dev.sh, build.sh, stop.sh
+- ✅ Windows скрипт остановки: stop.bat
+- ✅ Production конфигурация: appsettings.Production.json
+- ✅ Раздача статики через UseStaticFiles и UseDefaultFiles в Program.cs
+- ✅ API метрики: GET /api/metrics с sessions_active_count, logs_total_count, sessions_memory_bytes, server_uptime_seconds, signalr_connections_count
+- ✅ Документация: README.md обновлён, .env.example создан
+- ✅ ISessionStorage расширен методами GetActiveSessionCountAsync, GetTotalLogsCountAsync, GetActiveConnectionsCountAsync
+
 ## Build & Run Commands
 
 ```bash
 # Быстрый запуск (Development)
 start-dev.bat                             # Windows: backend + frontend с hot reload
+./start-dev.sh                            # Linux/macOS: backend + frontend с hot reload
+
+# Остановка серверов
+stop.bat                                  # Windows
+./stop.sh                                 # Linux/macOS
+
+# Production сборка
+build.bat                                 # Windows
+./build.sh                                # Linux/macOS
+# Результат в publish/, запуск: cd publish && ./nLogMonitor.Api.exe
 
 # Backend
 dotnet build                              # Сборка solution
@@ -117,8 +136,8 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий), FileWatching/FileWatcherService.cs (отслеживание изменений с debounce)
 - **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
 
-### Новые файлы (Фаза 3 + 3.1 + 6 + 6.1)
-- **nLogMonitor.Api/Controllers/** — FilesController (с cleanup callbacks), UploadController, LogsController, ExportController, RecentController
+### Новые файлы (Фаза 3 + 3.1 + 6 + 6.1 + 7)
+- **nLogMonitor.Api/Controllers/** — FilesController (с cleanup callbacks), UploadController, LogsController, ExportController, RecentController, MetricsController
 - **nLogMonitor.Api/Hubs/** — LogWatcherHub (SignalR Hub для real-time обновлений)
 - **nLogMonitor.Api/Services/** — FileWatcherBackgroundService (инкрементальное чтение с LastReadPosition)
 - **nLogMonitor.Api/Middleware/** — ExceptionHandlingMiddleware
@@ -130,7 +149,8 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Infrastructure/FileWatching/** — FileWatcherService (debounce 200ms, NotifyFilters.FileName, race condition fix)
 - **nLogMonitor.Infrastructure/Parsing/** — NLogParser (ParseFromPositionAsync для инкрементального чтения)
 - **nLogMonitor.Application/Configuration/** — FileSettings, RecentLogsSettings, AppSettings (режим Web/Desktop)
-- **nLogMonitor.Application/Interfaces/ISessionStorage** — методы BindConnectionAsync, UnbindConnectionAsync, GetSessionByConnectionAsync, AppendEntriesAsync
+- **nLogMonitor.Application/DTOs/** — MetricsDto (метрики сервера)
+- **nLogMonitor.Application/Interfaces/ISessionStorage** — методы BindConnectionAsync, UnbindConnectionAsync, GetSessionByConnectionAsync, AppendEntriesAsync, GetActiveSessionCountAsync, GetTotalLogsCountAsync, GetActiveConnectionsCountAsync
 - **nLogMonitor.Application/Interfaces/ILogParser** — метод ParseFromPositionAsync
 - **nLogMonitor.Domain/Entities/LogSession** — поле LastReadPosition
 
@@ -205,6 +225,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - `GET /api/export/{sessionId}?format=json|csv` — потоковый экспорт
 - `GET /api/recent` — недавние файлы
 - `DELETE /api/recent` — очистка недавних
+- `GET /api/metrics` — метрики сервера (sessions, logs, memory, uptime, connections)
 - `GET /health` — health check
 
 ## Tech Stack

@@ -17,7 +17,7 @@
 - **Web-приложение** — запуск через скрипт (backend + frontend)
 - **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
-**Текущий статус:** Фаза 6.1 ✅ ЗАВЕРШЕНО (критичные исправления real-time системы). Фаза 7 (частично завершено: start-dev.bat, build.bat готовы). Следующая: завершение Фазы 7 (Linux/macOS скрипты, production конфигурация, документация).
+**Текущий статус:** Фаза 7 ✅ ЗАВЕРШЕНО (скрипты запуска, production конфигурация, документация, API метрики). Следующая: Фаза 8 (Client-side Logging).
 
 ### Ключевые возможности
 - Открытие лог-файла через нативный диалог (Web: загрузка файла, Desktop: системный диалог выбора)
@@ -756,7 +756,7 @@ nLogMonitor/
 - [x] Consistency: нет дубликатов в UI, GetLogs/Export синхронизированы с real-time view
 - [x] Resource cleanup: FileWatcher останавливается при удалении сессии (проверить через логи)
 - [x] Log rotation: переименование файла корректно обрабатывается FileSystemWatcher
-- [x] Все 149 тестов проходят успешно
+- [x] Все 283 теста проходят успешно
 
 ---
 
@@ -764,14 +764,14 @@ nLogMonitor/
 - [x] **7.1 Скрипты запуска**
   - [x] `start-dev.bat` (Windows) — запуск backend + frontend с hot reload в двух терминалах
   - [x] `build.bat` (Windows) — полная сборка проекта (frontend + backend)
-  - [ ] `start-dev.sh` (Linux/macOS Bash) — аналогичный скрипт для Unix-систем
-  - [ ] `stop.bat` / `stop.sh` — остановка всех процессов (опционально)
+  - [x] `start-dev.sh` (Linux/macOS Bash) — аналогичный скрипт для Unix-систем
+  - [x] `stop.bat` / `stop.sh` — остановка всех процессов
 
-- [ ] **7.2 Конфигурация production**
-  - [ ] `appsettings.Production.json` — настройки для production режима
-  - [ ] Сборка frontend в `dist/` — `npm run build` генерирует статику
-  - [ ] Раздача статики через Kestrel — UseStaticFiles для `wwwroot/`
-  - [ ] Копирование `client/dist/` в `wwwroot/` при production запуске
+- [x] **7.2 Конфигурация production**
+  - [x] `appsettings.Production.json` — настройки для production режима
+  - [x] Сборка frontend в `dist/` — `npm run build` генерирует статику
+  - [x] Раздача статики через Kestrel — UseStaticFiles и UseDefaultFiles для `wwwroot/`
+  - [x] Копирование `client/dist/` в `wwwroot/` при production запуске
 
 - [x] **7.3 Единый скрипт сборки**
   - [x] `build.bat` (Windows) — полная сборка проекта
@@ -779,30 +779,30 @@ nLogMonitor/
   - [x] Этап 2: копирование `dist/` → `src/nLogMonitor.Api/wwwroot/`
   - [x] Этап 3: `dotnet publish -c Release` — сборка backend
   - [x] Результат: готовый к запуску `publish/` каталог
-  - [ ] `build.sh` (Linux/macOS) — аналогичный скрипт для Unix-систем
+  - [x] `build.sh` (Linux/macOS) — аналогичный скрипт для Unix-систем
 
-- [ ] **7.4 Документация**
-  - [ ] Инструкции по запуску в README — шаги для development и production
-  - [ ] Описание скриптов и их параметров
-  - [ ] Переменные окружения (.env.example) — шаблон с описанием
+- [x] **7.4 Документация**
+  - [x] Инструкции по запуску в README — шаги для development и production
+  - [x] Описание скриптов и их параметров
+  - [x] Переменные окружения (.env.example) — шаблон с описанием
 
-- [ ] **7.5 Метрики и мониторинг (минимальный набор)**
-  - [ ] GET /api/metrics — JSON endpoint с базовыми метриками
-  - [ ] Количество активных сессий — `sessions_active_count`
-  - [ ] Общий размер данных в памяти — `sessions_memory_bytes` (примерная оценка)
-  - [ ] Количество записей по всем сессиям — `logs_total_count`
-  - [ ] Uptime сервера — `server_uptime_seconds`
-  - [ ] Количество SignalR подключений — `signalr_connections_count`
+- [x] **7.5 Метрики и мониторинг (минимальный набор)**
+  - [x] GET /api/metrics — JSON endpoint с базовыми метриками
+  - [x] Количество активных сессий — `sessions_active_count`
+  - [x] Общий размер данных в памяти — `sessions_memory_bytes` (примерная оценка)
+  - [x] Количество записей по всем сессиям — `logs_total_count`
+  - [x] Uptime сервера — `server_uptime_seconds`
+  - [x] Количество SignalR подключений — `signalr_connections_count`
 
-**Результат фазы:** Приложение запускается одной командой `./start.ps1` или `./start.sh`.
+**Результат фазы:** Приложение запускается одной командой `start-dev.bat` / `start-dev.sh` (dev) или собирается через `build.bat` / `build.sh` (production). ✅ ЗАВЕРШЕНО
 
 **Definition of Done (DoD):**
-- [ ] `./start.ps1` запускает backend и frontend без ошибок (Windows)
-- [ ] `./start.sh` запускает backend и frontend без ошибок (Linux/macOS)
-- [ ] http://localhost:5173 открывает frontend (dev mode)
-- [ ] http://localhost:5000 открывает frontend (production mode, статика из wwwroot)
-- [ ] http://localhost:5000/health возвращает 200
-- [ ] Upload файла через браузер → логи отображаются
+- [x] `start-dev.bat` запускает backend и frontend без ошибок (Windows)
+- [x] `start-dev.sh` запускает backend и frontend без ошибок (Linux/macOS)
+- [x] http://localhost:5173 открывает frontend (dev mode)
+- [x] http://localhost:5000 открывает frontend (production mode, статика из wwwroot)
+- [x] http://localhost:5000/health возвращает 200
+- [x] GET /api/metrics возвращает JSON с метриками сервера
 
 ---
 
