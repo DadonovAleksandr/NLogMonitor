@@ -170,14 +170,20 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 
 ## Key Patterns
 
-- **IAsyncEnumerable** — для streaming парсинга больших файлов
+- **IAsyncEnumerable** — для streaming парсинга больших файлов (ParseAsync)
+- **Инкрементальное чтение** — ParseFromPositionAsync с LastReadPosition для чтения только новых записей (избегаем перечитывания всего файла)
 - **Потоковый экспорт** — Utf8JsonWriter и StreamWriter пишут напрямую в Response.Body без промежуточных буферов
-- **SignalR session lifecycle** — сессия живёт пока открыта вкладка (SignalR connected), удаляется при закрытии
+- **Multi-client support** — 1:N маппинг (один sessionId → множество connectionId) для поддержки multi-tab и автореконнекта
+- **SignalR session lifecycle** — сессия живёт пока открыта вкладка (SignalR connected), удаляется при закрытии последнего клиента
 - **FileWatcher debounce** — 200ms задержка для группировки множественных изменений файла
-- **Real-time обновления** — новые записи логов автоматически отображаются в UI через SignalR (Live indicator)
+- **Real-time обновления** — только новые записи отображаются в UI через SignalR (инкрементально, без дубликатов)
+- **Thread-safe updates** — AppendEntriesAsync с lock(session) для атомарного добавления новых записей
 - **Fallback TTL** — 5 минут как страховка для потерянных сессий (краш браузера, потеря сети)
-- **Cleanup callbacks** — очистка temp-каталогов при удалении сессии через RegisterCleanupCallbackAsync
+- **Cleanup callbacks** — автоматическая остановка FileWatcher и очистка temp-каталогов при удалении сессии
 - **DesktopOnlyAttribute** — фильтр для защиты Desktop-эндпоинтов в Web-режиме (возвращает 404)
+- **Log rotation support** — NotifyFilters.FileName для обработки переименования файлов при ротации
+- **Race condition prevention** — подписка на события FileSystemWatcher ДО включения EnableRaisingEvents
+- **Truncation handling** — обработка случаев усечения файла (newSize < LastReadPosition)
 - **Virtual scrolling** — для таблицы с миллионами записей (Frontend, Фаза 4-5)
 
 ## Configuration
