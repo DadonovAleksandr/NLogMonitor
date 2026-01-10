@@ -66,6 +66,35 @@ public sealed partial class NLogParser : ILogParser
     }
 
     /// <summary>
+    /// Parse log entries from a file starting at a specific byte position.
+    /// Used for incremental reading of new log entries when file changes.
+    /// </summary>
+    public async IAsyncEnumerable<LogEntry> ParseFromPositionAsync(
+        string filePath,
+        long startPosition,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await using var stream = new FileStream(
+            filePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite,
+            bufferSize: 65536, // 64KB buffer
+            useAsync: true);
+
+        // Seek to the start position
+        if (startPosition > 0 && startPosition < stream.Length)
+        {
+            stream.Seek(startPosition, SeekOrigin.Begin);
+        }
+
+        await foreach (var entry in ParseAsync(stream, cancellationToken).ConfigureAwait(false))
+        {
+            yield return entry;
+        }
+    }
+
+    /// <summary>
     /// Parse log entries from a stream using async streaming.
     /// Handles multiline log entries where message may contain newlines and pipe characters.
     /// </summary>

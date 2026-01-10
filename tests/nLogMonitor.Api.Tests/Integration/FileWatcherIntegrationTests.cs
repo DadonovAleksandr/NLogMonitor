@@ -116,11 +116,13 @@ public class FileWatcherIntegrationTests : DesktopModeTestBase
         receivedInTime.Should().BeTrue("SignalR должен отправить обновления в течение 5 секунд");
         receivedLogs.Should().NotBeEmpty("Должны быть получены новые записи логов");
 
-        // Проверяем, что получены все записи (включая начальные)
-        // FileWatcher отправляет все записи файла, так как нет отслеживания позиции чтения
-        receivedLogs.Should().HaveCountGreaterThanOrEqualTo(3, "Должны быть получены минимум 3 записи");
+        // Проверяем, что получены только новые записи (инкрементальное чтение)
+        // FileWatcher теперь отправляет только записи после LastReadPosition
+        receivedLogs.Should().HaveCount(2, "Должны быть получены только 2 новые записи (не включая начальную)");
         receivedLogs.Should().Contain(l => l.Level == "Error" && l.Message == "Error occurred");
         receivedLogs.Should().Contain(l => l.Level == "Warn" && l.Message == "Warning message");
+        receivedLogs.Should().NotContain(l => l.Level == "Info" && l.Message == "Initial log entry",
+            "Начальная запись не должна быть отправлена повторно");
     }
 
     [Test]

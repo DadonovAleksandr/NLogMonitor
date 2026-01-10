@@ -10,6 +10,12 @@ public class LogSession
     public DateTime ExpiresAt { get; set; }
     public List<LogEntry> Entries { get; set; } = new();
 
+    /// <summary>
+    /// Последняя прочитанная позиция в байтах для инкрементального чтения файла.
+    /// Используется FileWatcherService для чтения только новых записей.
+    /// </summary>
+    public long LastReadPosition { get; set; }
+
     // Статистика по уровням
     public Dictionary<LogLevel, int> LevelCounts { get; set; } = new();
 }

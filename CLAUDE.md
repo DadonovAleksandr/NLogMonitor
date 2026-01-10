@@ -55,6 +55,15 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ 8 интеграционных тестов для LogWatcherHub
 - ✅ 3 нагрузочных теста (500 файлов × 100 записей, 100 одновременных обновлений, debounce)
 
+### Критичные исправления (Фаза 6.1)
+- ✅ Multi-client support: 1:N маппинг (один sessionId → множество connectionId) для поддержки multi-tab и автореконнекта
+- ✅ Инкрементальное чтение: добавлено поле `LastReadPosition` в LogSession, метод `ParseFromPositionAsync` в ILogParser
+- ✅ Thread-safe обновление: метод `AppendEntriesAsync` в ISessionStorage для атомарного добавления новых записей
+- ✅ Cleanup callbacks: автоматическая остановка FileWatcher при удалении сессии (предотвращение утечек ресурсов)
+- ✅ NotifyFilters.FileName: поддержка log rotation и корректная обработка переименования файлов
+- ✅ Race condition fix: подписка на события FileSystemWatcher ДО включения мониторинга
+- ✅ Truncation handling: обработка случаев, когда файл усечён (новый размер < LastReadPosition)
+
 ## Build & Run Commands
 
 ```bash

@@ -14,6 +14,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, SessionWrapper> _sessions = new();
     private readonly ConcurrentDictionary<string, Guid> _connectionToSession = new();
+    private readonly ConcurrentDictionary<Guid, ConcurrentBag<string>> _sessionToConnections = new();
     private readonly ConcurrentDictionary<Guid, Func<Task>> _cleanupCallbacks = new();
     private readonly TimeSpan _ttl;
     private readonly Timer _cleanupTimer;
@@ -55,15 +56,19 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
             wrapper.LastAccessedAt = DateTime.UtcNow;
 
             // Если сессия привязана к SignalR - TTL не применяется (сессия живёт бесконечно)
-            var hasConnection = _connectionToSession.Values.Contains(sessionId);
+            var hasConnection = _sessionToConnections.TryGetValue(sessionId, out var connections)
+                && connections != null
+                && !connections.IsEmpty;
+
             if (hasConnection)
             {
                 // Устанавливаем ExpiresAt в далёкое будущее для индикации "не истекает"
                 wrapper.Session.ExpiresAt = DateTime.MaxValue;
 
                 _logger.LogDebug(
-                    "Session {SessionId} accessed, SignalR connected - TTL disabled",
-                    sessionId);
+                    "Session {SessionId} accessed, SignalR connected ({ConnectionCount} connections) - TTL disabled",
+                    sessionId,
+                    connections!.Count);
             }
             else
             {
@@ -144,6 +149,61 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     }
 
     /// <inheritdoc />
+    public Task AppendEntriesAsync(Guid sessionId, IEnumerable<LogEntry> newEntries, long newPosition)
+    {
+        if (!_sessions.TryGetValue(sessionId, out var wrapper))
+        {
+            _logger.LogWarning(
+                "Cannot append entries to non-existent session {SessionId}",
+                sessionId);
+            return Task.CompletedTask;
+        }
+
+        var entriesList = newEntries.ToList();
+        if (entriesList.Count == 0)
+        {
+            _logger.LogDebug("No new entries to append to session {SessionId}", sessionId);
+            return Task.CompletedTask;
+        }
+
+        // Thread-safe добавление записей
+        lock (wrapper.Session)
+        {
+            // Продолжаем нумерацию ID с последней записи
+            var lastId = wrapper.Session.Entries.Count > 0
+                ? wrapper.Session.Entries[^1].Id
+                : 0;
+
+            foreach (var entry in entriesList)
+            {
+                entry.Id = ++lastId;
+                wrapper.Session.Entries.Add(entry);
+
+                // Обновляем счётчики по уровням
+                if (wrapper.Session.LevelCounts.ContainsKey(entry.Level))
+                {
+                    wrapper.Session.LevelCounts[entry.Level]++;
+                }
+                else
+                {
+                    wrapper.Session.LevelCounts[entry.Level] = 1;
+                }
+            }
+
+            // Обновляем позицию чтения
+            wrapper.Session.LastReadPosition = newPosition;
+
+            _logger.LogInformation(
+                "Appended {Count} new entries to session {SessionId}, new position: {Position}",
+                entriesList.Count,
+                sessionId,
+                newPosition);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
     public Task RegisterCleanupCallbackAsync(Guid sessionId, Func<Task> cleanupCallback)
     {
         _cleanupCallbacks.AddOrUpdate(sessionId, cleanupCallback, (_, _) => cleanupCallback);
@@ -158,12 +218,18 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     /// <summary>
     /// Связывает SignalR connectionId с сессией.
     /// После привязки TTL для сессии отключается (сессия живёт бесконечно пока соединение активно).
+    /// Поддерживает множественные подключения к одной сессии (multi-tab, reconnect).
     /// </summary>
     /// <param name="connectionId">ID SignalR соединения.</param>
     /// <param name="sessionId">ID сессии логов.</param>
     public Task BindConnectionAsync(string connectionId, Guid sessionId)
     {
+        // Добавляем маппинг connectionId -> sessionId для быстрого поиска
         _connectionToSession.AddOrUpdate(connectionId, sessionId, (_, _) => sessionId);
+
+        // Добавляем connectionId в коллекцию подключений для sessionId (1:N маппинг)
+        var connections = _sessionToConnections.GetOrAdd(sessionId, _ => new ConcurrentBag<string>());
+        connections.Add(connectionId);
 
         // Отключаем TTL для привязанной сессии
         if (_sessions.TryGetValue(sessionId, out var wrapper))
@@ -171,9 +237,10 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
             wrapper.Session.ExpiresAt = DateTime.MaxValue;
 
             _logger.LogInformation(
-                "Connection {ConnectionId} bound to session {SessionId}, TTL disabled",
+                "Connection {ConnectionId} bound to session {SessionId} (total connections: {ConnectionCount}), TTL disabled",
                 connectionId,
-                sessionId);
+                sessionId,
+                connections.Count);
         }
         else
         {
@@ -187,27 +254,63 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     }
 
     /// <summary>
-    /// Отвязывает SignalR connectionId от сессии и удаляет сессию.
+    /// Отвязывает SignalR connectionId от сессии.
+    /// Удаляет сессию ТОЛЬКО если это был последний активный connectionId для данной сессии.
+    /// Это позволяет поддерживать multi-tab и автореконнект.
     /// </summary>
     /// <param name="connectionId">ID SignalR соединения.</param>
-    public Task UnbindConnectionAsync(string connectionId)
+    public async Task UnbindConnectionAsync(string connectionId)
     {
-        if (_connectionToSession.TryRemove(connectionId, out var sessionId))
+        if (!_connectionToSession.TryRemove(connectionId, out var sessionId))
         {
             _logger.LogDebug(
-                "Connection {ConnectionId} unbound from session {SessionId}",
-                connectionId,
-                sessionId);
-
-            // Удаляем связанную сессию
-            return DeleteAsync(sessionId);
+                "Connection {ConnectionId} not found for unbinding",
+                connectionId);
+            return;
         }
 
         _logger.LogDebug(
-            "Connection {ConnectionId} not found for unbinding",
-            connectionId);
+            "Connection {ConnectionId} unbound from session {SessionId}",
+            connectionId,
+            sessionId);
 
-        return Task.CompletedTask;
+        // Удаляем connectionId из коллекции подключений сессии
+        if (_sessionToConnections.TryGetValue(sessionId, out var connections))
+        {
+            // Создаем новую коллекцию без текущего connectionId
+            var remainingConnections = new ConcurrentBag<string>(
+                connections.Where(c => c != connectionId));
+
+            // Обновляем коллекцию
+            _sessionToConnections.TryUpdate(sessionId, remainingConnections, connections);
+
+            // Проверяем: остались ли другие подключения?
+            if (remainingConnections.IsEmpty)
+            {
+                // Это был последний connectionId - удаляем сессию
+                _sessionToConnections.TryRemove(sessionId, out _);
+
+                _logger.LogInformation(
+                    "No more connections for session {SessionId}, deleting session",
+                    sessionId);
+
+                await DeleteAsync(sessionId);
+            }
+            else
+            {
+                // Есть другие подключения - сессия остаётся
+                _logger.LogInformation(
+                    "Session {SessionId} has {RemainingCount} remaining connections, keeping session alive",
+                    sessionId,
+                    remainingConnections.Count);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "No connections found for session {SessionId} during unbind",
+                sessionId);
+        }
     }
 
     /// <summary>
@@ -259,12 +362,18 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
                     await ExecuteCleanupCallbackAsync(kvp.Key);
 
                     // Удаляем связанные connection mappings
-                    var connectionToRemove = _connectionToSession
-                        .FirstOrDefault(c => c.Value == kvp.Key);
-
-                    if (connectionToRemove.Key != null)
+                    if (_sessionToConnections.TryRemove(kvp.Key, out var connections))
                     {
-                        _connectionToSession.TryRemove(connectionToRemove.Key, out _);
+                        // Удаляем все connectionId -> sessionId маппинги
+                        foreach (var connId in connections)
+                        {
+                            _connectionToSession.TryRemove(connId, out _);
+                        }
+
+                        _logger.LogDebug(
+                            "Removed {ConnectionCount} connection mappings for expired session {SessionId}",
+                            connections.Count,
+                            kvp.Key);
                     }
                 }
             }
@@ -326,6 +435,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
             _cleanupTimer.Dispose();
             _sessions.Clear();
             _connectionToSession.Clear();
+            _sessionToConnections.Clear();
             _cleanupCallbacks.Clear();
             _logger.LogInformation("InMemorySessionStorage disposed");
         }

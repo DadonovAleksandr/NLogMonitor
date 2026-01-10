@@ -10,6 +10,15 @@ public interface ISessionStorage
     Task<IEnumerable<LogSession>> GetAllAsync();
 
     /// <summary>
+    /// Атомарно добавляет новые записи в сессию и обновляет LastReadPosition.
+    /// Thread-safe метод для использования из FileWatcherService.
+    /// </summary>
+    /// <param name="sessionId">ID сессии.</param>
+    /// <param name="newEntries">Новые записи логов.</param>
+    /// <param name="newPosition">Новая позиция в файле после чтения.</param>
+    Task AppendEntriesAsync(Guid sessionId, IEnumerable<LogEntry> newEntries, long newPosition);
+
+    /// <summary>
     /// Регистрирует callback, который будет вызван при удалении сессии.
     /// Используется для очистки временных файлов и других ресурсов, связанных с сессией.
     /// </summary>

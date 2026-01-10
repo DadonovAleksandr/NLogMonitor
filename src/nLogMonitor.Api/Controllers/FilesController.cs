@@ -89,6 +89,19 @@ public class FilesController : ControllerBase
         try
         {
             await _fileWatcherService.StartWatchingAsync(sessionId, session.FilePath);
+
+            // Регистрируем cleanup callback для остановки watcher при удалении сессии
+            var sessionStorage = HttpContext.RequestServices.GetRequiredService<ISessionStorage>();
+            await sessionStorage.RegisterCleanupCallbackAsync(
+                sessionId,
+                async () =>
+                {
+                    _logger.LogInformation(
+                        "Cleanup callback: stopping file watcher for session {SessionId}",
+                        sessionId);
+                    await _fileWatcherService.StopWatchingAsync(sessionId);
+                });
+
             _logger.LogInformation(
                 "Started file watching for session {SessionId}: {FilePath}",
                 sessionId,
@@ -164,6 +177,19 @@ public class FilesController : ControllerBase
         try
         {
             await _fileWatcherService.StartWatchingAsync(sessionId, session.FilePath);
+
+            // Регистрируем cleanup callback для остановки watcher при удалении сессии
+            var sessionStorage = HttpContext.RequestServices.GetRequiredService<ISessionStorage>();
+            await sessionStorage.RegisterCleanupCallbackAsync(
+                sessionId,
+                async () =>
+                {
+                    _logger.LogInformation(
+                        "Cleanup callback: stopping file watcher for session {SessionId}",
+                        sessionId);
+                    await _fileWatcherService.StopWatchingAsync(sessionId);
+                });
+
             _logger.LogInformation(
                 "Started file watching for session {SessionId}: {FilePath}",
                 sessionId,

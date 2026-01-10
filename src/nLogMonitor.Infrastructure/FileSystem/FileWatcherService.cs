@@ -58,8 +58,7 @@ public class FileWatcherService : IFileWatcherService, IDisposable
                 var watcher = new FileSystemWatcher(directoryPath)
                 {
                     Filter = fileName,
-                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
-                    EnableRaisingEvents = true
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName
                 };
 
                 var context = new WatcherContext
@@ -71,10 +70,13 @@ public class FileWatcherService : IFileWatcherService, IDisposable
                     LastEventTime = DateTime.UtcNow
                 };
 
-                // Подписываемся на события
+                // Подписываемся на события ДО включения мониторинга (предотвращение race condition)
                 watcher.Changed += (sender, args) => OnFileChanged(sessionId, args);
                 watcher.Renamed += (sender, args) => OnFileRenamed(sessionId, args);
                 watcher.Error += (sender, args) => OnWatcherError(sessionId, args);
+
+                // Включаем мониторинг после подписки на события
+                watcher.EnableRaisingEvents = true;
 
                 _watchers.TryAdd(sessionId, context);
 

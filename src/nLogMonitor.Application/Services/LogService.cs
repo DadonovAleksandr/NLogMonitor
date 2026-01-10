@@ -81,6 +81,9 @@ public class LogService : ILogService
             session.LevelCounts[entry.Level]++;
         }
 
+        // Устанавливаем LastReadPosition в конец файла после первоначального парсинга
+        session.LastReadPosition = fileInfo.Length;
+
         _logger.LogInformation(
             "Parsed log file: {FilePath}, Entries: {EntryCount}, Levels: {LevelCounts}",
             filePath,

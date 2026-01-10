@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using nLogMonitor.Api.Hubs;
 using nLogMonitor.Application.DTOs;
 using nLogMonitor.Application.Interfaces;
+using nLogMonitor.Domain.Entities;
 
 namespace nLogMonitor.Api.Services;
 
@@ -49,7 +50,7 @@ public class FileWatcherBackgroundService : BackgroundService
 
     /// <summary>
     /// Обработчик события изменения файла.
-    /// Читает новые строки из файла и отправляет их через SignalR.
+    /// Читает только новые строки из файла (инкрементально) и отправляет их через SignalR.
     /// </summary>
     private async void OnFileChanged(object? sender, FileChangedEventArgs e)
     {
@@ -61,20 +62,47 @@ public class FileWatcherBackgroundService : BackgroundService
                 e.FilePath,
                 e.NewSize);
 
-            // TODO: Реализовать чтение только новых строк (последняя позиция чтения)
-            // Пока просто парсим весь файл заново (для MVP достаточно, оптимизация позже)
             var newLogs = new List<LogEntryDto>();
+            long newPosition;
 
-            // Создаём scope для получения scoped сервисов (ILogParser)
+            // Создаём scope для получения scoped сервисов
             using (var scope = _serviceScopeFactory.CreateScope())
             {
                 var logParser = scope.ServiceProvider.GetRequiredService<ILogParser>();
+                var sessionStorage = scope.ServiceProvider.GetRequiredService<ISessionStorage>();
 
-                await foreach (var entry in logParser.ParseAsync(e.FilePath))
+                // Получаем сессию для чтения LastReadPosition
+                var session = await sessionStorage.GetAsync(e.SessionId);
+                if (session == null)
                 {
+                    _logger.LogWarning(
+                        "Session {SessionId} not found, skipping file change processing",
+                        e.SessionId);
+                    return;
+                }
+
+                var startPosition = session.LastReadPosition;
+
+                // Проверяем: был ли файл усечён (truncated)?
+                if (e.NewSize < startPosition)
+                {
+                    _logger.LogWarning(
+                        "File {FilePath} was truncated (new size: {NewSize}, last position: {LastPosition}), re-parsing from beginning",
+                        e.FilePath,
+                        e.NewSize,
+                        startPosition);
+                    startPosition = 0;
+                }
+
+                // Парсим только новые записи
+                var entries = new List<LogEntry>();
+                await foreach (var entry in logParser.ParseFromPositionAsync(e.FilePath, startPosition))
+                {
+                    entries.Add(entry);
+
                     newLogs.Add(new LogEntryDto
                     {
-                        Id = entry.Id,
+                        Id = entry.Id, // ID будет переназначен в AppendEntriesAsync
                         Timestamp = entry.Timestamp,
                         Level = entry.Level.ToString(),
                         Message = entry.Message,
@@ -84,6 +112,12 @@ public class FileWatcherBackgroundService : BackgroundService
                         Exception = entry.Exception
                     });
                 }
+
+                // Обновляем позицию: новая позиция = новый размер файла
+                newPosition = e.NewSize;
+
+                // Атомарно добавляем новые записи в сессию
+                await sessionStorage.AppendEntriesAsync(e.SessionId, entries, newPosition);
             }
 
             if (newLogs.Count > 0)
@@ -94,9 +128,11 @@ public class FileWatcherBackgroundService : BackgroundService
                     .SendAsync("NewLogs", newLogs);
 
                 _logger.LogInformation(
-                    "Sent {Count} new log entries to session {SessionId}",
+                    "Sent {Count} new log entries to session {SessionId} (position: {OldPosition} -> {NewPosition})",
                     newLogs.Count,
-                    e.SessionId);
+                    e.SessionId,
+                    e.NewSize - newLogs.Count,
+                    newPosition);
             }
             else
             {
