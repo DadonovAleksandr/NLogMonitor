@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (скрипты запуска) и Desktop (Photino).
 
-**Текущий статус:** Фаза 7 ✅ ЗАВЕРШЕНО. Следующая: Фаза 8 (Client-side Logging). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 8 ✅ ЗАВЕРШЕНО. Следующая: Фаза 9 (Photino Desktop). Полный план — см. `PLAN.md`.
 
 ### Выполнено в Фазе 3.1
 - ✅ Path traversal защита (санитизация file.FileName)
@@ -72,6 +72,22 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ API метрики: GET /api/metrics с sessions_active_count, logs_total_count, sessions_memory_bytes, server_uptime_seconds, signalr_connections_count
 - ✅ Документация: README.md обновлён, .env.example создан
 - ✅ ISessionStorage расширен методами GetActiveSessionCountAsync, GetTotalLogsCountAsync, GetActiveConnectionsCountAsync
+
+### Выполнено в Фазе 8 (Client-side Logging)
+- ✅ ClientLogsController: POST /api/client-logs для приёма batch логов с фронтенда
+- ✅ Rate Limiting: 100 запросов в минуту на IP (ASP.NET Core Rate Limiting middleware)
+- ✅ Нормализация уровней: warning→warn, fatal→error, critical→error
+- ✅ Валидация: Level и Message обязательные, лимиты длины полей
+- ✅ Санитизация: экранирование HTML, удаление управляющих символов
+- ✅ Structured logging с NLog: префикс [CLIENT], контекст (userId, version, url, userAgent)
+- ✅ Frontend ClientLogger service: trace/debug/info/warn/error/fatal/exception методы
+- ✅ Буферизация (batchSize: 10) и автоматический flush по таймеру (5 сек)
+- ✅ Retry с exponential backoff (1s, 2s, 4s) - 3 попытки
+- ✅ Глобальный контекст: setGlobalContext({ userId, version, sessionId })
+- ✅ Автоматическое добавление url и userAgent к каждому логу
+- ✅ Error handlers: window.onerror, window.onunhandledrejection, app.config.errorHandler
+- ✅ Отправка логов при закрытии страницы (beforeunload) и visibilitychange
+- ✅ 23 интеграционных теста для /api/client-logs
 
 ## Build & Run Commands
 
@@ -157,11 +173,12 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 ### Структура tests/
 - **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests, FileWatcherServiceTests (debounce, множественные сессии)
 - **nLogMonitor.Application.Tests** — LogServiceTests (фильтрация, пагинация, поиск, статистика)
-- **nLogMonitor.Api.Tests** — Unit тесты контроллеров + Integration тесты с WebApplicationFactory (Files, Upload, Export, Health, Logs, Recent, LogWatcherHub) + нагрузочные тесты (500 файлов, 100 обновлений, debounce)
+- **nLogMonitor.Api.Tests** — Unit тесты контроллеров + Integration тесты с WebApplicationFactory (Files, Upload, Export, Health, Logs, Recent, LogWatcherHub, ClientLogs) + нагрузочные тесты (500 файлов, 100 обновлений, debounce)
 
 ### Структура client/
 - **src/types/** — TypeScript типы (LogEntry, PagedResult, FilterOptions, etc.)
-- **src/api/** — Axios клиент и API методы (client.ts, logs.ts, files.ts, export.ts, health.ts, signalr.ts)
+- **src/api/** — Axios клиент и API методы (client.ts, logs.ts, files.ts, export.ts, health.ts, signalr.ts, client-logs.ts)
+- **src/services/** — ClientLogger service (logger.ts) — буферизация, retry, error handlers
 - **src/composables/** — useFileWatcher (интеграция SignalR с Vue компонентами)
 - **src/stores/** — Pinia stores (logStore, filterStore, recentStore)
 - **src/components/ui/** — shadcn-vue компоненты (Button, Input, Card, Table, Toast, Badge, Select, etc.)
@@ -226,6 +243,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - `GET /api/recent` — недавние файлы
 - `DELETE /api/recent` — очистка недавних
 - `GET /api/metrics` — метрики сервера (sessions, logs, memory, uptime, connections)
+- `POST /api/client-logs` — приём batch логов с фронтенда (rate limiting 100 req/min per IP)
 - `GET /health` — health check
 
 ## Tech Stack

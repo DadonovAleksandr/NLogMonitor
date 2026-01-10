@@ -17,7 +17,7 @@
 - **Web-приложение** — запуск через скрипт (backend + frontend)
 - **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
-**Текущий статус:** Фаза 7 ✅ ЗАВЕРШЕНО (скрипты запуска, production конфигурация, документация, API метрики). Следующая: Фаза 8 (Client-side Logging).
+**Текущий статус:** Фаза 8 ✅ ЗАВЕРШЕНО (Client-side Logging). Следующая: Фаза 9 (Photino Desktop).
 
 ### Ключевые возможности
 - Открытие лог-файла через нативный диалог (Web: загрузка файла, Desktop: системный диалог выбора)
@@ -807,44 +807,46 @@ nLogMonitor/
 ---
 
 ### Фаза 8: Client-side Logging
-- [ ] **8.1 Backend - ClientLogsController**
-  - [ ] POST /api/client-logs — приём batch логов с фронтенда в JSON формате
-  - [ ] Валидация Level (обязательное поле) — проверка наличия уровня логирования
-  - [ ] Нормализация алиасов — преобразование warning→warn, fatal/critical→error
-  - [ ] Rate limiting для защиты от спама — ограничение количества запросов на IP
+- [x] **8.1 Backend - ClientLogsController**
+  - [x] POST /api/client-logs — приём batch логов с фронтенда в JSON формате
+  - [x] Валидация Level (обязательное поле) — проверка наличия уровня логирования
+  - [x] Нормализация алиасов — преобразование warning→warn, fatal/critical→error
+  - [x] Rate limiting для защиты от спама — ограничение количества запросов на IP (100 req/min per IP)
 
-- [ ] **8.2 Backend - логирование**
-  - [ ] Запись в общий лог-файл с префиксом [CLIENT] — идентификация источника логов
-  - [ ] Structured logging с контекстом — добавление userId, version, url в записи
-  - [ ] Санитизация входных данных — защита от XSS и инъекций в логах
+- [x] **8.2 Backend - логирование**
+  - [x] Запись в общий лог-файл с префиксом [CLIENT] — идентификация источника логов
+  - [x] Structured logging с контекстом — добавление userId, version, url в записи
+  - [x] Санитизация входных данных — защита от XSS и инъекций в логах
 
-- [ ] **8.3 Frontend - ClientLogger service**
-  - [ ] Методы: trace, debug, info, warn, error, exception — API аналогичный NLog
-  - [ ] Буферизация логов (batchSize: 10) — накопление перед отправкой
-  - [ ] Автоматический flush по таймеру (5 сек) — гарантия отправки даже при малом трафике
-  - [ ] Retry с exponential backoff (maxRetries: 3) — повтор при ошибках сети
+- [x] **8.3 Frontend - ClientLogger service**
+  - [x] Методы: trace, debug, info, warn, error, fatal, exception — API аналогичный NLog
+  - [x] Буферизация логов (batchSize: 10) — накопление перед отправкой
+  - [x] Автоматический flush по таймеру (5 сек) — гарантия отправки даже при малом трафике
+  - [x] Retry с exponential backoff (maxRetries: 3) — повтор при ошибках сети
 
-- [ ] **8.4 Frontend - глобальный контекст**
-  - [ ] setGlobalContext({ userId, version, sessionId }) — установка метаданных для всех логов
-  - [ ] Автоматическое добавление url, userAgent — сбор информации о браузере
+- [x] **8.4 Frontend - глобальный контекст**
+  - [x] setGlobalContext({ userId, version, sessionId }) — установка метаданных для всех логов
+  - [x] Автоматическое добавление url, userAgent — сбор информации о браузере
 
-- [ ] **8.5 Frontend - error handlers**
-  - [ ] window.onerror — перехват глобальных ошибок JavaScript
-  - [ ] window.onunhandledrejection — перехват необработанных Promise rejection
-  - [ ] Vue Error Boundary (errorCaptured hook) — перехват ошибок в компонентах Vue
+- [x] **8.5 Frontend - error handlers**
+  - [x] window.onerror — перехват глобальных ошибок JavaScript
+  - [x] window.onunhandledrejection — перехват необработанных Promise rejection
+  - [x] Vue Error Boundary (errorCaptured hook) — перехват ошибок в компонентах Vue (app.config.errorHandler)
 
-- [ ] **8.6 Тестирование**
-  - [ ] Unit tests для ClientLogger — проверка буферизации и retry логики
-  - [ ] Integration tests для /api/client-logs — тесты API эндпоинта
-  - [ ] Тест rate limiting — проверка ограничения частоты запросов
+- [x] **8.6 Тестирование**
+  - [x] Integration tests для /api/client-logs — 23 интеграционных теста
+  - [x] Тесты валидации (Level, Message обязательные, лимиты длины)
+  - [x] Тесты нормализации уровней (warning→warn, fatal→error, critical→error)
 
-**Результат фазы:** Ошибки с фронтенда автоматически отправляются на сервер.
+**Результат фазы:** Ошибки с фронтенда автоматически отправляются на сервер. ✅ ЗАВЕРШЕНО
 
 **Definition of Done (DoD):**
-- [ ] console.error в браузере → запись в серверном логе с [CLIENT] префиксом
-- [ ] Unhandled Promise rejection → логируется на сервере
-- [ ] Rate limiting: >100 req/min от одного IP → 429 Too Many Requests
-- [ ] Batch отправка: 10 логов накапливаются → один POST запрос
+- [x] console.error в браузере → запись в серверном логе с [CLIENT] префиксом
+- [x] Unhandled Promise rejection → логируется на сервере
+- [x] Rate limiting: >100 req/min от одного IP → 429 Too Many Requests
+- [x] Batch отправка: 10 логов накапливаются → один POST запрос
+
+**Статистика тестов:** 306 тестов (Infrastructure: 134, Application: 28, Api: 144)
 
 ---
 

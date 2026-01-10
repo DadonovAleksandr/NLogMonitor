@@ -1,4 +1,6 @@
+using System.Threading.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
 using nLogMonitor.Api.Hubs;
 using nLogMonitor.Api.Middleware;
 using nLogMonitor.Api.Services;
@@ -70,6 +72,24 @@ try
 
     // FluentValidation
     builder.Services.AddScoped<IValidator<FilterOptionsDto>, FilterOptionsValidator>();
+    builder.Services.AddScoped<IValidator<ClientLogDto>, ClientLogDtoValidator>();
+
+    // Rate Limiting for client logs endpoint (100 requests per minute per IP)
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+        options.AddPolicy("ClientLogs", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                }));
+    });
 
     // Configuration
     builder.Services.Configure<FileSettings>(
@@ -116,6 +136,9 @@ try
 
     app.UseHttpsRedirection();
     app.UseCors("AllowFrontend");
+
+    // Rate limiting middleware
+    app.UseRateLimiter();
 
     // Serve static files from wwwroot (production mode)
     app.UseDefaultFiles(); // Serves index.html by default
