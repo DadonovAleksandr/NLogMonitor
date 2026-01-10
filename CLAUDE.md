@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (скрипты запуска) и Desktop (Photino).
 
-**Текущий статус:** Фаза 8 ✅ ЗАВЕРШЕНО. Следующая: Фаза 9 (Photino Desktop). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 9 ✅ ЗАВЕРШЕНО (Photino Desktop). Следующая: Фаза 10 (Оптимизация и тестирование). Полный план — см. `PLAN.md`.
 
 ### Выполнено в Фазе 3.1
 - ✅ Path traversal защита (санитизация file.FileName)
@@ -65,7 +65,7 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ Truncation handling: обработка случаев, когда файл усечён (новый размер < LastReadPosition)
 
 ### Выполнено в Фазе 7 (Скрипты запуска и конфигурация)
-- ✅ Shell скрипты для Linux/macOS: start-dev.sh, build.sh, stop.sh
+- ✅ Shell скрипты для Linux: start-dev.sh, build.sh, stop.sh
 - ✅ Windows скрипт остановки: stop.bat
 - ✅ Production конфигурация: appsettings.Production.json
 - ✅ Раздача статики через UseStaticFiles и UseDefaultFiles в Program.cs
@@ -89,32 +89,49 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ Отправка логов при закрытии страницы (beforeunload) и visibilitychange
 - ✅ 23 интеграционных теста для /api/client-logs
 
+### Выполнено в Фазе 9 (Photino Desktop)
+- ✅ Проект nLogMonitor.Desktop с Photino.NET 3.1.18
+- ✅ Embedded ASP.NET Core сервер в фоновом потоке
+- ✅ PhotinoWindow с WebView и автоматическим выбором порта
+- ✅ Нативные диалоги: ShowOpenFile, ShowOpenFolder (кроссплатформенные)
+- ✅ JS ↔ .NET Bridge: BridgeRequest/BridgeResponse, JSON сериализация
+- ✅ Message handler для команд: isDesktop, getServerPort, showOpenFile, showOpenFolder
+- ✅ Frontend usePhotinoBridge composable с Promise-based API
+- ✅ FileSelector обновлён: Web режим (drag & drop) и Desktop режим (нативные кнопки)
+- ✅ Скрипты сборки: build-desktop.bat (Windows), build-desktop.sh (Linux)
+- ✅ Self-contained exe ~50 MB (< 100 MB DoD)
+
 ## Build & Run Commands
 
 ```bash
 # Быстрый запуск (Development)
 start-dev.bat                             # Windows: backend + frontend с hot reload
-./start-dev.sh                            # Linux/macOS: backend + frontend с hot reload
+./start-dev.sh                            # Linux: backend + frontend с hot reload
 
 # Остановка серверов
 stop.bat                                  # Windows
-./stop.sh                                 # Linux/macOS
+./stop.sh                                 # Linux
 
-# Production сборка
+# Production сборка (Web)
 build.bat                                 # Windows
-./build.sh                                # Linux/macOS
+./build.sh                                # Linux
 # Результат в publish/, запуск: cd publish && ./nLogMonitor.Api.exe
+
+# Desktop сборка (Photino)
+build-desktop.bat                         # Windows: frontend + Desktop exe
+./build-desktop.sh                        # Linux: frontend + Desktop binary
+# Результат в publish/desktop/win-x64/, запуск: nLogMonitor.Desktop.exe
 
 # Backend
 dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — 283 теста
-dotnet test                               # Все тесты (283)
+# Tests (NUnit) — 306 тестов
+dotnet test                               # Все тесты (306)
 dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта, FileWatcher (134 теста)
 dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28 тестов)
-dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров + SignalR Hub + нагрузочные (121 тест)
+dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров + SignalR Hub + нагрузочные (144 теста)
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
 # Lint / Format
@@ -151,8 +168,9 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository, IDirectoryScanner; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto; Services/LogService.cs; Configuration/SessionSettings.cs; Exceptions/NoLogFilesFoundException.cs
 - **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий), FileWatching/FileWatcherService.cs (отслеживание изменений с debounce)
 - **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
+- **nLogMonitor.Desktop** — Photino Desktop приложение: Program.cs (embedded ASP.NET Core + PhotinoWindow), BridgeRequest/BridgeResponse (IPC), нативные диалоги, Controllers/Hubs/Services (скопированы из Api)
 
-### Новые файлы (Фаза 3 + 3.1 + 6 + 6.1 + 7)
+### Новые файлы (Фаза 3 + 3.1 + 6 + 6.1 + 7 + 9)
 - **nLogMonitor.Api/Controllers/** — FilesController (с cleanup callbacks), UploadController, LogsController, ExportController, RecentController, MetricsController
 - **nLogMonitor.Api/Hubs/** — LogWatcherHub (SignalR Hub для real-time обновлений)
 - **nLogMonitor.Api/Services/** — FileWatcherBackgroundService (инкрементальное чтение с LastReadPosition)
@@ -169,6 +187,11 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Application/Interfaces/ISessionStorage** — методы BindConnectionAsync, UnbindConnectionAsync, GetSessionByConnectionAsync, AppendEntriesAsync, GetActiveSessionCountAsync, GetTotalLogsCountAsync, GetActiveConnectionsCountAsync
 - **nLogMonitor.Application/Interfaces/ILogParser** — метод ParseFromPositionAsync
 - **nLogMonitor.Domain/Entities/LogSession** — поле LastReadPosition
+- **nLogMonitor.Desktop/Program.cs** — embedded ASP.NET Core + PhotinoWindow, BridgeRequest/BridgeResponse, message handlers
+- **nLogMonitor.Desktop/Controllers/** — скопированы из Api (FilesController, LogsController, ExportController, etc.)
+- **nLogMonitor.Desktop/Hubs/** — LogWatcherHub (SignalR Hub)
+- **nLogMonitor.Desktop/Services/** — FileWatcherBackgroundService
+- **build-desktop.bat, build-desktop.sh** — скрипты сборки Desktop приложения
 
 ### Структура tests/
 - **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests, FileWatcherServiceTests (debounce, множественные сессии)
@@ -179,10 +202,10 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **src/types/** — TypeScript типы (LogEntry, PagedResult, FilterOptions, etc.)
 - **src/api/** — Axios клиент и API методы (client.ts, logs.ts, files.ts, export.ts, health.ts, signalr.ts, client-logs.ts)
 - **src/services/** — ClientLogger service (logger.ts) — буферизация, retry, error handlers
-- **src/composables/** — useFileWatcher (интеграция SignalR с Vue компонентами)
+- **src/composables/** — useFileWatcher (интеграция SignalR с Vue компонентами), usePhotinoBridge (Desktop IPC)
 - **src/stores/** — Pinia stores (logStore, filterStore, recentStore)
 - **src/components/ui/** — shadcn-vue компоненты (Button, Input, Card, Table, Toast, Badge, Select, etc.)
-- **src/components/FileSelector/** — загрузка файлов с drag & drop
+- **src/components/FileSelector/** — загрузка файлов (Web: drag & drop, Desktop: нативные диалоги)
 - **src/components/LogTable/** — таблица логов с TanStack Table и LogLevelBadge, интеграция real-time обновлений
 - **src/components/FilterPanel/** — фильтры по уровням логирования с подсчётом, интеграция real-time обновлений
 - **src/components/SearchBar/** — поиск с debounce и очисткой
@@ -222,6 +245,8 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - **Race condition prevention** — подписка на события FileSystemWatcher ДО включения EnableRaisingEvents
 - **Truncation handling** — обработка случаев усечения файла (newSize < LastReadPosition)
 - **Virtual scrolling** — для таблицы с миллионами записей (Frontend, Фаза 4-5)
+- **Photino Bridge** — JS ↔ .NET IPC через window.external.sendMessage/receiveMessage, Promise-based async API
+- **Embedded ASP.NET Core** — Kestrel сервер в фоновом потоке Desktop приложения, динамический выбор порта
 
 ## Configuration
 
@@ -250,7 +275,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 
 - **Backend:** .NET 10, ASP.NET Core, SignalR, FluentValidation, NLog
 - **Frontend:** Vue 3.5, TypeScript 5.9, Vite 7.2, Pinia 3.0, TanStack Table 8.21, Tailwind CSS 3.4, Reka UI 2.7, lucide-vue-next, @microsoft/signalr 10.0
-- **Desktop (план):** Photino.NET
+- **Desktop:** Photino.NET 3.1.18 (embedded ASP.NET Core + WebView)
 - **Testing:** NUnit 4.x, Moq, FluentAssertions, coverlet
 
 ## Development Notes

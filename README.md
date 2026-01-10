@@ -1,12 +1,16 @@
 # nLogMonitor
 
-Кроссплатформенное веб-приложение для просмотра и анализа NLog-логов.
+Кроссплатформенное приложение для просмотра и анализа NLog-логов. Работает в двух режимах: Web (браузер) и Desktop (нативное приложение с Photino.NET).
 
-**Технологии:** .NET 10 + Vue 3 + TypeScript + SignalR
+**Технологии:** .NET 10 + Vue 3 + TypeScript + SignalR + Photino.NET
 
 ## Features
 
 - Загрузка и парсинг NLog-файлов (drag & drop, до 100MB)
+- Desktop режим с нативным окном (Photino.NET)
+- Нативные диалоги для открытия файлов и директорий (Desktop)
+- Прямой доступ к файловой системе без загрузки (Desktop)
+- Поддержка директорий с автовыбором последнего .log файла (Desktop)
 - Фильтрация по уровням: Trace, Debug, Info, Warn, Error, Fatal
 - Полнотекстовый поиск с debounce 300ms
 - Серверная пагинация для больших файлов (100K+ записей)
@@ -54,6 +58,25 @@ nLogMonitor.Api.exe   # Windows
 
 Production доступен на http://localhost:5000
 
+### Desktop Build
+
+```bash
+# Windows
+build-desktop.bat
+
+# Linux/macOS
+./build-desktop.sh
+
+# Результат в папке ./publish/desktop/win-x64 (или linux-x64)
+cd publish/desktop/win-x64
+nLogMonitor.Desktop.exe   # Windows
+# или
+cd publish/desktop/linux-x64
+./nLogMonitor.Desktop      # Linux
+```
+
+Desktop приложение (~50 MB) включает встроенный веб-сервер и WebView.
+
 ## Scripts
 
 | Скрипт | Платформа | Описание |
@@ -62,6 +85,8 @@ Production доступен на http://localhost:5000
 | `start-dev.sh` | Linux/macOS | Запуск backend + frontend в режиме разработки с hot reload |
 | `build.bat` | Windows | Сборка production: frontend -> wwwroot -> publish |
 | `build.sh` | Linux/macOS | Сборка production: frontend -> wwwroot -> publish |
+| `build-desktop.bat` | Windows | Сборка Desktop приложения (frontend + self-contained exe) |
+| `build-desktop.sh` | Linux/macOS | Сборка Desktop приложения (frontend + self-contained binary) |
 | `stop.bat` | Windows | Остановка всех запущенных процессов |
 | `stop.sh` | Linux/macOS | Остановка всех запущенных процессов |
 
@@ -72,7 +97,7 @@ Production доступен на http://localhost:5000
 dotnet build                              # Сборка
 dotnet run --project src/nLogMonitor.Api  # Запуск
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
-dotnet test                               # Тесты (283)
+dotnet test                               # Тесты (306)
 
 # Frontend
 cd client
@@ -93,7 +118,10 @@ npm run build  # Production build
 | `/api/files/open` | POST | Открытие файла по пути (Desktop-only) |
 | `/api/files/open-directory` | POST | Открытие директории (Desktop-only) |
 | `/api/metrics` | GET | Метрики сервера (sessions, logs, memory, uptime, connections) |
+| `/api/client-logs` | POST | Приём логов с фронтенда (batch, rate limit: 100 req/min per IP) |
 | `/health` | GET | Health check |
+
+**Примечание:** Эндпоинты `/api/files/open` и `/api/files/open-directory` доступны только в Desktop режиме. В Web режиме возвращают 404.
 
 ### SignalR Hub
 
@@ -152,7 +180,8 @@ nLogMonitor/
 │   ├── nLogMonitor.Api/           # ASP.NET Core Web API + SignalR Hub
 │   ├── nLogMonitor.Application/   # Интерфейсы, DTOs, Services
 │   ├── nLogMonitor.Domain/        # Entities (LogEntry, LogSession, LogLevel)
-│   └── nLogMonitor.Infrastructure/# Реализации (Parser, Storage, Export, FileWatcher)
+│   ├── nLogMonitor.Infrastructure/# Реализации (Parser, Storage, Export, FileWatcher)
+│   └── nLogMonitor.Desktop/       # Photino Desktop приложение (embedded ASP.NET Core)
 ├── tests/
 │   ├── nLogMonitor.Api.Tests/     # Integration + Unit тесты API
 │   ├── nLogMonitor.Application.Tests/
@@ -168,6 +197,40 @@ nLogMonitor/
 ├── start-dev.bat                  # Скрипт запуска для разработки
 ├── build.bat                      # Скрипт production сборки
 └── docs/                          # Документация
+```
+
+## Desktop Mode
+
+Desktop приложение создано на базе Photino.NET и включает:
+
+- **Embedded ASP.NET Core** — встроенный веб-сервер работает в фоновом потоке
+- **Native WebView** — использует Edge WebView2 (Windows), WebKit (Linux/macOS)
+- **System Dialogs** — нативные диалоги открытия файлов через Photino API
+- **Direct File Access** — прямой доступ к файловой системе без ограничений на размер
+- **Directory Support** — открытие директории с автоматическим выбором последнего .log файла
+- **Bridge API** — JS ↔ .NET взаимодействие через window.external
+
+### Отличия от Web режима
+
+| Функция | Web | Desktop |
+|---------|:---:|:-------:|
+| Открытие файла | Upload (до 100MB) | Системный диалог (без ограничений) |
+| Открытие директории | ❌ | ✅ |
+| Real-time мониторинг | ✅ | ✅ |
+| Экспорт | ✅ | ✅ |
+| История файлов | Per-session | Persistent (AppData) |
+
+### Сборка для других платформ
+
+```bash
+# Linux x64
+dotnet publish src/nLogMonitor.Desktop -c Release -r linux-x64 --self-contained -o publish/desktop/linux-x64
+
+# macOS x64
+dotnet publish src/nLogMonitor.Desktop -c Release -r osx-x64 --self-contained -o publish/desktop/osx-x64
+
+# macOS ARM64 (Apple Silicon)
+dotnet publish src/nLogMonitor.Desktop -c Release -r osx-arm64 --self-contained -o publish/desktop/osx-arm64
 ```
 
 ## NLog Format

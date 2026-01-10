@@ -4,6 +4,7 @@
 
 - [Обзор](#-обзор)
 - [Production сборка](#-production-сборка)
+- [Desktop Build](#-desktop-build)
 - [Docker](#-docker)
 - [CI/CD](#-cicd)
 - [Переменные окружения](#-переменные-окружения)
@@ -17,6 +18,7 @@ nLogMonitor поддерживает несколько вариантов де�
 
 | Вариант | Сложность | Рекомендуется для |
 |---------|-----------|-------------------|
+| Desktop (Photino) | Низкая | Локальное использование, портативность |
 | Docker Compose | Низкая | Локальная разработка, небольшие команды |
 | Kubernetes | Высокая | Enterprise, масштабирование |
 | Azure App Service | Средняя | .NET-экосистема |
@@ -62,6 +64,132 @@ cp -r dist/* ../publish/wwwroot/
 
 ---
 
+## 💻 Desktop Build
+
+Desktop приложение на базе Photino.NET — автономный executable с встроенным ASP.NET Core сервером и WebView.
+
+### Особенности
+
+- **Self-contained** — не требует установленного .NET Runtime
+- **Embedded Server** — ASP.NET Core работает в фоновом потоке
+- **Native Dialogs** — системные диалоги открытия файлов
+- **Direct File Access** — без ограничения на размер файла
+- **Cross-platform** — Windows, Linux, macOS
+
+### Сборка
+
+#### Windows (x64)
+
+```bash
+# Используйте готовый скрипт (рекомендуется)
+build-desktop.bat
+
+# Или вручную:
+# 1. Сборка frontend
+cd client
+npm run build
+
+# 2. Копирование в Desktop wwwroot
+xcopy /E /I /Y dist ..\src\nLogMonitor.Desktop\wwwroot
+
+# 3. Публикация Desktop приложения
+cd ..
+dotnet publish src/nLogMonitor.Desktop -c Release -r win-x64 ^
+  --self-contained true ^
+  -p:PublishSingleFile=false ^
+  -o publish/desktop/win-x64
+
+# Результат в publish/desktop/win-x64/
+# Размер: ~50 MB
+```
+
+#### Linux (x64)
+
+```bash
+# Используйте готовый скрипт (рекомендуется)
+./build-desktop.sh
+
+# Или вручную:
+# 1. Сборка frontend
+cd client
+npm run build
+
+# 2. Копирование в Desktop wwwroot
+cp -r dist/* ../src/nLogMonitor.Desktop/wwwroot/
+
+# 3. Публикация Desktop приложения
+cd ..
+dotnet publish src/nLogMonitor.Desktop -c Release -r linux-x64 \
+  --self-contained true \
+  -p:PublishSingleFile=false \
+  -o publish/desktop/linux-x64
+
+# Результат в publish/desktop/linux-x64/
+```
+
+#### macOS (ARM64 / x64)
+
+```bash
+# macOS Apple Silicon (M1/M2/M3)
+dotnet publish src/nLogMonitor.Desktop -c Release -r osx-arm64 \
+  --self-contained true \
+  -p:PublishSingleFile=false \
+  -o publish/desktop/osx-arm64
+
+# macOS Intel
+dotnet publish src/nLogMonitor.Desktop -c Release -r osx-x64 \
+  --self-contained true \
+  -p:PublishSingleFile=false \
+  -o publish/desktop/osx-x64
+```
+
+### Запуск
+
+```bash
+# Windows
+cd publish/desktop/win-x64
+nLogMonitor.Desktop.exe
+
+# Linux
+cd publish/desktop/linux-x64
+chmod +x nLogMonitor.Desktop
+./nLogMonitor.Desktop
+
+# macOS
+cd publish/desktop/osx-arm64
+chmod +x nLogMonitor.Desktop
+./nLogMonitor.Desktop
+```
+
+### Отличия от Web версии
+
+| Параметр | Web | Desktop |
+|----------|:---:|:-------:|
+| Требует .NET Runtime | ✅ Да | ❌ Self-contained |
+| Требует браузер | ✅ Да | ❌ Embedded WebView |
+| Размер файла | ~10 MB | ~50 MB |
+| Ограничение размера лог-файла | 100 MB | Без ограничений |
+| Открытие директорий | ❌ | ✅ |
+| История файлов | Per-session | Persistent (AppData) |
+| CORS конфигурация | Требуется | Не требуется |
+
+### Портативная версия
+
+Desktop приложение является портативным — все файлы в одной папке:
+
+```
+publish/desktop/win-x64/
+├── nLogMonitor.Desktop.exe         # Основной executable
+├── nLogMonitor.Api.dll             # ASP.NET Core API
+├── nLogMonitor.*.dll               # Библиотеки приложения
+├── wwwroot/                        # Vue 3 frontend
+└── [runtime dependencies]          # .NET Runtime
+```
+
+Можно скопировать эту папку на любую машину с поддерживаемой ОС и запустить без установки.
+
+---
+
 ## 🐳 Docker
 
 ### Dockerfile (Multi-stage)
@@ -90,6 +218,8 @@ EXPOSE 5000
 ENV ASPNETCORE_URLS=http://+:5000
 ENTRYPOINT ["dotnet", "nLogMonitor.Api.dll"]
 ```
+
+> **Примечание:** Docker используется только для Web режима. Desktop приложение не требует контейнеризации, так как является self-contained executable.
 
 ### Docker Compose
 
@@ -263,6 +393,7 @@ deploy:
 
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
+| `App__Mode` | `Web` | Режим работы (Web/Desktop) |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | Окружение |
 | `ASPNETCORE_URLS` | `http://+:5000` | URL для прослушивания |
 | `SessionSettings__FallbackTtlMinutes` | `5` | Fallback TTL сессий (страховка) |
@@ -275,6 +406,7 @@ deploy:
 # .env
 ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://+:5000
+App__Mode=Desktop
 SessionSettings__FallbackTtlMinutes=10
 FileSettings__MaxFileSizeMB=200
 ```
