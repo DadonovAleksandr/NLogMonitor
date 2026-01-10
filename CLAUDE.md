@@ -75,9 +75,9 @@ dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — 283 теста
-dotnet test                               # Все тесты (283)
-dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта, FileWatcher (134 теста)
+# Tests (NUnit) — 149 тестов
+dotnet test                               # Все тесты (149)
+dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта, FileWatcher
 dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28 тестов)
 dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров + SignalR Hub + нагрузочные (121 тест)
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
@@ -117,19 +117,22 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий), FileWatching/FileWatcherService.cs (отслеживание изменений с debounce)
 - **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
 
-### Новые файлы (Фаза 3 + 3.1 + 6)
-- **nLogMonitor.Api/Controllers/** — FilesController, UploadController, LogsController, ExportController, RecentController
+### Новые файлы (Фаза 3 + 3.1 + 6 + 6.1)
+- **nLogMonitor.Api/Controllers/** — FilesController (с cleanup callbacks), UploadController, LogsController, ExportController, RecentController
 - **nLogMonitor.Api/Hubs/** — LogWatcherHub (SignalR Hub для real-time обновлений)
-- **nLogMonitor.Api/Services/** — FileWatcherBackgroundService (автозапуск FileWatcher)
+- **nLogMonitor.Api/Services/** — FileWatcherBackgroundService (инкрементальное чтение с LastReadPosition)
 - **nLogMonitor.Api/Middleware/** — ExceptionHandlingMiddleware
 - **nLogMonitor.Api/Models/** — ApiErrorResponse, OpenFileRequest, OpenDirectoryRequest
 - **nLogMonitor.Api/Validators/** — FilterOptionsValidator
 - **nLogMonitor.Api/Filters/** — DesktopOnlyAttribute (защита Desktop-only эндпоинтов)
 - **nLogMonitor.Infrastructure/Export/** — JsonExporter, CsvExporter (потоковый экспорт)
-- **nLogMonitor.Infrastructure/Storage/** — RecentLogsFileRepository
-- **nLogMonitor.Infrastructure/FileWatching/** — FileWatcherService (мониторинг файлов с debounce 200ms)
+- **nLogMonitor.Infrastructure/Storage/** — RecentLogsFileRepository, InMemorySessionStorage (1:N маппинг, AppendEntriesAsync)
+- **nLogMonitor.Infrastructure/FileWatching/** — FileWatcherService (debounce 200ms, NotifyFilters.FileName, race condition fix)
+- **nLogMonitor.Infrastructure/Parsing/** — NLogParser (ParseFromPositionAsync для инкрементального чтения)
 - **nLogMonitor.Application/Configuration/** — FileSettings, RecentLogsSettings, AppSettings (режим Web/Desktop)
-- **nLogMonitor.Application/Interfaces/ISessionStorage** — методы BindConnectionAsync, UnbindConnectionAsync, GetSessionByConnectionAsync
+- **nLogMonitor.Application/Interfaces/ISessionStorage** — методы BindConnectionAsync, UnbindConnectionAsync, GetSessionByConnectionAsync, AppendEntriesAsync
+- **nLogMonitor.Application/Interfaces/ILogParser** — метод ParseFromPositionAsync
+- **nLogMonitor.Domain/Entities/LogSession** — поле LastReadPosition
 
 ### Структура tests/
 - **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests, FileWatcherServiceTests (debounce, множественные сессии)
