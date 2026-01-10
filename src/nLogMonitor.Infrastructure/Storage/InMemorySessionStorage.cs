@@ -14,7 +14,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, SessionWrapper> _sessions = new();
     private readonly ConcurrentDictionary<string, Guid> _connectionToSession = new();
-    private readonly ConcurrentDictionary<Guid, ConcurrentBag<string>> _sessionToConnections = new();
+    private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<string, byte>> _sessionToConnections = new();
     private readonly ConcurrentDictionary<Guid, Func<Task>> _cleanupCallbacks = new();
     private readonly TimeSpan _ttl;
     private readonly Timer _cleanupTimer;
@@ -149,21 +149,21 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     }
 
     /// <inheritdoc />
-    public Task AppendEntriesAsync(Guid sessionId, IEnumerable<LogEntry> newEntries, long newPosition)
+    public Task<IReadOnlyList<LogEntry>> AppendEntriesAsync(Guid sessionId, IEnumerable<LogEntry> newEntries, long newPosition)
     {
         if (!_sessions.TryGetValue(sessionId, out var wrapper))
         {
             _logger.LogWarning(
                 "Cannot append entries to non-existent session {SessionId}",
                 sessionId);
-            return Task.CompletedTask;
+            return Task.FromResult<IReadOnlyList<LogEntry>>(Array.Empty<LogEntry>());
         }
 
         var entriesList = newEntries.ToList();
         if (entriesList.Count == 0)
         {
             _logger.LogDebug("No new entries to append to session {SessionId}", sessionId);
-            return Task.CompletedTask;
+            return Task.FromResult<IReadOnlyList<LogEntry>>(Array.Empty<LogEntry>());
         }
 
         // Thread-safe добавление записей
@@ -200,7 +200,8 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
                 newPosition);
         }
 
-        return Task.CompletedTask;
+        // Возвращаем записи с назначенными ID
+        return Task.FromResult<IReadOnlyList<LogEntry>>(entriesList);
     }
 
     /// <inheritdoc />
@@ -228,8 +229,9 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
         _connectionToSession.AddOrUpdate(connectionId, sessionId, (_, _) => sessionId);
 
         // Добавляем connectionId в коллекцию подключений для sessionId (1:N маппинг)
-        var connections = _sessionToConnections.GetOrAdd(sessionId, _ => new ConcurrentBag<string>());
-        connections.Add(connectionId);
+        // Используем ConcurrentDictionary<string, byte> для thread-safe добавления/удаления O(1)
+        var connections = _sessionToConnections.GetOrAdd(sessionId, _ => new ConcurrentDictionary<string, byte>());
+        connections.TryAdd(connectionId, 0);
 
         // Отключаем TTL для привязанной сессии
         if (_sessions.TryGetValue(sessionId, out var wrapper))
@@ -274,18 +276,14 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
             connectionId,
             sessionId);
 
-        // Удаляем connectionId из коллекции подключений сессии
+        // Удаляем connectionId из коллекции подключений сессии (атомарная операция O(1))
         if (_sessionToConnections.TryGetValue(sessionId, out var connections))
         {
-            // Создаем новую коллекцию без текущего connectionId
-            var remainingConnections = new ConcurrentBag<string>(
-                connections.Where(c => c != connectionId));
-
-            // Обновляем коллекцию
-            _sessionToConnections.TryUpdate(sessionId, remainingConnections, connections);
+            // Thread-safe удаление из ConcurrentDictionary
+            connections.TryRemove(connectionId, out _);
 
             // Проверяем: остались ли другие подключения?
-            if (remainingConnections.IsEmpty)
+            if (connections.IsEmpty)
             {
                 // Это был последний connectionId - удаляем сессию
                 _sessionToConnections.TryRemove(sessionId, out _);
@@ -302,7 +300,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
                 _logger.LogInformation(
                     "Session {SessionId} has {RemainingCount} remaining connections, keeping session alive",
                     sessionId,
-                    remainingConnections.Count);
+                    connections.Count);
             }
         }
         else
@@ -326,6 +324,30 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
         }
 
         return Task.FromResult<Guid?>(null);
+    }
+
+    /// <inheritdoc />
+    public Task<int> GetActiveSessionCountAsync()
+    {
+        return Task.FromResult(_sessions.Count);
+    }
+
+    /// <inheritdoc />
+    public Task<long> GetTotalLogsCountAsync()
+    {
+        long totalCount = 0;
+        foreach (var wrapper in _sessions.Values)
+        {
+            totalCount += wrapper.Session.Entries.Count;
+        }
+
+        return Task.FromResult(totalCount);
+    }
+
+    /// <inheritdoc />
+    public Task<int> GetActiveConnectionsCountAsync()
+    {
+        return Task.FromResult(_connectionToSession.Count);
     }
 
     /// <summary>
@@ -365,7 +387,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
                     if (_sessionToConnections.TryRemove(kvp.Key, out var connections))
                     {
                         // Удаляем все connectionId -> sessionId маппинги
-                        foreach (var connId in connections)
+                        foreach (var connId in connections.Keys)
                         {
                             _connectionToSession.TryRemove(connId, out _);
                         }

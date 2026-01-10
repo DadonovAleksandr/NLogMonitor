@@ -66,3 +66,7 @@ nul
 
 # Session temp files
 **/temp/
+
+# Build output
+publish/
+src/nLogMonitor.Api/wwwroot/

@@ -82,8 +82,18 @@ public sealed partial class NLogParser : ILogParser
             bufferSize: 65536, // 64KB buffer
             useAsync: true);
 
+        // Early return: если позиция >= длины файла, нет новых данных
+        if (startPosition >= stream.Length)
+        {
+            _logger?.LogDebug(
+                "No new data to parse: startPosition ({StartPosition}) >= file length ({Length})",
+                startPosition,
+                stream.Length);
+            yield break;
+        }
+
         // Seek to the start position
-        if (startPosition > 0 && startPosition < stream.Length)
+        if (startPosition > 0)
         {
             stream.Seek(startPosition, SeekOrigin.Begin);
         }

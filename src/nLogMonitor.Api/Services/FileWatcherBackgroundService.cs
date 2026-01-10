@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using nLogMonitor.Api.Hubs;
 using nLogMonitor.Application.DTOs;
@@ -16,6 +17,12 @@ public class FileWatcherBackgroundService : BackgroundService
     private readonly IHubContext<LogWatcherHub> _hubContext;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<FileWatcherBackgroundService> _logger;
+
+    /// <summary>
+    /// Семафоры для сериализации обработки событий per session.
+    /// Предотвращает параллельное чтение одного и того же диапазона файла.
+    /// </summary>
+    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _sessionLocks = new();
 
     /// <summary>
     /// Создаёт новый экземпляр FileWatcherBackgroundService.
@@ -51,9 +58,15 @@ public class FileWatcherBackgroundService : BackgroundService
     /// <summary>
     /// Обработчик события изменения файла.
     /// Читает только новые строки из файла (инкрементально) и отправляет их через SignalR.
+    /// Сериализует обработку per session для предотвращения дубликатов.
     /// </summary>
     private async void OnFileChanged(object? sender, FileChangedEventArgs e)
     {
+        // Получаем или создаём семафор для сериализации обработки этой сессии
+        var sessionLock = _sessionLocks.GetOrAdd(e.SessionId, _ => new SemaphoreSlim(1, 1));
+
+        // Ждём освобождения семафора (сериализация обработки для одной сессии)
+        await sessionLock.WaitAsync();
         try
         {
             _logger.LogDebug(
@@ -62,8 +75,9 @@ public class FileWatcherBackgroundService : BackgroundService
                 e.FilePath,
                 e.NewSize);
 
-            var newLogs = new List<LogEntryDto>();
+            IReadOnlyList<LogEntry> appendedEntries;
             long newPosition;
+            long startPosition;
 
             // Создаём scope для получения scoped сервисов
             using (var scope = _serviceScopeFactory.CreateScope())
@@ -78,10 +92,13 @@ public class FileWatcherBackgroundService : BackgroundService
                     _logger.LogWarning(
                         "Session {SessionId} not found, skipping file change processing",
                         e.SessionId);
+
+                    // Удаляем семафор для несуществующей сессии
+                    CleanupSessionLock(e.SessionId);
                     return;
                 }
 
-                var startPosition = session.LastReadPosition;
+                startPosition = session.LastReadPosition;
 
                 // Проверяем: был ли файл усечён (truncated)?
                 if (e.NewSize < startPosition)
@@ -99,29 +116,30 @@ public class FileWatcherBackgroundService : BackgroundService
                 await foreach (var entry in logParser.ParseFromPositionAsync(e.FilePath, startPosition))
                 {
                     entries.Add(entry);
-
-                    newLogs.Add(new LogEntryDto
-                    {
-                        Id = entry.Id, // ID будет переназначен в AppendEntriesAsync
-                        Timestamp = entry.Timestamp,
-                        Level = entry.Level.ToString(),
-                        Message = entry.Message,
-                        Logger = entry.Logger,
-                        ProcessId = entry.ProcessId,
-                        ThreadId = entry.ThreadId,
-                        Exception = entry.Exception
-                    });
                 }
 
                 // Обновляем позицию: новая позиция = новый размер файла
                 newPosition = e.NewSize;
 
-                // Атомарно добавляем новые записи в сессию
-                await sessionStorage.AppendEntriesAsync(e.SessionId, entries, newPosition);
+                // Атомарно добавляем новые записи в сессию и получаем записи с назначенными ID
+                appendedEntries = await sessionStorage.AppendEntriesAsync(e.SessionId, entries, newPosition);
             }
 
-            if (newLogs.Count > 0)
+            if (appendedEntries.Count > 0)
             {
+                // Формируем DTO ПОСЛЕ AppendEntriesAsync с корректными ID
+                var newLogs = appendedEntries.Select(entry => new LogEntryDto
+                {
+                    Id = entry.Id, // ID уже назначен в AppendEntriesAsync
+                    Timestamp = entry.Timestamp,
+                    Level = entry.Level.ToString(),
+                    Message = entry.Message,
+                    Logger = entry.Logger,
+                    ProcessId = entry.ProcessId,
+                    ThreadId = entry.ThreadId,
+                    Exception = entry.Exception
+                }).ToList();
+
                 // Отправляем новые записи всем подписчикам группы сессии
                 await _hubContext.Clients
                     .Group(e.SessionId.ToString())
@@ -131,7 +149,7 @@ public class FileWatcherBackgroundService : BackgroundService
                     "Sent {Count} new log entries to session {SessionId} (position: {OldPosition} -> {NewPosition})",
                     newLogs.Count,
                     e.SessionId,
-                    e.NewSize - newLogs.Count,
+                    startPosition,
                     newPosition);
             }
             else
@@ -148,6 +166,21 @@ public class FileWatcherBackgroundService : BackgroundService
                 "Error processing file change for session {SessionId}",
                 e.SessionId);
         }
+        finally
+        {
+            sessionLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Удаляет семафор для сессии и освобождает ресурсы.
+    /// </summary>
+    private void CleanupSessionLock(Guid sessionId)
+    {
+        if (_sessionLocks.TryRemove(sessionId, out var semaphore))
+        {
+            semaphore.Dispose();
+        }
     }
 
     /// <inheritdoc />
@@ -155,6 +188,13 @@ public class FileWatcherBackgroundService : BackgroundService
     {
         // Отписываемся от события при остановке сервиса
         _fileWatcherService.FileChanged -= OnFileChanged;
+
+        // Освобождаем все семафоры
+        foreach (var kvp in _sessionLocks)
+        {
+            kvp.Value.Dispose();
+        }
+        _sessionLocks.Clear();
 
         _logger.LogInformation("FileWatcherBackgroundService stopped");
 
