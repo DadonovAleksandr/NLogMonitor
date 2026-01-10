@@ -17,7 +17,7 @@
 - **Web-приложение** — запуск через скрипт (backend + frontend)
 - **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
-**Текущий статус:** Фаза 7 (частично завершено: start-dev.bat, build.bat готовы). Следующая: завершение Фазы 7 (Linux/macOS скрипты, production конфигурация, документация).
+**Текущий статус:** Фаза 6.1 ✅ ЗАВЕРШЕНО (критичные исправления real-time системы). Фаза 7 (частично завершено: start-dev.bat, build.bat готовы). Следующая: завершение Фазы 7 (Linux/macOS скрипты, production конфигурация, документация).
 
 ### Ключевые возможности
 - Открытие лог-файла через нативный диалог (Web: загрузка файла, Desktop: системный диалог выбора)
@@ -716,6 +716,47 @@ nLogMonitor/
 - [x] Закрытие вкладки → сессия удаляется (проверить через API)
 - [x] Индикатор "Live" отображается при активном соединении
 - [x] Нагрузочный тест: 10 изменений/сек → UI не тормозит
+
+---
+
+### Фаза 6.1: Критичные исправления Real-time системы
+- [x] **6.1.1 Multi-client support**
+  - [x] Реализовать 1:N маппинг (sessionId → множество connectionId) — `ConcurrentDictionary<Guid, ConcurrentBag<string>>` в InMemorySessionStorage
+  - [x] UnbindConnectionAsync удаляет сессию только при отключении последнего клиента — проверка `connections.IsEmpty` перед DeleteAsync
+  - [x] Поддержка multi-tab: один sessionId может быть связан с несколькими connectionId — множественные вкладки с одним файлом
+  - [x] Поддержка автореконнекта: при восстановлении соединения клиент присоединяется к существующей сессии — `onreconnected` вызывает `JoinSession`
+  - [x] Логирование количества активных подключений для каждой сессии — информация в логах для диагностики
+
+- [x] **6.1.2 Инкрементальное чтение файлов**
+  - [x] Добавить поле `LastReadPosition` в LogSession — позиция последнего прочитанного байта в файле
+  - [x] Реализовать `ParseFromPositionAsync` в ILogParser и NLogParser — чтение файла начиная с указанной позиции (byte offset)
+  - [x] Добавить `AppendEntriesAsync` в ISessionStorage — thread-safe добавление новых записей в сессию с обновлением LevelCounts
+  - [x] FileWatcherBackgroundService: чтение только новых строк вместо перечитывания всего файла — использование LastReadPosition и ParseFromPositionAsync
+  - [x] Обработка truncation файла — если `newSize < LastReadPosition`, парсинг начинается с позиции 0
+  - [x] Установка LastReadPosition после первоначального парсинга — `session.LastReadPosition = fileSize` в LogService.OpenFileAsync
+  - [x] Thread-safe обновление: lock(session) в AppendEntriesAsync — предотвращение race conditions при параллельных обновлениях
+
+- [x] **6.1.3 Cleanup callbacks для FileWatcher**
+  - [x] Регистрация cleanup callback в FilesController после старта FileWatcher — вызов `sessionStorage.RegisterCleanupCallbackAsync`
+  - [x] Автоматическая остановка FileWatcher при удалении сессии — callback вызывает `fileWatcherService.StopWatchingAsync`
+  - [x] Предотвращение утечек ресурсов: FileSystemWatcher, Timer, event handlers освобождаются — cleanup при OnDisconnectedAsync/LeaveSession/TTL expiration
+  - [x] Логирование cleanup операций для диагностики — информация о вызове callbacks в логах
+
+- [x] **6.1.4 Улучшения FileWatcherService**
+  - [x] Добавить `NotifyFilters.FileName` для поддержки log rotation — отслеживание переименования файлов (app.log → app.2024-01-10.log)
+  - [x] Race condition fix: подписка на события ДО включения `EnableRaisingEvents` — предотвращение потери событий между инициализацией и подпиской
+  - [x] Корректная обработка событий Renamed для log rotation — обновление при переименовании файла
+
+**Результат фазы:** Исправлены критичные проблемы производительности, стабильности и надёжности real-time системы. ✅ ЗАВЕРШЕНО
+
+**Definition of Done (DoD):**
+- [x] Multi-tab: открытие одного файла в нескольких вкладках не приводит к удалению сессии
+- [x] Автореконнект: временный разрыв сети не приводит к потере сессии
+- [x] Performance: при изменении файла 100K записей читаются только новые строки (не весь файл)
+- [x] Consistency: нет дубликатов в UI, GetLogs/Export синхронизированы с real-time view
+- [x] Resource cleanup: FileWatcher останавливается при удалении сессии (проверить через логи)
+- [x] Log rotation: переименование файла корректно обрабатывается FileSystemWatcher
+- [x] Все 149 тестов проходят успешно
 
 ---
 
