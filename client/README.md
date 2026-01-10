@@ -36,11 +36,16 @@ npm run lint
 ```
 src/
 ├── api/                  # Axios API client
-│   └── client.ts
+│   ├── client.ts
+│   ├── logs.ts
+│   ├── files.ts
+│   ├── export.ts
+│   └── health.ts
 ├── components/
 │   ├── ui/               # shadcn-vue (Button, Input, Card, Table)
 │   ├── FileSelector/     # Drag & drop загрузка файлов
-│   └── LogTable/         # Таблица логов с TanStack Table
+│   ├── LogTable/         # Таблица логов с TanStack Table
+│   └── ExportButton/     # Dropdown экспорт в JSON/CSV
 ├── lib/                  # Utility functions
 ├── stores/               # Pinia stores
 │   ├── logStore.ts       # Состояние логов и сессии
@@ -57,6 +62,7 @@ src/
 - **FileSelector** — drag & drop загрузка .log файлов
 - **LogTable** — таблица с TanStack Table и виртуализацией
 - **LogLevelBadge** — цветовая индикация уровней (Trace/Debug/Info/Warn/Error/Fatal)
+- **ExportButton** — dropdown с экспортом в JSON/CSV, terminal/brutalist дизайн
 - **shadcn-vue** — Button, Input, Card, Table
 
 ## Конфигурация
@@ -81,5 +87,5 @@ Frontend взаимодействует с .NET 10 Backend через REST API:
 
 - FilterPanel — фильтры по уровням логирования
 - SearchBar — полнотекстовый поиск с debounce
-- ExportButton — экспорт в JSON/CSV
 - Pagination — навигация по страницам
+- LogDetails — детальный просмотр одной записи

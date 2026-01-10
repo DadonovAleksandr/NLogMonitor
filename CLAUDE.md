@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 nLogMonitor — кроссплатформенное приложение для просмотра и анализа NLog-логов. Full-stack проект с Clean Architecture: .NET 10 Backend + Vue 3/TypeScript Frontend. Работает в двух режимах: Web (скрипты запуска) и Desktop (Photino).
 
-**Текущий статус:** Фаза 4 ✅ В ПРОЦЕССЕ (осталась интеграция E2E). Следующая: Фаза 5 (UI компоненты). Полный план — см. `PLAN.md`.
+**Текущий статус:** Фаза 5 ✅ ЗАВЕРШЕНО. Следующая: Фаза 6 (Real-time обновления через SignalR). Полный план — см. `PLAN.md`.
 
 ### Выполнено в Фазе 3.1
 - ✅ Path traversal защита (санитизация file.FileName)
@@ -30,6 +30,16 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ LogTable компонент с TanStack Table
 - ✅ LogLevelBadge с цветовой индикацией уровней
 - ✅ App.vue с интеграцией компонентов
+
+### Выполнено в Фазе 5
+- ✅ FilterPanel компонент с toggle-кнопками по уровням и подсчётом записей
+- ✅ SearchBar компонент с debounce 300ms и иконкой поиска
+- ✅ Pagination компонент с выбором размера страницы (50, 100, 200)
+- ✅ ExportButton компонент с dropdown выбора формата (JSON/CSV)
+- ✅ RecentFiles компонент с историей открытых файлов
+- ✅ Loading states и error handling через Toast компоненты
+- ✅ Empty states с информативными placeholders
+- ✅ Responsive design для корректного отображения на всех разрешениях
 
 ## Build & Run Commands
 
@@ -103,9 +113,14 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **src/types/** — TypeScript типы (LogEntry, PagedResult, FilterOptions, etc.)
 - **src/api/** — Axios клиент и API методы (client.ts, logs.ts, files.ts, export.ts, health.ts)
 - **src/stores/** — Pinia stores (logStore, filterStore, recentStore)
-- **src/components/ui/** — shadcn-vue компоненты (Button, Input, Card, Table)
+- **src/components/ui/** — shadcn-vue компоненты (Button, Input, Card, Table, Toast, Badge, Select, etc.)
 - **src/components/FileSelector/** — загрузка файлов с drag & drop
 - **src/components/LogTable/** — таблица логов с TanStack Table и LogLevelBadge
+- **src/components/FilterPanel/** — фильтры по уровням логирования с подсчётом
+- **src/components/SearchBar/** — поиск с debounce и очисткой
+- **src/components/Pagination/** — пагинация с выбором размера страницы
+- **src/components/ExportButton/** — экспорт в JSON/CSV
+- **src/components/RecentFiles/** — список недавних файлов
 
 ## NLog Format
 

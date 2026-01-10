@@ -2,8 +2,11 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { LogEntry, OpenFileResult, FilterOptions, LevelCounts } from '@/types'
 import { logsApi, filesApi } from '@/api'
+import { useToast } from '@/composables/useToast'
 
 export const useLogStore = defineStore('logs', () => {
+  const { showToast } = useToast()
+
   // State
   const sessionId = ref<string | null>(null)
   const fileName = ref<string>('')
@@ -40,8 +43,11 @@ export const useLogStore = defineStore('logs', () => {
       const result = await filesApi.uploadFile(file)
       setSessionData(result)
       await fetchLogs()
+      showToast(`File "${file.name}" loaded successfully`, 'success')
     } catch (err: unknown) {
-      error.value = (err as { message?: string }).message || 'Failed to upload file'
+      const message = (err as { message?: string }).message || 'Failed to upload file'
+      error.value = message
+      showToast(message, 'error')
       throw err
     } finally {
       isLoading.value = false
@@ -56,8 +62,11 @@ export const useLogStore = defineStore('logs', () => {
       const result = await filesApi.openFile(path)
       setSessionData(result)
       await fetchLogs()
+      showToast(`File "${result.fileName}" loaded successfully`, 'success')
     } catch (err: unknown) {
-      error.value = (err as { message?: string }).message || 'Failed to open file'
+      const message = (err as { message?: string }).message || 'Failed to open file'
+      error.value = message
+      showToast(message, 'error')
       throw err
     } finally {
       isLoading.value = false
@@ -72,8 +81,11 @@ export const useLogStore = defineStore('logs', () => {
       const result = await filesApi.openDirectory(path)
       setSessionData(result)
       await fetchLogs()
+      showToast(`Directory "${result.fileName}" loaded successfully`, 'success')
     } catch (err: unknown) {
-      error.value = (err as { message?: string }).message || 'Failed to open directory'
+      const message = (err as { message?: string }).message || 'Failed to open directory'
+      error.value = message
+      showToast(message, 'error')
       throw err
     } finally {
       isLoading.value = false
@@ -105,7 +117,9 @@ export const useLogStore = defineStore('logs', () => {
       totalCount.value = result.totalCount
       totalPages.value = result.totalPages
     } catch (err: unknown) {
-      error.value = (err as { message?: string }).message || 'Failed to fetch logs'
+      const message = (err as { message?: string }).message || 'Failed to fetch logs'
+      error.value = message
+      showToast(message, 'error')
       throw err
     } finally {
       isLoading.value = false
