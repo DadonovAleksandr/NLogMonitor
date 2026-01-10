@@ -120,18 +120,15 @@
 
 Остановка мониторинга изменений файла для указанной сессии.
 
-> 📌 **Примечание:** File watching будет реализован в Фазе 6.
+> ⚠️ **Только Desktop режим**: В Web-режиме (`App.Mode: Web`) этот эндпоинт возвращает HTTP 404.
 
-**Response:** `501 Not Implemented`
+**Response:** `204 No Content`
 
-```json
-{
-  "error": "NotImplemented",
-  "message": "File watching functionality is planned for Phase 6",
-  "details": null,
-  "traceId": "00-abc123..."
-}
-```
+**Ошибки:**
+
+| Код | Описание |
+|-----|----------|
+| 404 | Сессия не найдена или эндпоинт доступен только в Desktop-режиме |
 
 ---
 
@@ -393,6 +390,127 @@ Id,Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
 |-----|----------|
 | 400 | Некорректный формат логов |
 | 429 | Слишком много запросов (rate limit) |
+
+---
+
+### SignalR Hub
+
+#### WebSocket Connection
+
+Подключение к SignalR Hub для real-time обновлений логов.
+
+**Hub URL:** `/hubs/logwatcher`
+
+**Библиотека:** `@microsoft/signalr` (frontend)
+
+#### `JoinSession`
+
+Присоединение к сессии для получения real-time обновлений.
+
+**Request (Client → Server):**
+
+```typescript
+await connection.invoke('JoinSession', sessionId)
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "sessionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "fileName": "app.log"
+}
+```
+
+или при ошибке:
+
+```json
+{
+  "success": false,
+  "error": "Session not found"
+}
+```
+
+**Описание:** Привязывает SignalR connectionId к sessionId и добавляет клиента в группу сессии. После вызова клиент начинает получать событие `NewLogs`.
+
+---
+
+#### `LeaveSession`
+
+Выход из сессии и остановка получения обновлений.
+
+**Request (Client → Server):**
+
+```typescript
+await connection.invoke('LeaveSession', sessionId)
+```
+
+**Response:** `void`
+
+**Описание:** Удаляет клиента из группы сессии, отвязывает connectionId и удаляет сессию из хранилища. После вызова клиент больше не получает обновления.
+
+---
+
+#### `NewLogs` (Server → Client Event)
+
+Событие отправляется сервером при обнаружении новых записей в файле лога.
+
+**Подписка (Client):**
+
+```typescript
+connection.on('NewLogs', (logs: LogEntry[]) => {
+  console.log('Получены новые логи:', logs)
+})
+```
+
+**Payload:**
+
+```typescript
+type NewLogsEvent = LogEntry[]
+```
+
+**Описание:** Отправляется всем клиентам в группе сессии. FileWatcherService обнаруживает изменения в файле (debounce 200ms) и через Hub рассылает новые записи.
+
+---
+
+#### Lifecycle управление
+
+**Автоматическое удаление сессии:**
+- При закрытии вкладки браузера → `OnDisconnectedAsync` → отвязывание connectionId → удаление сессии
+- При явном вызове `LeaveSession` → удаление сессии
+
+**Fallback TTL (5 минут):**
+- Страховка для случаев потери соединения (crash браузера, потеря сети)
+- Фоновый cleanup timer удаляет сессии, у которых истёк TTL
+
+**Пример использования:**
+
+```typescript
+import * as signalR from '@microsoft/signalr'
+
+const connection = new signalR.HubConnectionBuilder()
+  .withUrl('/hubs/logwatcher')
+  .withAutomaticReconnect()
+  .build()
+
+await connection.start()
+
+// Присоединиться к сессии
+const result = await connection.invoke('JoinSession', sessionId)
+if (result.success) {
+  console.log(`Joined session for file: ${result.fileName}`)
+}
+
+// Подписаться на новые логи
+connection.on('NewLogs', (logs) => {
+  logs.forEach(log => console.log(log.message))
+})
+
+// При закрытии - покинуть сессию
+await connection.invoke('LeaveSession', sessionId)
+await connection.stop()
+```
 
 ---
 

@@ -176,19 +176,26 @@ public record OpenFileResultDto(
 | Компонент | Назначение | Статус |
 |-----------|-----------|--------|
 | `NLogParser` | Высокопроизводительный парсер логов NLog | ✅ Реализован (Фаза 2) |
-| `InMemorySessionStorage` | Хранение сессий в памяти с TTL | ✅ Реализован (Фаза 2) |
+| `InMemorySessionStorage` | Хранение сессий в памяти с TTL и SignalR binding | ✅ Реализован (Фаза 2, расширен в Фазе 6) |
 | `DirectoryScanner` | Поиск лог-файлов в директории | ✅ Реализован (Фаза 2) |
 | `JsonExporter` | Потоковый экспорт в JSON | ✅ Реализован (Фаза 3) |
 | `CsvExporter` | Потоковый экспорт в CSV | ✅ Реализован (Фаза 3) |
 | `RecentLogsFileRepository` | Хранение истории в JSON | ✅ Реализован (Фаза 3) |
-| `FileWatcherService` | Мониторинг изменений файлов | Планируется (Фаза 6) |
+| `FileWatcherService` | Мониторинг изменений файлов с debounce 200ms | ✅ Реализован (Фаза 6) |
 | `DesktopOnlyAttribute` | Фильтр для защиты Desktop-only эндпоинтов | ✅ Реализован (Фаза 3.1) |
 
 ### Application Layer Services
 
 | Компонент | Назначение | Статус |
 |-----------|-----------|--------|
-| `LogService` | Основной сервис для работы с логами | Реализован (Фаза 2) |
+| `LogService` | Основной сервис для работы с логами | ✅ Реализован (Фаза 2) |
+
+### Presentation Layer
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `LogWatcherHub` | SignalR Hub для real-time обновлений | ✅ Реализован (Фаза 6) |
+| `FileWatcherBackgroundService` | Background service для автозапуска FileWatcher | ✅ Реализован (Фаза 6) |
 
 ### Application Layer Configuration
 
@@ -471,7 +478,7 @@ Thread-safe хранилище сессий логов в памяти с авт
 - **Автоматическая очистка** — Timer каждую минуту удаляет просроченные сессии
 - **IDisposable** — корректная остановка таймера и освобождение ресурсов
 
-#### Подготовка к SignalR (Фаза 6)
+#### SignalR интеграция (Фаза 6) ✅
 
 ```csharp
 // Методы для связывания сессий с SignalR соединениями
@@ -479,6 +486,11 @@ Task BindConnectionAsync(string connectionId, Guid sessionId);
 Task UnbindConnectionAsync(string connectionId);
 Task<Guid?> GetSessionByConnectionAsync(string connectionId);
 ```
+
+**Реализация:**
+- ConcurrentDictionary<string, Guid> для маппинга connectionId → sessionId
+- При вызове UnbindConnectionAsync сессия автоматически удаляется из хранилища
+- Cleanup callbacks вызываются при удалении сессии (очистка temp-файлов, остановка FileWatcher)
 
 #### Архитектура хранения
 
@@ -579,6 +591,147 @@ Client          LogService           NLogParser          SessionStorage
    │                 │<────────────────────────────────────────│
    │     sessionId   │                    │                    │
    │<────────────────│                    │                    │
+```
+
+---
+
+### FileWatcherService (Фаза 6)
+
+**Расположение:** `src/nLogMonitor.Infrastructure/FileSystem/FileWatcherService.cs`
+
+Сервис мониторинга изменений лог-файлов с использованием FileSystemWatcher.
+
+#### Ключевые особенности
+
+- **Множественные сессии** — одновременное отслеживание нескольких файлов через ConcurrentDictionary
+- **Debounce механизм (200ms)** — группировка множественных изменений файла для предотвращения спама событий
+- **FileSystemWatcher** — нативный мониторинг NotifyFilters.LastWrite | Size
+- **Event-based архитектура** — событие FileChanged для уведомления подписчиков
+- **IDisposable** — корректное освобождение FileSystemWatcher и таймеров
+
+#### API методы
+
+| Метод | Описание |
+|-------|----------|
+| `StartWatchingAsync(sessionId, filePath)` | Запуск мониторинга файла для сессии |
+| `StopWatchingAsync(sessionId)` | Остановка мониторинга |
+| `IsWatching(sessionId)` | Проверка активности мониторинга |
+
+#### Архитектура
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FileWatcherService                            │
+├─────────────────────────────────────────────────────────────────┤
+│  ConcurrentDictionary<Guid, WatcherContext>                     │
+│    └── WatcherContext                                            │
+│          ├── SessionId: Guid                                    │
+│          ├── FilePath: string                                   │
+│          ├── Watcher: FileSystemWatcher                         │
+│          ├── DebounceTimer: Timer?                              │
+│          └── LastEventTime: DateTime                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Event: FileChanged (EventHandler<FileChangedEventArgs>)        │
+│    └── Подписчики: FileWatcherBackgroundService                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Debounce алгоритм
+
+```
+File changed → Cancel existing timer → Start new 200ms timer → Timer elapsed → Parse new logs → Raise FileChanged event
+```
+
+Это предотвращает множественные парсинги при быстрых изменениях файла (например, batch запись логов).
+
+---
+
+### LogWatcherHub (Фаза 6)
+
+**Расположение:** `src/nLogMonitor.Api/Hubs/LogWatcherHub.cs`
+
+SignalR Hub для real-time обновлений логов.
+
+#### Ключевые особенности
+
+- **Groups** — каждая сессия = отдельная группа для broadcast сообщений
+- **Connection binding** — привязка SignalR connectionId к sessionId через ISessionStorage
+- **Lifecycle управление** — автоматическое удаление сессий при disconnect
+- **Type-safe communication** — JoinSessionResult DTO для client-server взаимодействия
+
+#### Hub методы
+
+| Метод | Направление | Описание |
+|-------|-------------|----------|
+| `JoinSession(sessionId)` | Client → Server | Присоединение к группе сессии, возвращает JoinSessionResult |
+| `LeaveSession(sessionId)` | Client → Server | Выход из группы, удаление сессии |
+| `OnDisconnectedAsync()` | Событие | Автоматический cleanup при разрыве соединения |
+| `SendNewLogs(sessionId, logs)` | Server → Client | Отправка новых записей всем в группе |
+
+#### События для клиентов
+
+| Событие | Payload | Описание |
+|---------|---------|----------|
+| `NewLogs` | `LogEntry[]` | Массив новых записей логов |
+
+#### Sequence диаграмма: Real-time обновления
+
+```
+Browser         LogWatcherHub     ISessionStorage     FileWatcherService
+   │                 │                    │                    │
+   │  JoinSession    │                    │                    │
+   │────────────────>│                    │                    │
+   │                 │ BindConnection     │                    │
+   │                 │───────────────────>│                    │
+   │                 │ AddToGroup         │                    │
+   │                 │──┐                 │                    │
+   │                 │<─┘                 │                    │
+   │ {success:true}  │                    │                    │
+   │<────────────────│                    │                    │
+   │                 │                    │                    │
+   │                 │                    │ File changed       │
+   │                 │                    │<───────────────────│
+   │                 │ SendNewLogs        │                    │
+   │                 │<───────────────────────────────────────│
+   │  NewLogs event  │                    │                    │
+   │<────────────────│                    │                    │
+   │                 │                    │                    │
+   │ (close tab)     │                    │                    │
+   │──────────X      │                    │                    │
+   │                 │ OnDisconnected     │                    │
+   │                 │──┐                 │                    │
+   │                 │  │ UnbindConnection│                    │
+   │                 │  └────────────────>│                    │
+   │                 │                    │ Delete session     │
+   │                 │                    │──┐                 │
+   │                 │                    │  │ (cleanup)       │
+   │                 │                    │<─┘                 │
+```
+
+---
+
+### FileWatcherBackgroundService (Фаза 6)
+
+**Расположение:** `src/nLogMonitor.Api/Services/FileWatcherBackgroundService.cs`
+
+Hosted service для автоматического запуска FileWatcher и интеграции с SignalR Hub.
+
+#### Ключевые особенности
+
+- **BackgroundService** — IHostedService для выполнения в фоновом режиме
+- **Event subscription** — подписка на FileWatcherService.FileChanged
+- **NLog парсинг** — автоматический парсинг новых записей при изменении файла
+- **SignalR broadcast** — отправка новых логов через LogWatcherHub.SendNewLogs
+
+#### Алгоритм работы
+
+```
+1. Subscribe to FileWatcherService.FileChanged
+2. On FileChanged event:
+   a. Get session from storage
+   b. Determine file size delta
+   c. Parse new logs from end of file (using offset)
+   d. Send new logs via SignalR Hub to session group
 ```
 
 ---

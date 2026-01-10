@@ -342,7 +342,20 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 
 ### Memory Limits
 
-> Примечание: Память управляется через TTL сессий. Основной механизм удаления — через SignalR disconnect (см. Фаза 6 в PLAN.md). FallbackTtlMinutes используется как страховка.
+> **Механизм управления памятью (Фаза 6):**
+>
+> **Основной механизм:** SignalR lifecycle управление
+> - При открытии файла клиент вызывает `LogWatcherHub.JoinSession(sessionId)`
+> - SignalR connectionId привязывается к sessionId через `ISessionStorage.BindConnectionAsync`
+> - При закрытии вкладки браузера → `OnDisconnectedAsync` → `UnbindConnectionAsync` → удаление сессии из памяти
+> - Cleanup callbacks автоматически останавливают FileWatcher и удаляют temp-файлы
+>
+> **Fallback механизм:** TTL-based cleanup (страховка)
+> - `FallbackTtlMinutes` (по умолчанию 5 минут) — для случаев потери соединения
+> - Фоновый таймер каждую минуту (`CleanupIntervalMinutes`) проверяет и удаляет просроченные сессии
+> - Срабатывает при crash браузера, потере сети, или если клиент не вызвал `LeaveSession`
+>
+> Такая двухуровневая архитектура гарантирует, что память всегда освобождается: либо немедленно (через SignalR), либо через TTL.
 
 ---
 
