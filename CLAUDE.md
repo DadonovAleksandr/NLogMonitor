@@ -122,6 +122,10 @@ build-desktop.bat                         # Windows: frontend + Desktop exe
 ./build-desktop.sh                        # Linux: frontend + Desktop binary
 # Результат в publish/desktop/win-x64/, запуск: nLogMonitor.Desktop.exe
 
+# Desktop разработка (hot reload)
+start-desktop-dev.bat                     # Windows: Vite dev server + Desktop с hot reload
+stop-desktop-dev.bat                      # Windows: остановка Desktop dev процессов
+
 # Backend
 dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
@@ -166,7 +170,7 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 ### Текущая структура src/
 - **nLogMonitor.Domain** — сущности: LogEntry, LogSession, LogLevel enum, RecentLogEntry
 - **nLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository, IDirectoryScanner; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto; Services/LogService.cs; Configuration/SessionSettings.cs; Exceptions/NoLogFilesFoundException.cs
-- **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий), FileWatching/FileWatcherService.cs (отслеживание изменений с debounce)
+- **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий), FileSystem/FileWatcherService.cs (отслеживание изменений с debounce)
 - **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
 - **nLogMonitor.Desktop** — Photino Desktop приложение: Program.cs (embedded ASP.NET Core + PhotinoWindow), BridgeRequest/BridgeResponse (IPC), нативные диалоги, Controllers/Hubs/Services (скопированы из Api)
 
@@ -180,7 +184,7 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Api/Filters/** — DesktopOnlyAttribute (защита Desktop-only эндпоинтов)
 - **nLogMonitor.Infrastructure/Export/** — JsonExporter, CsvExporter (потоковый экспорт)
 - **nLogMonitor.Infrastructure/Storage/** — RecentLogsFileRepository, InMemorySessionStorage (1:N маппинг, AppendEntriesAsync)
-- **nLogMonitor.Infrastructure/FileWatching/** — FileWatcherService (debounce 200ms, NotifyFilters.FileName, race condition fix)
+- **nLogMonitor.Infrastructure/FileSystem/** — FileWatcherService (debounce 200ms, NotifyFilters.FileName, race condition fix)
 - **nLogMonitor.Infrastructure/Parsing/** — NLogParser (ParseFromPositionAsync для инкрементального чтения)
 - **nLogMonitor.Application/Configuration/** — FileSettings, RecentLogsSettings, AppSettings (режим Web/Desktop)
 - **nLogMonitor.Application/DTOs/** — MetricsDto (метрики сервера)
@@ -192,6 +196,8 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Desktop/Hubs/** — LogWatcherHub (SignalR Hub)
 - **nLogMonitor.Desktop/Services/** — FileWatcherBackgroundService
 - **build-desktop.bat, build-desktop.sh** — скрипты сборки Desktop приложения
+- **start-desktop-dev.bat** — запуск Desktop в режиме разработки с Vite hot reload
+- **stop-desktop-dev.bat** — остановка Desktop dev процессов (Vite + Desktop)
 
 ### Структура tests/
 - **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests, FileWatcherServiceTests (debounce, множественные сессии)
@@ -200,9 +206,9 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 
 ### Структура client/
 - **src/types/** — TypeScript типы (LogEntry, PagedResult, FilterOptions, etc.)
-- **src/api/** — Axios клиент и API методы (client.ts, logs.ts, files.ts, export.ts, health.ts, signalr.ts, client-logs.ts)
+- **src/api/** — Axios клиент и API методы (client.ts, config.ts, logs.ts, files.ts, export.ts, health.ts, signalr.ts, client-logs.ts)
 - **src/services/** — ClientLogger service (logger.ts) — буферизация, retry, error handlers
-- **src/composables/** — useFileWatcher (интеграция SignalR с Vue компонентами), usePhotinoBridge (Desktop IPC)
+- **src/composables/** — useFileWatcher (интеграция SignalR с Vue компонентами), usePhotinoBridge (Desktop IPC), useToast (уведомления)
 - **src/stores/** — Pinia stores (logStore, filterStore, recentStore)
 - **src/components/ui/** — shadcn-vue компоненты (Button, Input, Card, Table, Toast, Badge, Select, etc.)
 - **src/components/FileSelector/** — загрузка файлов (Web: drag & drop, Desktop: нативные диалоги)

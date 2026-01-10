@@ -1,4 +1,5 @@
-import { ref, readonly, onMounted } from 'vue'
+import { ref, readonly } from 'vue'
+import { setBaseUrlFromPort, markAsInitialized, waitForInit } from '@/api/config'
 
 // Type declarations for Photino bridge
 declare global {
@@ -99,37 +100,78 @@ async function sendCommand<T = unknown>(command: string, data?: unknown): Promis
   })
 }
 
+// Глобальное состояние для синглтона
+const globalIsDesktop = ref(false)
+const globalServerPort = ref<number | null>(null)
+const globalIsReady = ref(false)
+let apiInitPromise: Promise<void> | null = null
+
 /**
- * Composable for Photino Desktop bridge
+ * Инициализация API config.
+ * Вызывается один раз при старте приложения.
+ * В Desktop режиме получает порт через bridge и устанавливает базовый URL.
+ * В Web режиме просто помечает API как готовый.
  */
-export function usePhotinoBridge() {
-  const isDesktop = ref(false)
-  const serverPort = ref<number | null>(null)
-  const isReady = ref(false)
+export async function initializeApiConfig(): Promise<void> {
+  // Если уже инициализирован, возвращаем существующий promise
+  if (apiInitPromise) {
+    return apiInitPromise
+  }
 
-  // Initialize on mount
-  onMounted(async () => {
-    isDesktop.value = checkIsDesktop()
+  apiInitPromise = (async () => {
+    globalIsDesktop.value = checkIsDesktop()
 
-    if (isDesktop.value) {
+    if (globalIsDesktop.value) {
       initializeBridge()
       try {
-        serverPort.value = await sendCommand<number>('getServerPort')
-      } catch {
-        // Ignore errors getting server port
+        const port = await sendCommand<number>('getServerPort')
+        globalServerPort.value = port
+        setBaseUrlFromPort(port)
+        console.info(`[Photino Bridge] Desktop mode initialized, server port: ${port}`)
+      } catch (error) {
+        console.error('[Photino Bridge] Failed to get server port:', error)
+        // Fallback: помечаем как инициализированный с дефолтным URL
+        markAsInitialized()
       }
-      isReady.value = true
     } else {
-      isReady.value = true
+      // Web режим - используем дефолтный URL
+      markAsInitialized()
+      console.info('[Photino Bridge] Web mode initialized')
     }
-  })
 
+    globalIsReady.value = true
+  })()
+
+  return apiInitPromise
+}
+
+/**
+ * Ожидание готовности API.
+ * Используйте перед первым API вызовом.
+ */
+export function waitForApiReady(): Promise<void> {
+  return waitForInit()
+}
+
+/**
+ * Проверка, является ли приложение Desktop режимом.
+ * Синхронная проверка без ожидания инициализации.
+ */
+export function isDesktopMode(): boolean {
+  return checkIsDesktop()
+}
+
+/**
+ * Composable for Photino Desktop bridge.
+ * Предоставляет реактивное состояние и методы для работы с нативными диалогами.
+ */
+export function usePhotinoBridge() {
   /**
    * Show native file open dialog
    * @returns Selected file path or null if cancelled
    */
   async function showOpenFileDialog(): Promise<string | null> {
-    if (!isDesktop.value) {
+    if (!globalIsDesktop.value) {
       throw new Error('Native dialogs only available in Desktop mode')
     }
     return sendCommand<string | null>('showOpenFile')
@@ -140,16 +182,16 @@ export function usePhotinoBridge() {
    * @returns Selected folder path or null if cancelled
    */
   async function showOpenFolderDialog(): Promise<string | null> {
-    if (!isDesktop.value) {
+    if (!globalIsDesktop.value) {
       throw new Error('Native dialogs only available in Desktop mode')
     }
     return sendCommand<string | null>('showOpenFolder')
   }
 
   return {
-    isDesktop: readonly(isDesktop),
-    serverPort: readonly(serverPort),
-    isReady: readonly(isReady),
+    isDesktop: readonly(globalIsDesktop),
+    serverPort: readonly(globalServerPort),
+    isReady: readonly(globalIsReady),
     showOpenFileDialog,
     showOpenFolderDialog
   }

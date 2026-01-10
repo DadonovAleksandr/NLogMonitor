@@ -1,5 +1,5 @@
 import * as signalR from '@microsoft/signalr'
-import { BASE_URL } from './client'
+import { getBaseUrl } from './config'
 import { logger } from '@/services/logger'
 import type { JoinSessionResult, NewLogsEvent, ConnectionState } from '@/types'
 
@@ -30,7 +30,7 @@ class SignalRManager {
    * Использует exponential backoff: 0, 2, 10, 30 секунд.
    */
   private createConnection(): signalR.HubConnection {
-    const hubUrl = `${BASE_URL}/hubs/logwatcher`
+    const hubUrl = `${getBaseUrl()}/hubs/logwatcher`
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl)

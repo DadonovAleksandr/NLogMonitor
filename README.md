@@ -77,12 +77,29 @@ cd publish/desktop/linux-x64
 
 Desktop приложение (~50 MB) включает встроенный веб-сервер и WebView.
 
+### Desktop Development Mode (Hot Reload)
+
+```bash
+# Windows — запуск Vite dev server + Desktop с hot reload
+start-desktop-dev.bat
+
+# Остановка всех Desktop dev процессов
+stop-desktop-dev.bat
+```
+
+В этом режиме:
+- Vite dev server запускается в отдельном окне (http://localhost:5173)
+- Desktop приложение загружает frontend с Vite вместо embedded статики
+- Изменения в Vue компонентах применяются мгновенно (HMR)
+
 ## Scripts
 
 | Скрипт | Платформа | Описание |
 |--------|-----------|----------|
 | `start-dev.bat` | Windows | Запуск backend + frontend в режиме разработки с hot reload |
 | `start-dev.sh` | Linux/macOS | Запуск backend + frontend в режиме разработки с hot reload |
+| `start-desktop-dev.bat` | Windows | Запуск Desktop + Vite dev server с hot reload |
+| `stop-desktop-dev.bat` | Windows | Остановка Desktop dev процессов |
 | `build.bat` | Windows | Сборка production: frontend -> wwwroot -> publish |
 | `build.sh` | Linux/macOS | Сборка production: frontend -> wwwroot -> publish |
 | `build-desktop.bat` | Windows | Сборка Desktop приложения (frontend + self-contained exe) |

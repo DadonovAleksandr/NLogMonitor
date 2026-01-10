@@ -1,4 +1,5 @@
 import { clientLogsApi, type ClientLog } from '@/api/client-logs'
+import { getBaseUrl } from '@/api/config'
 
 /**
  * Уровни логирования
@@ -360,7 +361,7 @@ class ClientLogger {
         // Используем sendBeacon для гарантированной отправки при закрытии
         if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
           const blob = new Blob([JSON.stringify(logsToSend)], { type: 'application/json' })
-          const url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/client-logs`
+          const url = `${getBaseUrl()}/api/client-logs`
           navigator.sendBeacon(url, blob)
         } else {
           await clientLogsApi.sendLogs(logsToSend)

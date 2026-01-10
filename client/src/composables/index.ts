@@ -1,3 +1,8 @@
 export * from './useToast'
 export * from './useFileWatcher'
-export { usePhotinoBridge } from './usePhotinoBridge'
+export {
+  usePhotinoBridge,
+  initializeApiConfig,
+  waitForApiReady,
+  isDesktopMode
+} from './usePhotinoBridge'
