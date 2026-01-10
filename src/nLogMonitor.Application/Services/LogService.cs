@@ -125,15 +125,21 @@ public class LogService : ILogService
         string? searchText = null,
         LogLevel? minLevel = null,
         LogLevel? maxLevel = null,
+        IEnumerable<LogLevel>? levels = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
         string? logger = null,
         int page = 1,
         int pageSize = 50)
     {
+        var levelsList = levels?.ToList();
+        var levelsString = levelsList != null && levelsList.Any()
+            ? string.Join(", ", levelsList)
+            : "null";
+
         _logger.LogDebug(
-            "GetLogsAsync: SessionId={SessionId}, SearchText={SearchText}, MinLevel={MinLevel}, MaxLevel={MaxLevel}, FromDate={FromDate}, ToDate={ToDate}, Logger={Logger}, Page={Page}, PageSize={PageSize}",
-            sessionId, searchText, minLevel, maxLevel, fromDate, toDate, logger, page, pageSize);
+            "GetLogsAsync: SessionId={SessionId}, SearchText={SearchText}, MinLevel={MinLevel}, MaxLevel={MaxLevel}, Levels=[{Levels}], FromDate={FromDate}, ToDate={ToDate}, Logger={Logger}, Page={Page}, PageSize={PageSize}",
+            sessionId, searchText, minLevel, maxLevel, levelsString, fromDate, toDate, logger, page, pageSize);
 
         // Получаем сессию
         var session = await _sessionStorage.GetAsync(sessionId);
@@ -154,16 +160,26 @@ public class LogService : ILogService
                 e.Message.Contains(searchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Фильтр по минимальному уровню
-        if (minLevel.HasValue)
+        // Фильтр по уровням: если указан массив levels, используем его, иначе minLevel/maxLevel
+        if (levelsList != null && levelsList.Any())
         {
-            filteredEntries = filteredEntries.Where(e => e.Level >= minLevel.Value);
+            // Фильтруем по точному совпадению из массива
+            var levelSet = new HashSet<LogLevel>(levelsList);
+            filteredEntries = filteredEntries.Where(e => levelSet.Contains(e.Level));
         }
-
-        // Фильтр по максимальному уровню
-        if (maxLevel.HasValue)
+        else
         {
-            filteredEntries = filteredEntries.Where(e => e.Level <= maxLevel.Value);
+            // Фильтр по минимальному уровню
+            if (minLevel.HasValue)
+            {
+                filteredEntries = filteredEntries.Where(e => e.Level >= minLevel.Value);
+            }
+
+            // Фильтр по максимальному уровню
+            if (maxLevel.HasValue)
+            {
+                filteredEntries = filteredEntries.Where(e => e.Level <= maxLevel.Value);
+            }
         }
 
         // Фильтр по начальной дате

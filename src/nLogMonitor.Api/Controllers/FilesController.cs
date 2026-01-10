@@ -16,6 +16,7 @@ public class FilesController : ControllerBase
 {
     private readonly ILogService _logService;
     private readonly IRecentLogsRepository _recentLogsRepository;
+    private readonly IFileWatcherService _fileWatcherService;
     private readonly ILogger<FilesController> _logger;
 
     /// <summary>
@@ -23,14 +24,17 @@ public class FilesController : ControllerBase
     /// </summary>
     /// <param name="logService">Service for log file operations.</param>
     /// <param name="recentLogsRepository">Repository for recent log entries.</param>
+    /// <param name="fileWatcherService">Service for monitoring file changes.</param>
     /// <param name="logger">Logger instance.</param>
     public FilesController(
         ILogService logService,
         IRecentLogsRepository recentLogsRepository,
+        IFileWatcherService fileWatcherService,
         ILogger<FilesController> logger)
     {
         _logService = logService;
         _recentLogsRepository = recentLogsRepository;
+        _fileWatcherService = fileWatcherService;
         _logger = logger;
     }
 
@@ -80,6 +84,24 @@ public class FilesController : ControllerBase
             IsDirectory = false,
             OpenedAt = DateTime.UtcNow
         });
+
+        // Start file watching for real-time updates
+        try
+        {
+            await _fileWatcherService.StartWatchingAsync(sessionId, session.FilePath);
+            _logger.LogInformation(
+                "Started file watching for session {SessionId}: {FilePath}",
+                sessionId,
+                session.FilePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to start file watching for session {SessionId}, continuing without real-time updates",
+                sessionId);
+            // Continue execution - file watching is optional feature
+        }
 
         var result = MapToOpenFileResult(session);
 
@@ -138,6 +160,24 @@ public class FilesController : ControllerBase
             OpenedAt = DateTime.UtcNow
         });
 
+        // Start file watching for real-time updates
+        try
+        {
+            await _fileWatcherService.StartWatchingAsync(sessionId, session.FilePath);
+            _logger.LogInformation(
+                "Started file watching for session {SessionId}: {FilePath}",
+                sessionId,
+                session.FilePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to start file watching for session {SessionId}, continuing without real-time updates",
+                sessionId);
+            // Continue execution - file watching is optional feature
+        }
+
         var result = MapToOpenFileResult(session);
 
         _logger.LogInformation(
@@ -153,21 +193,19 @@ public class FilesController : ControllerBase
     /// Stops file monitoring for a session.
     /// </summary>
     /// <remarks>
-    /// This endpoint is planned for Phase 6 implementation.
-    /// Currently returns 501 Not Implemented.
     /// Desktop-only: file watching requires local filesystem access.
     /// </remarks>
     /// <param name="sessionId">Session identifier.</param>
-    /// <returns>501 Not Implemented until Phase 6.</returns>
-    /// <response code="501">File watching functionality not yet implemented.</response>
+    /// <returns>204 No Content on success.</returns>
+    /// <response code="204">File watching stopped successfully.</response>
     /// <response code="404">Session not found or endpoint not available in Web mode.</response>
     [HttpPost("{sessionId:guid}/stop-watching")]
     [DesktopOnly]
-    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status501NotImplemented)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> StopWatching(Guid sessionId)
     {
-        _logger.LogInformation("Stop watching requested for session: {SessionId} (not implemented)", sessionId);
+        _logger.LogInformation("Stop watching requested for session: {SessionId}", sessionId);
 
         var session = await _logService.GetSessionAsync(sessionId);
         if (session is null)
@@ -180,13 +218,12 @@ public class FilesController : ControllerBase
             });
         }
 
-        // File watching planned for Phase 6
-        return StatusCode(StatusCodes.Status501NotImplemented, new ApiErrorResponse
-        {
-            Error = "NotImplemented",
-            Message = "File watching functionality is planned for Phase 6.",
-            TraceId = HttpContext.TraceIdentifier
-        });
+        // Stop file watching
+        await _fileWatcherService.StopWatchingAsync(sessionId);
+
+        _logger.LogInformation("File watching stopped for session: {SessionId}", sessionId);
+
+        return NoContent();
     }
 
     private static OpenFileResultDto MapToOpenFileResult(LogSession session)

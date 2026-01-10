@@ -76,8 +76,13 @@ function setupClickOutside() {
 }
 
 // Watch for dropdown open/close
-import { watch } from 'vue'
+import { watch, onUnmounted } from 'vue'
 watch(isOpen, setupClickOutside)
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>

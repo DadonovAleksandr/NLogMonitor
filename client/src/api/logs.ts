@@ -10,11 +10,20 @@ export const logsApi = {
     filters?: FilterOptions
   ): Promise<PagedResult<LogEntry>> {
     const params = new URLSearchParams()
-    if (filters?.searchText) params.set('search', filters.searchText)
+    if (filters?.searchText) params.set('searchText', filters.searchText)
+
+    // Обработка levels[] (массив конкретных уровней)
+    // ВАЖНО: отправляем даже пустой массив (режим NONE)
+    if (filters?.levels !== undefined) {
+      filters.levels.forEach(level => params.append('levels', level))
+    }
+
+    // Fallback на minLevel/maxLevel (устарело, но оставлено для совместимости)
     if (filters?.minLevel !== undefined)
       params.set('minLevel', String(filters.minLevel))
     if (filters?.maxLevel !== undefined)
       params.set('maxLevel', String(filters.maxLevel))
+
     if (filters?.fromDate) params.set('fromDate', filters.fromDate)
     if (filters?.toDate) params.set('toDate', filters.toDate)
     if (filters?.logger) params.set('logger', filters.logger)

@@ -9,7 +9,7 @@ public class LogSession
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public List<LogEntry> Entries { get; set; } = new();
-    
+
     // Статистика по уровням
     public Dictionary<LogLevel, int> LevelCounts { get; set; } = new();
 }

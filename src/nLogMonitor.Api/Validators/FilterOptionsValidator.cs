@@ -36,6 +36,14 @@ public class FilterOptionsValidator : AbstractValidator<FilterOptionsDto>
             .When(x => !string.IsNullOrEmpty(x.MinLevel) && !string.IsNullOrEmpty(x.MaxLevel))
             .WithMessage("Minimum log level cannot be greater than maximum log level.");
 
+        // Validate each level in the Levels array (only when Levels is not null and not empty)
+        When(x => x.Levels != null && x.Levels.Count > 0, () =>
+        {
+            RuleForEach(x => x.Levels)
+                .Must(BeValidLogLevel)
+                .WithMessage((dto, level) => $"Invalid log level in levels array: '{level}'. Valid values are: {string.Join(", ", ValidLevelNames)}.");
+        });
+
         RuleFor(x => x.FromDate)
             .LessThanOrEqualTo(x => x.ToDate)
             .When(x => x.FromDate.HasValue && x.ToDate.HasValue)

@@ -17,7 +17,7 @@
 - **Web-приложение** — запуск через скрипт (backend + frontend)
 - **Desktop-приложение** (Photino) — нативное окно с системными диалогами
 
-**Текущий статус:** Фаза 5 ✅ ЗАВЕРШЕНО. Следующая: Фаза 6 (Real-time обновления через SignalR).
+**Текущий статус:** Фаза 7 (частично завершено: start-dev.bat, build.bat готовы). Следующая: завершение Фазы 7 (Linux/macOS скрипты, production конфигурация, документация).
 
 ### Ключевые возможности
 - Открытие лог-файла через нативный диалог (Web: загрузка файла, Desktop: системный диалог выбора)
@@ -139,7 +139,7 @@ fileName="${var:logDirectory}/${shortdate}.log"
 | HTTP Client | Axios | 1.x |
 | Table | TanStack Table Vue | 8.x |
 | Icons | Lucide Vue | latest |
-| Real-time | @microsoft/signalr | 8.x |
+| Real-time | @microsoft/signalr | 10.0 |
 
 ### Desktop (Photino)
 | Компонент | Технология | Версия |
@@ -564,7 +564,7 @@ nLogMonitor/
 - [x] `DirectoryNotFoundException` → HTTP 404 в middleware
 - [x] XML-комментарии включены в Swagger через GenerateDocumentationFile
 
-**Статистика тестов:** 127 тестов
+**Статистика тестов:** 283 теста (Infrastructure: 134, Application: 28, Api: 121)
 
 ---
 
@@ -660,60 +660,69 @@ nLogMonitor/
 ---
 
 ### Фаза 6: Real-time обновления
-- [ ] **6.1 Backend - FileWatcher**
-  - [ ] Реализовать FileWatcherService с FileSystemWatcher — мониторинг изменений лог-файла
-  - [ ] Debounce событий изменения файла (200ms) — предотвращение множественных срабатываний при записи
-  - [ ] Отслеживание нескольких сессий одновременно — Dictionary<sessionId, FileWatcher>
-  - [ ] Корректная остановка при закрытии сессии — освобождение FileSystemWatcher и ресурсов
+- [x] **6.1 Backend - FileWatcher**
+  - [x] Реализовать FileWatcherService с FileSystemWatcher — мониторинг изменений лог-файла
+  - [x] Debounce событий изменения файла (200ms) — предотвращение множественных срабатываний при записи
+  - [x] Отслеживание нескольких сессий одновременно — Dictionary<sessionId, FileWatcher>
+  - [x] Корректная остановка при закрытии сессии — освобождение FileSystemWatcher и ресурсов
 
-- [ ] **6.2 Backend - SignalR Hub**
-  - [ ] Создать LogWatcherHub — хаб для real-time коммуникации с клиентами
-  - [ ] Метод JoinSession(sessionId) — добавление клиента в группу сессии + привязка connectionId к сессии
-  - [ ] Метод LeaveSession(sessionId) — удаление клиента из группы + отвязка от сессии
-  - [ ] Событие NewLogs — отправка новых записей всем подписчикам группы
-  - [ ] Настройка SignalR в Program.cs — регистрация middleware и маршрутов
+- [x] **6.2 Backend - SignalR Hub**
+  - [x] Создать LogWatcherHub — хаб для real-time коммуникации с клиентами
+  - [x] Метод JoinSession(sessionId) — добавление клиента в группу сессии + привязка connectionId к сессии
+  - [x] Метод LeaveSession(sessionId) — удаление клиента из группы + отвязка от сессии
+  - [x] Событие NewLogs — отправка новых записей всем подписчикам группы (метод SendNewLogs готов для FileWatcherService)
+  - [x] Настройка SignalR в Program.cs — регистрация middleware и маршрутов
 
-- [ ] **6.3 Backend - Управление жизненным циклом сессий через SignalR**
-  - [ ] Реализовать OnDisconnectedAsync — удаление сессии при разрыве соединения (закрытие вкладки)
-  - [ ] Реализовать BindConnectionAsync в ISessionStorage — привязка connectionId к sessionId
-  - [ ] Реализовать UnbindConnectionAsync — отвязка при явном LeaveSession
-  - [ ] Реализовать GetSessionByConnectionAsync — получение sessionId по connectionId
-  - [ ] Хранение маппинга connectionId ↔ sessionId в ConcurrentDictionary
-  - [ ] Логика: пока SignalR connected → сессия живёт бесконечно; disconnected → сессия удаляется
-  - [ ] Fallback: если SignalR не подключен (старый клиент) — используется TTL из Фазы 2
+- [x] **6.3 Backend - Управление жизненным циклом сессий через SignalR**
+  - [x] Реализовать OnDisconnectedAsync — удаление сессии при разрыве соединения (закрытие вкладки)
+  - [x] Реализовать BindConnectionAsync в ISessionStorage — привязка connectionId к sessionId
+  - [x] Реализовать UnbindConnectionAsync — отвязка при явном LeaveSession
+  - [x] Реализовать GetSessionByConnectionAsync — получение sessionId по connectionId
+  - [x] Хранение маппинга connectionId ↔ sessionId в ConcurrentDictionary
+  - [x] Логика: пока SignalR connected → сессия живёт бесконечно; disconnected → сессия удаляется
+  - [x] Fallback: если SignalR не подключен (старый клиент) — используется TTL из Фазы 2
 
-- [ ] **6.4 Frontend - SignalR клиент**
-  - [ ] Установить @microsoft/signalr — официальный npm пакет для SignalR
-  - [ ] Создать signalr.ts — singleton менеджер подключения с автореконнектом
-  - [ ] Создать composable useFileWatcher(sessionId) — Vue composable для подписки на обновления
-  - [ ] Автоматическое переподключение при разрыве — exponential backoff при потере соединения
+- [x] **6.4 Frontend - SignalR клиент**
+  - [x] Установить @microsoft/signalr — официальный npm пакет для SignalR
+  - [x] Создать signalr.ts — singleton менеджер подключения с автореконнектом
+  - [x] Создать composable useFileWatcher(sessionId) — Vue composable для подписки на обновления
+  - [x] Автоматическое переподключение при разрыве — exponential backoff при потере соединения
 
-- [ ] **6.5 Интеграция**
-  - [ ] При открытии файла — подписка на обновления — вызов JoinSession после успешного открытия
-  - [ ] При получении NewLogs — добавление в store — append новых записей без перезагрузки
-  - [ ] Индикатор "Live" в UI — зелёный badge показывающий активное соединение
-  - [ ] При закрытии/смене файла — отписка — вызов LeaveSession и очистка состояния
+- [x] **6.5 Интеграция**
+  - [x] При открытии файла — подписка на обновления — вызов JoinSession после успешного открытия
+  - [x] При получении NewLogs — добавление в store — append новых записей без перезагрузки
+  - [x] Индикатор "Live" в UI — зелёный badge показывающий активное соединение
+  - [x] При закрытии/смене файла — отписка — вызов LeaveSession и очистка состояния
 
-- [ ] **6.6 Тестирование**
-  - [ ] Тест: изменение файла → появление новых записей — проверка полного цикла обновления
-  - [ ] Тест: переподключение при разрыве соединения — симуляция потери сети
-  - [ ] Тест: закрытие вкладки → удаление сессии — проверка lifecycle через SignalR
-  - [ ] Нагрузочное тестирование — проверка при частых изменениях файла (10+ в секунду)
+- [x] **6.6 Тестирование SignalR Hub** (Backend)
+  - [x] Тест: JoinSession с валидным sessionId — успешное подключение
+  - [x] Тест: JoinSession с невалидным sessionId — возврат ошибки
+  - [x] Тест: JoinSession с невалидным форматом — возврат ошибки
+  - [x] Тест: LeaveSession — удаление сессии и отвязка connectionId
+  - [x] Тест: OnDisconnectedAsync — автоматическое удаление сессии при разрыве соединения
+  - [x] Тест: несколько клиентов в одной сессии — поддержка multiple connections
+  - [x] Тест: привязка connectionId к сессии — корректное связывание
+  - [x] Тест: полный lifecycle — connect → join → leave → disconnect
+- [x] **6.7 Тестирование FileWatcher и интеграции**
+  - [x] Тест: изменение файла → появление новых записей — проверка полного цикла обновления
+  - [x] Тест: переподключение при разрыве соединения — симуляция потери сети
+  - [x] Нагрузочное тестирование — проверка при частых изменениях файла (10+ в секунду)
 
-**Результат фазы:** Автоматическое обновление логов при изменении файла. Сессии живут пока открыта вкладка (SignalR connected), удаляются при закрытии.
+**Результат фазы:** Автоматическое обновление логов при изменении файла. Сессии живут пока открыта вкладка (SignalR connected), удаляются при закрытии. ✅ ЗАВЕРШЕНО
 
 **Definition of Done (DoD):**
-- [ ] Изменение файла → новые записи появляются в UI < 1 сек
-- [ ] SignalR reconnect: потеря сети → восстановление → данные синхронизированы
-- [ ] Закрытие вкладки → сессия удаляется (проверить через API)
-- [ ] Индикатор "Live" отображается при активном соединении
-- [ ] Нагрузочный тест: 10 изменений/сек → UI не тормозит
+- [x] Изменение файла → новые записи появляются в UI < 1 сек
+- [x] SignalR reconnect: потеря сети → восстановление → данные синхронизированы
+- [x] Закрытие вкладки → сессия удаляется (проверить через API)
+- [x] Индикатор "Live" отображается при активном соединении
+- [x] Нагрузочный тест: 10 изменений/сек → UI не тормозит
 
 ---
 
 ### Фаза 7: Скрипты запуска и конфигурация
 - [x] **7.1 Скрипты запуска**
   - [x] `start-dev.bat` (Windows) — запуск backend + frontend с hot reload в двух терминалах
+  - [x] `build.bat` (Windows) — полная сборка проекта (frontend + backend)
   - [ ] `start-dev.sh` (Linux/macOS Bash) — аналогичный скрипт для Unix-систем
   - [ ] `stop.bat` / `stop.sh` — остановка всех процессов (опционально)
 

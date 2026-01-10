@@ -1,5 +1,7 @@
 using FluentValidation;
+using nLogMonitor.Api.Hubs;
 using nLogMonitor.Api.Middleware;
+using nLogMonitor.Api.Services;
 using nLogMonitor.Api.Validators;
 using nLogMonitor.Application.Configuration;
 using nLogMonitor.Application.DTOs;
@@ -90,8 +92,11 @@ try
     builder.Services.AddScoped<ILogExporter, JsonExporter>();
     builder.Services.AddScoped<ILogExporter, CsvExporter>();
 
-    // TODO: FileWatcherService will be added in Phase 6
-    // builder.Services.AddSingleton<IFileWatcherService, FileWatcherService>();
+    // FileWatcher for real-time monitoring
+    builder.Services.AddSingleton<IFileWatcherService, FileWatcherService>();
+
+    // Background service for FileWatcher -> SignalR integration
+    builder.Services.AddHostedService<FileWatcherBackgroundService>();
 
     var app = builder.Build();
 
@@ -115,12 +120,12 @@ try
 
     app.MapControllers();
 
+    // SignalR Hub for real-time log updates
+    app.MapHub<LogWatcherHub>("/hubs/logwatcher");
+
     // Health check endpoint
     app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
        .WithName("HealthCheck");
-
-    // TODO: Map SignalR hub (will be added in Phase 6)
-    // app.MapHub<LogWatcherHub>("/hubs/logwatcher");
 
     logger.Info("nLogMonitor API started successfully");
     app.Run();

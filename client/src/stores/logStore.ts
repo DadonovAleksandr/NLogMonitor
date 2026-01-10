@@ -42,7 +42,8 @@ export const useLogStore = defineStore('logs', () => {
     try {
       const result = await filesApi.uploadFile(file)
       setSessionData(result)
-      await fetchLogs()
+      // Загружаем все логи без фильтров при открытии нового файла
+      await fetchLogs({})
       showToast(`File "${file.name}" loaded successfully`, 'success')
     } catch (err: unknown) {
       const message = (err as { message?: string }).message || 'Failed to upload file'
@@ -61,7 +62,8 @@ export const useLogStore = defineStore('logs', () => {
     try {
       const result = await filesApi.openFile(path)
       setSessionData(result)
-      await fetchLogs()
+      // Загружаем все логи без фильтров при открытии нового файла
+      await fetchLogs({})
       showToast(`File "${result.fileName}" loaded successfully`, 'success')
     } catch (err: unknown) {
       const message = (err as { message?: string }).message || 'Failed to open file'
@@ -80,7 +82,8 @@ export const useLogStore = defineStore('logs', () => {
     try {
       const result = await filesApi.openDirectory(path)
       setSessionData(result)
-      await fetchLogs()
+      // Загружаем все логи без фильтров при открытии нового файла
+      await fetchLogs({})
       showToast(`Directory "${result.fileName}" loaded successfully`, 'success')
     } catch (err: unknown) {
       const message = (err as { message?: string }).message || 'Failed to open directory'
@@ -159,6 +162,37 @@ export const useLogStore = defineStore('logs', () => {
     error.value = null
   }
 
+  /**
+   * Добавляет новые логи в текущую коллекцию (для real-time обновлений через SignalR).
+   * Обновляет totalCount и levelCounts.
+   *
+   * @param newLogs - Массив новых LogEntry для добавления
+   */
+  function appendLogs(newLogs: LogEntry[]) {
+    if (!sessionId.value || newLogs.length === 0) {
+      return
+    }
+
+    // Добавляем новые логи в конец массива
+    logs.value.push(...newLogs)
+
+    // Обновляем общее количество записей
+    totalCount.value += newLogs.length
+
+    // Обновляем счётчики по уровням
+    newLogs.forEach((log) => {
+      const currentLevel = log.level
+      if (currentLevel && levelCounts.value[currentLevel] !== undefined) {
+        levelCounts.value[currentLevel]++
+      }
+    })
+
+    // Пересчитываем общее количество страниц
+    totalPages.value = Math.ceil(totalCount.value / pageSize.value)
+
+    console.info(`Appended ${newLogs.length} new log entries (total: ${totalCount.value})`)
+  }
+
   return {
     // State
     sessionId,
@@ -186,6 +220,7 @@ export const useLogStore = defineStore('logs', () => {
     setPage,
     setPageSize,
     clearSession,
-    clearError
+    clearError,
+    appendLogs
   }
 })

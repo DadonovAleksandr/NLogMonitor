@@ -8,10 +8,9 @@ export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // Создание axios instance с базовыми настройками
 export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  timeout: 30000
+  // Не устанавливаем Content-Type здесь - axios сам определит правильный тип
+  // для JSON отправит application/json, для FormData - multipart/form-data
 })
 
 // Интерцептор для обработки ошибок

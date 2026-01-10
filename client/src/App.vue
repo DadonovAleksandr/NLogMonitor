@@ -8,10 +8,15 @@ import { ExportButton } from '@/components/ExportButton'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SearchBar } from '@/components/SearchBar'
 import { Toast } from '@/components/Toast'
+import { LiveIndicator } from '@/components/LiveIndicator'
 import { useLogStore, useFilterStore } from '@/stores'
+import { useFileWatcher } from '@/composables/useFileWatcher'
 
 const logStore = useLogStore()
 const filterStore = useFilterStore()
+
+// SignalR file watcher для real-time обновлений
+const { connectionState, isWatching, startWatching, stopWatching } = useFileWatcher()
 
 const showFileSelector = computed(() => !logStore.hasSession && !logStore.isLoading)
 const showLogTable = computed(() => logStore.hasSession || logStore.isLoading)
@@ -21,6 +26,8 @@ watch(
   () => filterStore.filterOptions,
   async () => {
     if (logStore.hasSession) {
+      // Сбрасываем страницу на первую при изменении фильтров
+      logStore.setPage(1)
       await logStore.fetchLogs(filterStore.filterOptions)
     }
   },
@@ -33,6 +40,32 @@ watch(
   async () => {
     if (logStore.hasSession) {
       await logStore.fetchLogs(filterStore.filterOptions)
+    }
+  }
+)
+
+// Отслеживание изменений sessionId для управления SignalR подпиской
+watch(
+  () => logStore.sessionId,
+  async (newSessionId, oldSessionId) => {
+    // Если была старая сессия, останавливаем отслеживание
+    if (oldSessionId && oldSessionId !== newSessionId) {
+      await stopWatching()
+    }
+
+    // Если появилась новая сессия, начинаем отслеживание
+    if (newSessionId) {
+      // Сбрасываем фильтры при открытии нового файла
+      filterStore.clearFilters()
+
+      try {
+        await startWatching(newSessionId, (newLogs) => {
+          // Callback для обработки новых логов
+          logStore.appendLogs(newLogs)
+        })
+      } catch (err) {
+        console.error('Failed to start watching session:', err)
+      }
     }
   }
 )
@@ -54,6 +87,11 @@ watch(
 
         <!-- Session info -->
         <div v-if="logStore.hasSession" class="flex items-center gap-4">
+          <!-- Live Indicator -->
+          <LiveIndicator :connection-state="connectionState" :is-watching="isWatching" />
+
+          <div class="h-4 w-px bg-zinc-700" />
+
           <div class="flex items-center gap-2">
             <span class="font-mono text-xs text-zinc-500">File:</span>
             <span class="font-mono text-sm text-zinc-300">{{ logStore.fileName }}</span>

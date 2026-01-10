@@ -40,8 +40,9 @@ public class LogsController : ControllerBase
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="search">Search text to filter messages.</param>
-    /// <param name="minLevel">Minimum log level (Trace, Debug, Info, Warn, Error, Fatal).</param>
-    /// <param name="maxLevel">Maximum log level (Trace, Debug, Info, Warn, Error, Fatal).</param>
+    /// <param name="minLevel">Minimum log level (Trace, Debug, Info, Warn, Error, Fatal). Ignored if levels is specified.</param>
+    /// <param name="maxLevel">Maximum log level (Trace, Debug, Info, Warn, Error, Fatal). Ignored if levels is specified.</param>
+    /// <param name="levels">Specific log levels to filter (Trace, Debug, Info, Warn, Error, Fatal). Takes precedence over minLevel/maxLevel. Can be specified multiple times: ?levels=Error&amp;levels=Fatal</param>
     /// <param name="fromDate">Filter logs from this date.</param>
     /// <param name="toDate">Filter logs until this date.</param>
     /// <param name="logger">Filter by logger name.</param>
@@ -61,6 +62,7 @@ public class LogsController : ControllerBase
         [FromQuery] string? search,
         [FromQuery] string? minLevel,
         [FromQuery] string? maxLevel,
+        [FromQuery] List<string>? levels,
         [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate,
         [FromQuery] string? logger,
@@ -74,6 +76,7 @@ public class LogsController : ControllerBase
             SearchText = search,
             MinLevel = minLevel,
             MaxLevel = maxLevel,
+            Levels = levels,
             FromDate = fromDate,
             ToDate = toDate,
             Logger = logger,
@@ -113,10 +116,35 @@ public class LogsController : ControllerBase
         // Parse log levels
         LogLevel? parsedMinLevel = ParseLogLevel(minLevel);
         LogLevel? parsedMaxLevel = ParseLogLevel(maxLevel);
+        List<LogLevel>? parsedLevels = null;
+
+        // Parse levels array if provided
+        if (levels != null && levels.Count > 0)
+        {
+            parsedLevels = new List<LogLevel>();
+            foreach (var level in levels)
+            {
+                var parsed = ParseLogLevel(level);
+                if (parsed.HasValue)
+                {
+                    parsedLevels.Add(parsed.Value);
+                }
+            }
+
+            // If no valid levels were parsed, set to null
+            if (parsedLevels.Count == 0)
+            {
+                parsedLevels = null;
+            }
+        }
+
+        var levelsString = parsedLevels != null && parsedLevels.Count > 0
+            ? string.Join(", ", parsedLevels)
+            : "null";
 
         _logger.LogDebug(
-            "Getting logs for session {SessionId}: Page={Page}, PageSize={PageSize}, MinLevel={MinLevel}, MaxLevel={MaxLevel}, Search={Search}",
-            sessionId, page, pageSize, minLevel, maxLevel, search);
+            "Getting logs for session {SessionId}: Page={Page}, PageSize={PageSize}, MinLevel={MinLevel}, MaxLevel={MaxLevel}, Levels=[{Levels}], Search={Search}",
+            sessionId, page, pageSize, minLevel, maxLevel, levelsString, search);
 
         // Get logs from service
         var (entries, totalCount) = await _logService.GetLogsAsync(
@@ -124,6 +152,7 @@ public class LogsController : ControllerBase
             searchText: search,
             minLevel: parsedMinLevel,
             maxLevel: parsedMaxLevel,
+            levels: parsedLevels,
             fromDate: fromDate,
             toDate: toDate,
             logger: logger,

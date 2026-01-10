@@ -3,11 +3,19 @@ import { ref, computed } from 'vue'
 import { LogLevel } from '@/types'
 import type { FilterOptions } from '@/types'
 
+// Маппинг числовых значений в строковые названия уровней
+const LogLevelNames: Record<LogLevel, string> = {
+  [LogLevel.Trace]: 'Trace',
+  [LogLevel.Debug]: 'Debug',
+  [LogLevel.Info]: 'Info',
+  [LogLevel.Warn]: 'Warn',
+  [LogLevel.Error]: 'Error',
+  [LogLevel.Fatal]: 'Fatal'
+}
+
 export const useFilterStore = defineStore('filters', () => {
   // State
   const searchText = ref('')
-  const minLevel = ref<LogLevel | undefined>(undefined)
-  const maxLevel = ref<LogLevel | undefined>(undefined)
   const fromDate = ref<string | undefined>(undefined)
   const toDate = ref<string | undefined>(undefined)
   const logger = ref<string | undefined>(undefined)
@@ -25,8 +33,6 @@ export const useFilterStore = defineStore('filters', () => {
   // Getters
   const hasActiveFilters = computed(() => {
     return searchText.value !== '' ||
-      minLevel.value !== undefined ||
-      maxLevel.value !== undefined ||
       fromDate.value !== undefined ||
       toDate.value !== undefined ||
       logger.value !== undefined ||
@@ -39,12 +45,15 @@ export const useFilterStore = defineStore('filters', () => {
     if (searchText.value) {
       options.searchText = searchText.value
     }
-    if (minLevel.value !== undefined) {
-      options.minLevel = minLevel.value
+
+    // Отправляем массив активных уровней, если не все 6 уровней выбраны
+    // Включая случай когда activeLevels.size === 0 (пустой массив → нет результатов)
+    if (activeLevels.value.size < 6) {
+      options.levels = Array.from(activeLevels.value)
+        .sort((a, b) => a - b)
+        .map(level => LogLevelNames[level])
     }
-    if (maxLevel.value !== undefined) {
-      options.maxLevel = maxLevel.value
-    }
+
     if (fromDate.value) {
       options.fromDate = fromDate.value
     }
@@ -63,14 +72,6 @@ export const useFilterStore = defineStore('filters', () => {
     searchText.value = text
   }
 
-  function setMinLevel(level: LogLevel | undefined) {
-    minLevel.value = level
-  }
-
-  function setMaxLevel(level: LogLevel | undefined) {
-    maxLevel.value = level
-  }
-
   function setDateRange(from: string | undefined, to: string | undefined) {
     fromDate.value = from
     toDate.value = to
@@ -86,8 +87,6 @@ export const useFilterStore = defineStore('filters', () => {
     } else {
       activeLevels.value.add(level)
     }
-    // Пересчитываем minLevel/maxLevel на основе активных уровней
-    updateLevelRange()
   }
 
   function setAllLevels(active: boolean) {
@@ -103,30 +102,14 @@ export const useFilterStore = defineStore('filters', () => {
     } else {
       activeLevels.value.clear()
     }
-    updateLevelRange()
   }
 
   function isLevelActive(level: LogLevel): boolean {
     return activeLevels.value.has(level)
   }
 
-  function updateLevelRange() {
-    if (activeLevels.value.size === 0 || activeLevels.value.size === 6) {
-      // Все или ничего — нет фильтрации по уровню
-      minLevel.value = undefined
-      maxLevel.value = undefined
-      return
-    }
-
-    const levels = Array.from(activeLevels.value).sort((a, b) => a - b)
-    minLevel.value = levels[0]
-    maxLevel.value = levels[levels.length - 1]
-  }
-
   function clearFilters() {
     searchText.value = ''
-    minLevel.value = undefined
-    maxLevel.value = undefined
     fromDate.value = undefined
     toDate.value = undefined
     logger.value = undefined
@@ -143,8 +126,6 @@ export const useFilterStore = defineStore('filters', () => {
   return {
     // State
     searchText,
-    minLevel,
-    maxLevel,
     fromDate,
     toDate,
     logger,
@@ -154,8 +135,6 @@ export const useFilterStore = defineStore('filters', () => {
     filterOptions,
     // Actions
     setSearchText,
-    setMinLevel,
-    setMaxLevel,
     setDateRange,
     setLogger,
     toggleLevel,

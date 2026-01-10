@@ -64,6 +64,7 @@ public class LogsControllerTests
                 It.IsAny<string?>(),
                 It.IsAny<LogLevel?>(),
                 It.IsAny<LogLevel?>(),
+                It.IsAny<IEnumerable<LogLevel>?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<string?>(),
@@ -73,7 +74,7 @@ public class LogsControllerTests
 
         // Act
         var result = await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 1, 50);
+            _testSessionId, null, null, null, null, null, null, null, 1, 50);
 
         // Assert
         var okResult = result.Result as OkObjectResult;
@@ -99,6 +100,7 @@ public class LogsControllerTests
                 "test search",
                 LogLevel.Info,
                 LogLevel.Error,
+                null,
                 It.IsAny<DateTime?>(),
                 It.IsAny<DateTime?>(),
                 "TestLogger",
@@ -112,6 +114,7 @@ public class LogsControllerTests
             search: "test search",
             minLevel: "Info",
             maxLevel: "Error",
+            levels: null,
             fromDate: null,
             toDate: null,
             logger: "TestLogger",
@@ -124,6 +127,7 @@ public class LogsControllerTests
             "test search",
             LogLevel.Info,
             LogLevel.Error,
+            null,
             null,
             null,
             "TestLogger",
@@ -151,18 +155,19 @@ public class LogsControllerTests
                 It.IsAny<string?>(),
                 It.IsAny<LogLevel?>(),
                 It.IsAny<LogLevel?>(),
+                It.IsAny<IEnumerable<LogLevel>?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<string?>(),
                 It.IsAny<int>(),
                 It.IsAny<int>()))
-            .Callback<Guid, string?, LogLevel?, LogLevel?, DateTime?, DateTime?, string?, int, int>(
-                (_, _, minLevel, _, _, _, _, _, _) => capturedMinLevel = minLevel)
+            .Callback<Guid, string?, LogLevel?, LogLevel?, IEnumerable<LogLevel>?, DateTime?, DateTime?, string?, int, int>(
+                (_, _, minLevel, _, _, _, _, _, _, _) => capturedMinLevel = minLevel)
             .ReturnsAsync((Enumerable.Empty<LogEntry>(), 0));
 
         // Act
         await _controller.GetLogs(
-            _testSessionId, null, levelString, null, null, null, null, 1, 50);
+            _testSessionId, null, levelString, null, null, null, null, null, 1, 50);
 
         // Assert
         Assert.That(capturedMinLevel, Is.EqualTo(expectedLevel));
@@ -182,18 +187,19 @@ public class LogsControllerTests
                 It.IsAny<string?>(),
                 It.IsAny<LogLevel?>(),
                 It.IsAny<LogLevel?>(),
+                It.IsAny<IEnumerable<LogLevel>?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<string?>(),
                 It.IsAny<int>(),
                 It.IsAny<int>()))
-            .Callback<Guid, string?, LogLevel?, LogLevel?, DateTime?, DateTime?, string?, int, int>(
-                (_, _, minLevel, _, _, _, _, _, _) => capturedMinLevel = minLevel)
+            .Callback<Guid, string?, LogLevel?, LogLevel?, IEnumerable<LogLevel>?, DateTime?, DateTime?, string?, int, int>(
+                (_, _, minLevel, _, _, _, _, _, _, _) => capturedMinLevel = minLevel)
             .ReturnsAsync((Enumerable.Empty<LogEntry>(), 0));
 
         // Act
         await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 1, 50);
+            _testSessionId, null, null, null, null, null, null, null, 1, 50);
 
         // Assert
         Assert.That(capturedMinLevel, Is.Null);
@@ -224,6 +230,7 @@ public class LogsControllerTests
                 It.IsAny<string?>(),
                 It.IsAny<LogLevel?>(),
                 It.IsAny<LogLevel?>(),
+                It.IsAny<IEnumerable<LogLevel>?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<string?>(),
@@ -233,7 +240,7 @@ public class LogsControllerTests
 
         // Act
         var result = await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 1, 50);
+            _testSessionId, null, null, null, null, null, null, null, 1, 50);
 
         // Assert
         var okResult = result.Result as OkObjectResult;
@@ -266,6 +273,7 @@ public class LogsControllerTests
                 It.IsAny<string?>(),
                 It.IsAny<LogLevel?>(),
                 It.IsAny<LogLevel?>(),
+                It.IsAny<IEnumerable<LogLevel>?>(),
                 fromDate,
                 toDate,
                 It.IsAny<string?>(),
@@ -275,11 +283,12 @@ public class LogsControllerTests
 
         // Act
         await _controller.GetLogs(
-            _testSessionId, null, null, null, fromDate, toDate, null, 1, 50);
+            _testSessionId, null, null, null, null, fromDate, toDate, null, 1, 50);
 
         // Assert
         _logServiceMock.Verify(s => s.GetLogsAsync(
             _testSessionId,
+            null,
             null,
             null,
             null,
@@ -303,7 +312,7 @@ public class LogsControllerTests
 
         // Act
         var result = await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 1, 50);
+            _testSessionId, null, null, null, null, null, null, null, 1, 50);
 
         // Assert
         var notFoundResult = result.Result as NotFoundObjectResult;
@@ -325,7 +334,7 @@ public class LogsControllerTests
 
         // Act
         await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 1, 50);
+            _testSessionId, null, null, null, null, null, null, null, 1, 50);
 
         // Assert
         _logServiceMock.Verify(s => s.GetLogsAsync(
@@ -333,6 +342,7 @@ public class LogsControllerTests
             It.IsAny<string?>(),
             It.IsAny<LogLevel?>(),
             It.IsAny<LogLevel?>(),
+            It.IsAny<IEnumerable<LogLevel>?>(),
             It.IsAny<DateTime?>(),
             It.IsAny<DateTime?>(),
             It.IsAny<string?>(),
@@ -359,7 +369,7 @@ public class LogsControllerTests
 
         // Act
         var result = await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 0, 1000);
+            _testSessionId, null, null, null, null, null, null, null, 0, 1000);
 
         // Assert
         var badRequestResult = result.Result as BadRequestObjectResult;
@@ -387,7 +397,7 @@ public class LogsControllerTests
 
         // Act
         await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 1, 50);
+            _testSessionId, null, null, null, null, null, null, null, 1, 50);
 
         // Assert
         _logServiceMock.Verify(s => s.GetSessionAsync(It.IsAny<Guid>()), Times.Never);
@@ -396,6 +406,7 @@ public class LogsControllerTests
             It.IsAny<string?>(),
             It.IsAny<LogLevel?>(),
             It.IsAny<LogLevel?>(),
+            It.IsAny<IEnumerable<LogLevel>?>(),
             It.IsAny<DateTime?>(),
             It.IsAny<DateTime?>(),
             It.IsAny<string?>(),
@@ -422,6 +433,7 @@ public class LogsControllerTests
                 It.IsAny<string?>(),
                 It.IsAny<LogLevel?>(),
                 It.IsAny<LogLevel?>(),
+                It.IsAny<IEnumerable<LogLevel>?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<DateTime?>(),
                 It.IsAny<string?>(),
@@ -431,7 +443,7 @@ public class LogsControllerTests
 
         // Act
         var result = await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 2, 25);
+            _testSessionId, null, null, null, null, null, null, null, 2, 25);
 
         // Assert
         var okResult = result.Result as OkObjectResult;
@@ -465,17 +477,19 @@ public class LogsControllerTests
                 null,
                 null,
                 null,
+                null,
                 1,
                 50))
             .ReturnsAsync((Enumerable.Empty<LogEntry>(), 0));
 
         // Act
         await _controller.GetLogs(
-            _testSessionId, null, null, null, null, null, null, 1, 50);
+            _testSessionId, null, null, null, null, null, null, null, 1, 50);
 
         // Assert
         _logServiceMock.Verify(s => s.GetLogsAsync(
             _testSessionId,
+            null,
             null,
             null,
             null,

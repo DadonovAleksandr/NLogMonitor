@@ -197,6 +197,68 @@ public class InMemorySessionStorageTests
     }
 
     [Test]
+    public async Task BindConnectionAsync_DisablesTTL()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        session.ExpiresAt = DateTime.UtcNow.AddMinutes(5);
+        await storage.SaveAsync(session);
+        var connectionId = "test-connection-ttl";
+
+        // Act
+        await storage.BindConnectionAsync(connectionId, session.Id);
+        var retrieved = await storage.GetAsync(session.Id);
+
+        // Assert
+        Assert.That(retrieved, Is.Not.Null);
+        Assert.That(retrieved!.ExpiresAt, Is.EqualTo(DateTime.MaxValue),
+            "TTL should be disabled (ExpiresAt = MaxValue) when connection is bound");
+    }
+
+    [Test]
+    public async Task GetAsync_WithBoundConnection_KeepsTTLDisabled()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+        var connectionId = "test-connection-keepttl";
+        await storage.BindConnectionAsync(connectionId, session.Id);
+
+        // Act - повторное обращение к сессии
+        var retrieved1 = await storage.GetAsync(session.Id);
+        await Task.Delay(50);
+        var retrieved2 = await storage.GetAsync(session.Id);
+
+        // Assert - TTL должен оставаться отключенным
+        Assert.That(retrieved1, Is.Not.Null);
+        Assert.That(retrieved2, Is.Not.Null);
+        Assert.That(retrieved1!.ExpiresAt, Is.EqualTo(DateTime.MaxValue));
+        Assert.That(retrieved2!.ExpiresAt, Is.EqualTo(DateTime.MaxValue));
+    }
+
+    [Test]
+    public async Task GetAsync_WithoutBoundConnection_UsesSlidingExpiration()
+    {
+        // Arrange
+        using var storage = CreateStorage();
+        var session = CreateTestSession();
+        await storage.SaveAsync(session);
+
+        var originalExpiresAt = session.ExpiresAt;
+        await Task.Delay(50);
+
+        // Act - обращение к сессии без привязанного соединения
+        var retrieved = await storage.GetAsync(session.Id);
+
+        // Assert - TTL должен быть продлён (sliding expiration)
+        Assert.That(retrieved, Is.Not.Null);
+        Assert.That(retrieved!.ExpiresAt, Is.Not.EqualTo(DateTime.MaxValue));
+        Assert.That(retrieved.ExpiresAt, Is.GreaterThan(originalExpiresAt));
+    }
+
+    [Test]
     public async Task GetSessionByConnectionAsync_UnboundConnection_ReturnsNull()
     {
         // Arrange

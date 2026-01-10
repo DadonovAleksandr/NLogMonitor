@@ -52,15 +52,30 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     {
         if (_sessions.TryGetValue(sessionId, out var wrapper))
         {
-            // Sliding expiration - продлеваем TTL при каждом обращении
-            var newExpiresAt = DateTime.UtcNow + _ttl;
             wrapper.LastAccessedAt = DateTime.UtcNow;
-            wrapper.Session.ExpiresAt = newExpiresAt;
 
-            _logger.LogDebug(
-                "Session {SessionId} accessed, TTL extended to {ExpiresAt}",
-                sessionId,
-                newExpiresAt);
+            // Если сессия привязана к SignalR - TTL не применяется (сессия живёт бесконечно)
+            var hasConnection = _connectionToSession.Values.Contains(sessionId);
+            if (hasConnection)
+            {
+                // Устанавливаем ExpiresAt в далёкое будущее для индикации "не истекает"
+                wrapper.Session.ExpiresAt = DateTime.MaxValue;
+
+                _logger.LogDebug(
+                    "Session {SessionId} accessed, SignalR connected - TTL disabled",
+                    sessionId);
+            }
+            else
+            {
+                // Fallback: sliding expiration для старых клиентов без SignalR
+                var newExpiresAt = DateTime.UtcNow + _ttl;
+                wrapper.Session.ExpiresAt = newExpiresAt;
+
+                _logger.LogDebug(
+                    "Session {SessionId} accessed, no SignalR - TTL extended to {ExpiresAt}",
+                    sessionId,
+                    newExpiresAt);
+            }
 
             return Task.FromResult<LogSession?>(wrapper.Session);
         }
@@ -142,6 +157,7 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
 
     /// <summary>
     /// Связывает SignalR connectionId с сессией.
+    /// После привязки TTL для сессии отключается (сессия живёт бесконечно пока соединение активно).
     /// </summary>
     /// <param name="connectionId">ID SignalR соединения.</param>
     /// <param name="sessionId">ID сессии логов.</param>
@@ -149,10 +165,23 @@ public class InMemorySessionStorage : ISessionStorage, IDisposable
     {
         _connectionToSession.AddOrUpdate(connectionId, sessionId, (_, _) => sessionId);
 
-        _logger.LogDebug(
-            "Connection {ConnectionId} bound to session {SessionId}",
-            connectionId,
-            sessionId);
+        // Отключаем TTL для привязанной сессии
+        if (_sessions.TryGetValue(sessionId, out var wrapper))
+        {
+            wrapper.Session.ExpiresAt = DateTime.MaxValue;
+
+            _logger.LogInformation(
+                "Connection {ConnectionId} bound to session {SessionId}, TTL disabled",
+                connectionId,
+                sessionId);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Connection {ConnectionId} bound to non-existent session {SessionId}",
+                connectionId,
+                sessionId);
+        }
 
         return Task.CompletedTask;
     }

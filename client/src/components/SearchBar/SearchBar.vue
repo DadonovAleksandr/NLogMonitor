@@ -25,9 +25,6 @@ const clearSearch = () => {
   localSearchText.value = ''
   filterStore.setSearchText('')
 }
-
-// Фокус на input при монтировании (можно убрать если не нужно)
-const inputRef = ref<HTMLInputElement | null>(null)
 </script>
 
 <template>
@@ -42,7 +39,6 @@ const inputRef = ref<HTMLInputElement | null>(null)
 
     <!-- Input поле -->
     <Input
-      ref="inputRef"
       v-model="localSearchText"
       type="text"
       placeholder="Поиск по сообщениям..."

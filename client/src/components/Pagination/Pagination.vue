@@ -52,6 +52,9 @@ const pageInfo = computed(() => {
 
 // Total entries info
 const entriesInfo = computed(() => {
+  if (logStore.totalCount === 0) {
+    return '0-0 из 0'
+  }
   const start = (logStore.page - 1) * logStore.pageSize + 1
   const end = Math.min(logStore.page * logStore.pageSize, logStore.totalCount)
   return `${start}-${end} из ${logStore.totalCount}`

@@ -9,7 +9,7 @@ const logStore = useLogStore()
 
 // Конфигурация уровней с цветами из LogLevelBadge
 interface LevelConfig {
-  level: number
+  level: LogLevel
   name: string
   label: string
   bg: string
@@ -83,23 +83,23 @@ const levels: LevelConfig[] = [
 ]
 
 // Проверка активности уровня
-const isActive = (level: number) => filterStore.isLevelActive(level)
+const isActive = (level: LogLevel) => filterStore.isLevelActive(level)
 
 // Получение счетчика для уровня
 const getCount = (levelName: string) => logStore.levelCounts[levelName] || 0
 
-// Форматирование счетчика (добавление ведущих нулей для выравнивания)
+// Форматирование счетчика
 const formatCount = (count: number) => {
-  return count.toString().padStart(5, ' ')
+  return count.toString()
 }
 
 // Обработка клика по кнопке
-const handleToggle = (level: number) => {
+const handleToggle = (level: LogLevel) => {
   filterStore.toggleLevel(level)
 }
 
-// Активные фильтры
-const activeCount = computed(() => {
+// Количество отключённых фильтров
+const inactiveCount = computed(() => {
   return levels.filter(l => !isActive(l.level)).length
 })
 
@@ -122,10 +122,10 @@ const disableAll = () => {
         LEVEL
       </div>
       <div
-        v-if="activeCount > 0"
+        v-if="inactiveCount > 0"
         class="flex items-center justify-center min-w-[20px] h-4 px-1.5 bg-amber-950/60 border border-amber-700/50 font-mono text-[10px] text-amber-400"
       >
-        -{{ activeCount }}
+        -{{ inactiveCount }}
       </div>
     </div>
 
@@ -165,7 +165,7 @@ const disableAll = () => {
         <!-- Счетчик -->
         <span
           :class="[
-            'tabular-nums text-[10px] tracking-wide',
+            'tabular-nums text-[10px] tracking-wide min-w-[3ch] text-right inline-block',
             isActive(config.level) ? 'opacity-90' : 'opacity-50'
           ]"
         >

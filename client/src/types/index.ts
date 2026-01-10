@@ -44,8 +44,9 @@ export type LevelCounts = Record<string, number>
 // Параметры фильтрации
 export interface FilterOptions {
   searchText?: string
-  minLevel?: LogLevel
-  maxLevel?: LogLevel
+  levels?: string[] // Массив конкретных уровней для фильтрации
+  minLevel?: LogLevel // Устарело, оставлено для совместимости
+  maxLevel?: LogLevel // Устарело, оставлено для совместимости
   fromDate?: string
   toDate?: string
   logger?: string
@@ -85,3 +86,24 @@ export interface HealthResponse {
 
 // Форматы экспорта
 export type ExportFormat = 'json' | 'csv'
+
+// SignalR types
+
+// Результат операции JoinSession
+export interface JoinSessionResult {
+  success: boolean
+  sessionId?: string
+  fileName?: string
+  error?: string
+}
+
+// Событие новых логов (массив LogEntry)
+export type NewLogsEvent = LogEntry[]
+
+// Состояния подключения SignalR
+export type ConnectionState =
+  | 'Disconnected'
+  | 'Connecting'
+  | 'Connected'
+  | 'Disconnecting'
+  | 'Reconnecting'
