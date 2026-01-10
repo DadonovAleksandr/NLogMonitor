@@ -15,7 +15,12 @@ export const logsApi = {
     // Обработка levels[] (массив конкретных уровней)
     // ВАЖНО: отправляем даже пустой массив (режим NONE)
     if (filters?.levels !== undefined) {
-      filters.levels.forEach(level => params.append('levels', level))
+      if (filters.levels.length === 0) {
+        // Пустой массив: добавляем пустое значение, чтобы backend понял, что это фильтр по пустому массиву
+        params.append('levels', '')
+      } else {
+        filters.levels.forEach(level => params.append('levels', level))
+      }
     }
 
     // Fallback на minLevel/maxLevel (устарело, но оставлено для совместимости)

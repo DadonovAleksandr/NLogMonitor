@@ -119,23 +119,34 @@ public class LogsController : ControllerBase
         List<LogLevel>? parsedLevels = null;
 
         // Parse levels array if provided
-        if (levels != null && levels.Count > 0)
+        // ВАЖНО: различаем два случая:
+        // 1. Параметр levels отсутствует в query string → используем minLevel/maxLevel
+        // 2. Параметр levels присутствует в query string → используем levels (может быть пустой список для NONE режима)
+
+        // Проверяем явно, был ли параметр levels указан в query string
+        // Это критично, т.к. ASP.NET model binding создает пустой List даже когда параметр отсутствует
+        if (HttpContext.Request.Query.ContainsKey("levels"))
         {
             parsedLevels = new List<LogLevel>();
-            foreach (var level in levels)
+
+            if (levels != null)
             {
-                var parsed = ParseLogLevel(level);
-                if (parsed.HasValue)
+                foreach (var level in levels)
                 {
-                    parsedLevels.Add(parsed.Value);
+                    // Пропускаем пустые строки (они приходят как levels= из frontend)
+                    if (string.IsNullOrWhiteSpace(level))
+                        continue;
+
+                    var parsed = ParseLogLevel(level);
+                    if (parsed.HasValue)
+                    {
+                        parsedLevels.Add(parsed.Value);
+                    }
                 }
             }
 
-            // If no valid levels were parsed, set to null
-            if (parsedLevels.Count == 0)
-            {
-                parsedLevels = null;
-            }
+            // Если parsedLevels пустой, это режим NONE (возвращаем 0 записей)
+            // НЕ преобразуем обратно в null, чтобы отличать от случая "параметр не указан"
         }
 
         var levelsString = parsedLevels != null && parsedLevels.Count > 0

@@ -132,6 +132,7 @@ public class LogService : ILogService
         int page = 1,
         int pageSize = 50)
     {
+        // Конвертируем массив levels в список для удобства
         var levelsList = levels?.ToList();
         var levelsString = levelsList != null && levelsList.Any()
             ? string.Join(", ", levelsList)
@@ -161,14 +162,23 @@ public class LogService : ILogService
         }
 
         // Фильтр по уровням: если указан массив levels, используем его, иначе minLevel/maxLevel
-        if (levelsList != null && levelsList.Any())
+        if (levelsList != null)
         {
-            // Фильтруем по точному совпадению из массива
-            var levelSet = new HashSet<LogLevel>(levelsList);
-            filteredEntries = filteredEntries.Where(e => levelSet.Contains(e.Level));
+            if (levelsList.Any())
+            {
+                // Фильтруем по точному совпадению из массива
+                var levelSet = new HashSet<LogLevel>(levelsList);
+                filteredEntries = filteredEntries.Where(e => levelSet.Contains(e.Level));
+            }
+            else
+            {
+                // Пустой массив levels -> возвращаем 0 записей (режим NONE)
+                filteredEntries = Enumerable.Empty<LogEntry>();
+            }
         }
         else
         {
+            // levels == null -> используем minLevel/maxLevel (или все записи если не указаны)
             // Фильтр по минимальному уровню
             if (minLevel.HasValue)
             {
