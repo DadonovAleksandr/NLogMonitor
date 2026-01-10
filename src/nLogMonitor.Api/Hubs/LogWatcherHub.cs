@@ -86,7 +86,7 @@ public class LogWatcherHub : Hub
     /// <summary>
     /// Удаляет клиента из группы сессии и отвязывает connectionId от sessionId.
     /// После вызова этого метода клиент больше не будет получать обновления для указанной сессии.
-    /// Сессия будет удалена из хранилища.
+    /// Сессия удаляется из хранилища только если это был последний подключённый клиент (multi-client support).
     /// </summary>
     /// <param name="sessionId">ID сессии логов.</param>
     /// <returns>Асинхронная задача.</returns>
@@ -104,7 +104,7 @@ public class LogWatcherHub : Hub
         // Удаляем клиента из группы
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId);
 
-        // Отвязываем connectionId и удаляем сессию
+        // Отвязываем connectionId (сессия удаляется только если это последний клиент)
         await _sessionStorage.UnbindConnectionAsync(Context.ConnectionId);
 
         _logger.LogInformation(
@@ -115,7 +115,8 @@ public class LogWatcherHub : Hub
 
     /// <summary>
     /// Вызывается при разрыве соединения (закрытие вкладки, потеря сети).
-    /// Автоматически отвязывает connectionId и удаляет связанную сессию.
+    /// Автоматически отвязывает connectionId от сессии.
+    /// Сессия удаляется только если это был последний подключённый клиент (multi-client support).
     /// </summary>
     /// <param name="exception">Исключение, если разрыв был вызван ошибкой.</param>
     /// <returns>Асинхронная задача.</returns>
@@ -126,21 +127,21 @@ public class LogWatcherHub : Hub
 
         if (sessionId.HasValue)
         {
-            // Отвязываем connectionId и удаляем сессию
+            // Отвязываем connectionId (сессия удаляется только если это последний клиент)
             await _sessionStorage.UnbindConnectionAsync(Context.ConnectionId);
 
             if (exception != null)
             {
                 _logger.LogWarning(
                     exception,
-                    "Connection {ConnectionId} disconnected with error, session {SessionId} removed",
+                    "Connection {ConnectionId} disconnected with error from session {SessionId}",
                     Context.ConnectionId,
                     sessionId.Value);
             }
             else
             {
                 _logger.LogInformation(
-                    "Connection {ConnectionId} disconnected, session {SessionId} removed",
+                    "Connection {ConnectionId} disconnected from session {SessionId}",
                     Context.ConnectionId,
                     sessionId.Value);
             }
