@@ -23,23 +23,25 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
+set PROJECT_ROOT=%~dp0..
+
 :: Install frontend dependencies if needed
-if not exist "client\node_modules" (
+if not exist "%PROJECT_ROOT%\client\node_modules" (
     echo [INFO] Installing frontend dependencies...
-    cd client
+    cd /d "%PROJECT_ROOT%\client"
     call npm install
-    cd ..
+    cd /d "%~dp0"
     echo.
 )
 
 echo [INFO] Starting Backend (http://localhost:5000)...
-start "nLogMonitor API" cmd /k "cd /d %~dp0 && dotnet watch run --project src/nLogMonitor.Api"
+start "nLogMonitor API" cmd /k "cd /d %PROJECT_ROOT% && dotnet watch run --project src/nLogMonitor.Api"
 
 :: Wait a bit for backend to start
 timeout /t 3 /nobreak >nul
 
 echo [INFO] Starting Frontend (http://localhost:5173)...
-start "nLogMonitor Client" cmd /k "cd /d %~dp0client && npm run dev"
+start "nLogMonitor Client" cmd /k "cd /d %PROJECT_ROOT%\client && npm run dev"
 
 echo.
 echo ========================================

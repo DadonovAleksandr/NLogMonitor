@@ -103,28 +103,30 @@ nLogMonitor — кроссплатформенное приложение для
 
 ## Build & Run Commands
 
+Все скрипты находятся в папке `scripts/`.
+
 ```bash
 # Быстрый запуск (Development)
-start-dev.bat                             # Windows: backend + frontend с hot reload
-./start-dev.sh                            # Linux: backend + frontend с hot reload
+scripts\start-dev.bat                     # Windows: backend + frontend с hot reload
+./scripts/start-dev.sh                    # Linux: backend + frontend с hot reload
 
 # Остановка серверов
-stop.bat                                  # Windows
-./stop.sh                                 # Linux
+scripts\stop.bat                          # Windows
+./scripts/stop.sh                         # Linux
 
 # Production сборка (Web)
-build.bat                                 # Windows
-./build.sh                                # Linux
+scripts\build.bat                         # Windows
+./scripts/build.sh                        # Linux
 # Результат в publish/, запуск: cd publish && ./nLogMonitor.Api.exe
 
 # Desktop сборка (Photino)
-build-desktop.bat                         # Windows: frontend + Desktop exe
-./build-desktop.sh                        # Linux: frontend + Desktop binary
+scripts\build-desktop.bat                 # Windows: frontend + Desktop exe
+./scripts/build-desktop.sh                # Linux: frontend + Desktop binary
 # Результат в publish/desktop/win-x64/, запуск: nLogMonitor.Desktop.exe
 
 # Desktop разработка (hot reload)
-start-desktop-dev.bat                     # Windows: Vite dev server + Desktop с hot reload
-stop-desktop-dev.bat                      # Windows: остановка Desktop dev процессов
+scripts\start-desktop-dev.bat             # Windows: Vite dev server + Desktop с hot reload
+scripts\stop-desktop-dev.bat              # Windows: остановка Desktop dev процессов
 
 # Backend
 dotnet build                              # Сборка solution
@@ -195,9 +197,13 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Desktop/Controllers/** — скопированы из Api (FilesController, LogsController, ExportController, etc.)
 - **nLogMonitor.Desktop/Hubs/** — LogWatcherHub (SignalR Hub)
 - **nLogMonitor.Desktop/Services/** — FileWatcherBackgroundService
-- **build-desktop.bat, build-desktop.sh** — скрипты сборки Desktop приложения
-- **start-desktop-dev.bat** — запуск Desktop в режиме разработки с Vite hot reload
-- **stop-desktop-dev.bat** — остановка Desktop dev процессов (Vite + Desktop)
+- **scripts/** — папка со скриптами запуска и сборки:
+  - `start-dev.bat/sh` — запуск dev mode (backend + frontend)
+  - `stop.bat/sh` — остановка серверов (Web)
+  - `build.bat/sh` — production сборка (Web)
+  - `build-desktop.bat/sh` — сборка Desktop приложения
+  - `start-desktop-dev.bat` — Desktop dev mode с Vite hot reload
+  - `stop-desktop-dev.bat` — остановка Desktop dev процессов
 
 ### Структура tests/
 - **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests, FileWatcherServiceTests (debounce, множественные сессии)

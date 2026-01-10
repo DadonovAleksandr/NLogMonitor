@@ -30,10 +30,10 @@
 
 ```bash
 # Windows
-start-dev.bat
+scripts\start-dev.bat
 
 # Linux/macOS
-./start-dev.sh
+./scripts/start-dev.sh
 ```
 
 После запуска:
@@ -45,10 +45,10 @@ start-dev.bat
 
 ```bash
 # Windows
-build.bat
+scripts\build.bat
 
 # Linux/macOS
-./build.sh
+./scripts/build.sh
 
 # Результат в папке ./publish
 cd publish
@@ -62,10 +62,10 @@ Production доступен на http://localhost:5000
 
 ```bash
 # Windows
-build-desktop.bat
+scripts\build-desktop.bat
 
 # Linux/macOS
-./build-desktop.sh
+./scripts/build-desktop.sh
 
 # Результат в папке ./publish/desktop/win-x64 (или linux-x64)
 cd publish/desktop/win-x64
@@ -81,10 +81,10 @@ Desktop приложение (~50 MB) включает встроенный ве
 
 ```bash
 # Windows — запуск Vite dev server + Desktop с hot reload
-start-desktop-dev.bat
+scripts\start-desktop-dev.bat
 
 # Остановка всех Desktop dev процессов
-stop-desktop-dev.bat
+scripts\stop-desktop-dev.bat
 ```
 
 В этом режиме:
@@ -94,18 +94,20 @@ stop-desktop-dev.bat
 
 ## Scripts
 
+Все скрипты находятся в папке `scripts/`.
+
 | Скрипт | Платформа | Описание |
 |--------|-----------|----------|
 | `start-dev.bat` | Windows | Запуск backend + frontend в режиме разработки с hot reload |
 | `start-dev.sh` | Linux/macOS | Запуск backend + frontend в режиме разработки с hot reload |
 | `start-desktop-dev.bat` | Windows | Запуск Desktop + Vite dev server с hot reload |
 | `stop-desktop-dev.bat` | Windows | Остановка Desktop dev процессов |
-| `build.bat` | Windows | Сборка production: frontend -> wwwroot -> publish |
-| `build.sh` | Linux/macOS | Сборка production: frontend -> wwwroot -> publish |
+| `build.bat` | Windows | Сборка production: frontend → wwwroot → publish |
+| `build.sh` | Linux/macOS | Сборка production: frontend → wwwroot → publish |
 | `build-desktop.bat` | Windows | Сборка Desktop приложения (frontend + self-contained exe) |
 | `build-desktop.sh` | Linux/macOS | Сборка Desktop приложения (frontend + self-contained binary) |
-| `stop.bat` | Windows | Остановка всех запущенных процессов |
-| `stop.sh` | Linux/macOS | Остановка всех запущенных процессов |
+| `stop.bat` | Windows | Остановка всех запущенных процессов (Web) |
+| `stop.sh` | Linux/macOS | Остановка всех запущенных процессов (Web) |
 
 ### Ручные команды
 
@@ -211,8 +213,13 @@ nLogMonitor/
 │   │   ├── stores/                # Pinia stores
 │   │   └── types/                 # TypeScript типы
 │   └── ...
-├── start-dev.bat                  # Скрипт запуска для разработки
-├── build.bat                      # Скрипт production сборки
+├── scripts/                       # Скрипты запуска и сборки
+│   ├── start-dev.bat/sh           # Запуск dev mode (backend + frontend)
+│   ├── stop.bat/sh                # Остановка серверов
+│   ├── build.bat/sh               # Production сборка (Web)
+│   ├── build-desktop.bat/sh       # Сборка Desktop приложения
+│   ├── start-desktop-dev.bat      # Desktop dev mode с hot reload
+│   └── stop-desktop-dev.bat       # Остановка Desktop dev
 └── docs/                          # Документация
 ```
 

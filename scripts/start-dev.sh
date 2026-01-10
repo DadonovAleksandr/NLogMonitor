@@ -5,8 +5,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLIENT_DIR="$SCRIPT_DIR/client"
-API_PROJECT="$SCRIPT_DIR/src/nLogMonitor.Api"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLIENT_DIR="$PROJECT_ROOT/client"
+API_PROJECT="$PROJECT_ROOT/src/nLogMonitor.Api"
 
 # Colors for output
 RED='\033[0;31m'
@@ -40,17 +41,17 @@ if [ ! -d "$CLIENT_DIR/node_modules" ]; then
     echo -e "${YELLOW}[INFO]${NC} Installing frontend dependencies..."
     cd "$CLIENT_DIR"
     npm install
-    cd "$SCRIPT_DIR"
+    cd "$PROJECT_ROOT"
     echo ""
 fi
 
 # Create logs directory
-mkdir -p "$SCRIPT_DIR/.dev-logs"
+mkdir -p "$PROJECT_ROOT/.dev-logs"
 
 # Start Backend
 echo -e "${CYAN}[INFO]${NC} Starting Backend (http://localhost:5000)..."
-cd "$SCRIPT_DIR"
-nohup dotnet watch run --project "$API_PROJECT" > "$SCRIPT_DIR/.dev-logs/backend.log" 2>&1 &
+cd "$PROJECT_ROOT"
+nohup dotnet watch run --project "$API_PROJECT" > "$PROJECT_ROOT/.dev-logs/backend.log" 2>&1 &
 BACKEND_PID=$!
 echo "       Backend PID: $BACKEND_PID"
 
@@ -60,11 +61,11 @@ sleep 3
 # Start Frontend
 echo -e "${CYAN}[INFO]${NC} Starting Frontend (http://localhost:5173)..."
 cd "$CLIENT_DIR"
-nohup npm run dev > "$SCRIPT_DIR/.dev-logs/frontend.log" 2>&1 &
+nohup npm run dev > "$PROJECT_ROOT/.dev-logs/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 echo "       Frontend PID: $FRONTEND_PID"
 
-cd "$SCRIPT_DIR"
+cd "$PROJECT_ROOT"
 
 echo ""
 echo "========================================"
@@ -79,5 +80,5 @@ echo "  Logs:"
 echo "    Backend:  .dev-logs/backend.log"
 echo "    Frontend: .dev-logs/frontend.log"
 echo ""
-echo "  To stop: ./stop.sh"
+echo "  To stop: ./scripts/stop.sh"
 echo "========================================"

@@ -8,10 +8,11 @@ echo ========================================
 echo.
 
 set SCRIPT_DIR=%~dp0
-set CLIENT_DIR=%SCRIPT_DIR%client
-set API_DIR=%SCRIPT_DIR%src\nLogMonitor.Api
+set PROJECT_ROOT=%SCRIPT_DIR%..
+set CLIENT_DIR=%PROJECT_ROOT%\client
+set API_DIR=%PROJECT_ROOT%\src\nLogMonitor.Api
 set WWWROOT_DIR=%API_DIR%\wwwroot
-set PUBLISH_DIR=%SCRIPT_DIR%publish
+set PUBLISH_DIR=%PROJECT_ROOT%\publish
 
 :: Check prerequisites
 where node >nul 2>&1
@@ -63,7 +64,7 @@ echo.
 
 :: Step 3: Build Backend
 echo [3/4] Building backend...
-cd /d "%SCRIPT_DIR%"
+cd /d "%PROJECT_ROOT%"
 dotnet build -c Release
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Backend build failed
@@ -78,7 +79,7 @@ echo [4/4] Publishing...
 if exist "%PUBLISH_DIR%" (
     rmdir /s /q "%PUBLISH_DIR%"
 )
-dotnet publish src/nLogMonitor.Api -c Release -o "%PUBLISH_DIR%" --no-build
+dotnet publish "%PROJECT_ROOT%\src\nLogMonitor.Api" -c Release -o "%PUBLISH_DIR%" --no-build
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Publish failed
     pause

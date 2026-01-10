@@ -5,10 +5,11 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLIENT_DIR="$SCRIPT_DIR/client"
-API_DIR="$SCRIPT_DIR/src/nLogMonitor.Api"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLIENT_DIR="$PROJECT_ROOT/client"
+API_DIR="$PROJECT_ROOT/src/nLogMonitor.Api"
 WWWROOT_DIR="$API_DIR/wwwroot"
-PUBLISH_DIR="$SCRIPT_DIR/publish"
+PUBLISH_DIR="$PROJECT_ROOT/publish"
 
 # Colors for output
 RED='\033[0;31m'
@@ -66,7 +67,7 @@ echo ""
 
 # Step 3: Build Backend
 echo -e "${YELLOW}[3/4]${NC} Building backend..."
-cd "$SCRIPT_DIR"
+cd "$PROJECT_ROOT"
 dotnet build -c Release || {
     echo -e "${RED}[ERROR]${NC} Backend build failed"
     exit 1
@@ -79,7 +80,7 @@ echo -e "${YELLOW}[4/4]${NC} Publishing..."
 if [ -d "$PUBLISH_DIR" ]; then
     rm -rf "$PUBLISH_DIR"
 fi
-dotnet publish src/nLogMonitor.Api -c Release -o "$PUBLISH_DIR" --no-build || {
+dotnet publish "$PROJECT_ROOT/src/nLogMonitor.Api" -c Release -o "$PUBLISH_DIR" --no-build || {
     echo -e "${RED}[ERROR]${NC} Publish failed"
     exit 1
 }
