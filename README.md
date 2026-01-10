@@ -70,11 +70,11 @@
 | **Session lifecycle** | Multi-client support (1:N маппинг), автореконнект, cleanup callbacks |
 | **Инкрементальное чтение** | ParseFromPositionAsync + LastReadPosition для оптимальной производительности |
 | **Thread-safe updates** | AppendEntriesAsync для атомарного добавления новых записей |
-| **Unit/Integration тесты** | 149 тестов (NUnit) — парсер, хранилище, сервисы, контроллеры, SignalR |
+| **Unit/Integration тесты** | 283 теста (NUnit) — парсер, хранилище, сервисы, контроллеры, SignalR |
 
 ```bash
 # Проверка работоспособности
-dotnet test                       # 149 тестов
+dotnet test                       # 283 теста
 curl http://localhost:5000/health  # {"status":"healthy",...}
 ```
 

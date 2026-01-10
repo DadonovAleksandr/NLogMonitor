@@ -75,9 +75,9 @@ dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — 149 тестов
-dotnet test                               # Все тесты (149)
-dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта, FileWatcher
+# Tests (NUnit) — 283 теста
+dotnet test                               # Все тесты (283)
+dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта, FileWatcher (134 теста)
 dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28 тестов)
 dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров + SignalR Hub + нагрузочные (121 тест)
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
