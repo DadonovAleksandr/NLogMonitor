@@ -363,33 +363,76 @@ Id,Timestamp,Level,Message,Logger,ProcessId,ThreadId,Exception
 
 #### `POST /api/client-logs`
 
-Приём логов с фронтенда (batch отправка).
+Приём логов с фронтенда (batch отправка). Rate limiting: 100 запросов в минуту на IP.
 
 **Request:**
 
 ```json
+[
+  {
+    "level": "Error",
+    "message": "Failed to load component",
+    "logger": "ClientLogger",
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "url": "http://localhost:5173/logs",
+    "userAgent": "Mozilla/5.0...",
+    "userId": "user-123",
+    "version": "1.0.0",
+    "sessionId": "abc-123",
+    "context": {
+      "componentName": "LogTable",
+      "action": "fetch"
+    },
+    "stack": "Error: Failed to load...\n    at Component.vue:42"
+  }
+]
+```
+
+**Поля ClientLogDto:**
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|--------------|----------|
+| `level` | string | Да | Уровень лога: Trace, Debug, Info, Warn, Error, Fatal (нормализуется: warning→warn, fatal/critical→error) |
+| `message` | string | Да | Сообщение лога (max 10000 символов) |
+| `logger` | string | Нет | Имя логгера (max 256 символов, default: "ClientLogger") |
+| `timestamp` | string | Нет | ISO 8601 timestamp (default: текущее время сервера) |
+| `url` | string | Нет | URL страницы (max 2048 символов) |
+| `userAgent` | string | Нет | User-Agent браузера (max 512 символов) |
+| `userId` | string | Нет | ID пользователя (max 128 символов) |
+| `version` | string | Нет | Версия приложения (max 64 символа) |
+| `sessionId` | string | Нет | ID сессии (max 128 символов) |
+| `context` | object | Нет | Произвольный контекст (JSON объект, сериализуется в строку) |
+| `stack` | string | Нет | Stack trace ошибки (max 32000 символов) |
+
+**Response:** `200 OK`
+
+```json
 {
-  "logs": [
-    {
-      "level": "error",
-      "message": "Failed to load component",
-      "timestamp": "2024-01-15T10:30:45.123Z",
-      "url": "http://localhost:5173/logs",
-      "userAgent": "Mozilla/5.0...",
-      "stackTrace": "Error: Failed to load...\n    at Component.vue:42"
-    }
-  ]
+  "processed": 5,
+  "failed": 0,
+  "errors": []
 }
 ```
 
-**Response:** `204 No Content`
+При частичной ошибке:
+
+```json
+{
+  "processed": 3,
+  "failed": 2,
+  "errors": [
+    "[1] Level is required",
+    "[4] Message is required"
+  ]
+}
+```
 
 **Ошибки:**
 
 | Код | Описание |
 |-----|----------|
-| 400 | Некорректный формат логов |
-| 429 | Слишком много запросов (rate limit) |
+| 400 | Пустой массив или некорректный JSON |
+| 429 | Превышен лимит запросов (100 req/min per IP) |
 
 ---
 

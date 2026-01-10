@@ -1,5 +1,6 @@
 import { ref, onUnmounted, type Ref } from 'vue'
 import { signalRManager } from '@/api/signalr'
+import { logger } from '@/services/logger'
 import type { NewLogsEvent, ConnectionState } from '@/types'
 
 /**
@@ -74,7 +75,7 @@ export function useFileWatcher(): UseFileWatcherReturn {
     try {
       // Если уже отслеживаем эту же сессию, ничего не делаем
       if (isWatching.value && currentSessionId.value === sessionId) {
-        console.info(`Already watching session ${sessionId}`)
+        logger.debug(`Already watching session ${sessionId}`)
         return
       }
 
@@ -98,9 +99,12 @@ export function useFileWatcher(): UseFileWatcherReturn {
       currentSessionId.value = sessionId
       isWatching.value = true
 
-      console.info(`Started watching session ${sessionId} (file: ${result.fileName})`)
+      logger.info(`Started watching session ${sessionId}`, { fileName: result.fileName })
     } catch (err) {
-      console.error('Failed to start watching', err)
+      logger.error('Failed to start watching', {
+        sessionId,
+        error: err instanceof Error ? err.message : String(err)
+      })
       isWatching.value = false
       currentSessionId.value = null
       throw err
@@ -126,9 +130,12 @@ export function useFileWatcher(): UseFileWatcherReturn {
       // Покидаем сессию
       await signalRManager.leaveSession(currentSessionId.value)
 
-      console.info(`Stopped watching session ${currentSessionId.value}`)
+      logger.info(`Stopped watching session ${currentSessionId.value}`)
     } catch (err) {
-      console.error('Failed to stop watching', err)
+      logger.error('Failed to stop watching', {
+        sessionId: currentSessionId.value,
+        error: err instanceof Error ? err.message : String(err)
+      })
       throw err
     } finally {
       isWatching.value = false

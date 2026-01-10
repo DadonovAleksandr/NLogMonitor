@@ -9,7 +9,73 @@
 
 ## [Unreleased]
 
-> Планируется: Фаза 7 — Скрипты запуска, Docker контейнеризация, CI/CD
+> Планируется: Фаза 10 — Оптимизация и тестирование
+
+---
+
+## [0.9.0] - 2026-01-10
+
+> 🎯 **Фаза 9: Photino Desktop** ✅
+
+### 🚀 Добавлено
+- [x] Проект nLogMonitor.Desktop с Photino.NET 3.1.18
+- [x] Embedded ASP.NET Core сервер в фоновом потоке
+- [x] PhotinoWindow с WebView и автоматическим выбором порта
+- [x] Нативные диалоги: ShowOpenFile, ShowOpenFolder (кроссплатформенные)
+- [x] JS ↔ .NET Bridge: BridgeRequest/BridgeResponse, JSON сериализация
+- [x] Message handler для команд: isDesktop, getServerPort, showOpenFile, showOpenFolder
+- [x] Frontend usePhotinoBridge composable с Promise-based API
+- [x] FileSelector обновлён: Web режим (drag & drop) и Desktop режим (нативные кнопки)
+- [x] Скрипты сборки: build-desktop.bat (Windows), build-desktop.sh (Linux/macOS)
+- [x] Self-contained exe ~50 MB (< 100 MB DoD)
+
+---
+
+## [0.8.0] - 2026-01-10
+
+> 🎯 **Фаза 8: Client-side Logging** ✅
+
+### 🚀 Добавлено
+- [x] POST /api/client-logs — приём batch логов с фронтенда
+- [x] Rate Limiting: 100 запросов в минуту на IP (ASP.NET Core Rate Limiting middleware)
+- [x] Нормализация уровней: warning→warn, fatal→error, critical→error
+- [x] Валидация: Level и Message обязательные, лимиты длины полей
+- [x] Санитизация: экранирование HTML, удаление управляющих символов
+- [x] Structured logging с NLog: префикс [CLIENT], контекст (userId, version, url, userAgent)
+- [x] Frontend ClientLogger service: trace/debug/info/warn/error/fatal/exception методы
+- [x] Буферизация (batchSize: 10) и автоматический flush по таймеру (5 сек)
+- [x] Retry с exponential backoff (1s, 2s, 4s) — 3 попытки
+- [x] Глобальный контекст: setGlobalContext({ userId, version, sessionId })
+- [x] Автоматическое добавление url и userAgent к каждому логу
+- [x] Error handlers: window.onerror, window.onunhandledrejection, app.config.errorHandler
+- [x] Отправка логов при закрытии страницы (beforeunload) и visibilitychange
+- [x] 23 интеграционных теста для /api/client-logs
+
+### 🔧 Изменено
+- [x] nlog.config: добавлен ${all-event-properties} для вывода контекста клиентских логов
+- [x] console.error заменены на ClientLogger в App.vue, useFileWatcher.ts, signalr.ts, ExportButton.vue
+- [x] Исправлен race condition авто-flush таймера в logger.ts
+
+### 📊 Статистика
+- Общее количество тестов: 306 (было 283)
+  - Infrastructure: 134 (без изменений)
+  - Application: 28 (без изменений)
+  - Api: 144 (было 121)
+
+---
+
+## [0.7.0] - 2026-01-10
+
+> 🎯 **Фаза 7: Скрипты запуска и Production конфигурация** ✅
+
+### 🚀 Добавлено
+- [x] Shell скрипты для Linux/macOS: start-dev.sh, build.sh, stop.sh
+- [x] Windows скрипт остановки: stop.bat
+- [x] Production конфигурация: appsettings.Production.json
+- [x] Раздача статики через UseStaticFiles и UseDefaultFiles в Program.cs
+- [x] GET /api/metrics — метрики сервера (sessions_active_count, logs_total_count, sessions_memory_bytes, server_uptime_seconds, signalr_connections_count)
+- [x] Документация: README.md обновлён, .env.example создан
+- [x] ISessionStorage расширен методами GetActiveSessionCountAsync, GetTotalLogsCountAsync, GetActiveConnectionsCountAsync
 
 ---
 
@@ -206,6 +272,9 @@
 
 [Unreleased]: https://github.com/YOUR_USERNAME/nLogMonitor/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v1.0.0
+[0.9.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.9.0
+[0.8.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.8.0
+[0.7.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.7.0
 [0.6.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.6.0
 [0.5.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.5.0
 [0.4.0]: https://github.com/YOUR_USERNAME/nLogMonitor/releases/tag/v0.4.0

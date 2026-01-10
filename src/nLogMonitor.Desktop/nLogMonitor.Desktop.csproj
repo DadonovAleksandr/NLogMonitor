@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- <ApplicationIcon>icon.ico</ApplicationIcon> -->
+
+    <!-- Publish properties for single-file executable -->
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Photino.NET for native WebView window -->
+    <PackageReference Include="Photino.NET" Version="3.1.18" />
+
+    <!-- NLog for logging -->
+    <PackageReference Include="NLog.Web.AspNetCore" Version="6.1.0" />
+
+    <!-- FluentValidation for validators -->
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+
+    <!-- SignalR -->
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+
+    <!-- Swagger (optional, for dev mode) -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\nLogMonitor.Application\nLogMonitor.Application.csproj" />
+    <ProjectReference Include="..\nLogMonitor.Infrastructure\nLogMonitor.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- Framework reference for embedded ASP.NET Core -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- Copy configuration files to output -->
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="appsettings.*.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.*.json')" />
+    <Content Include="nlog.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Copy wwwroot content to output -->
+  <ItemGroup>
+    <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

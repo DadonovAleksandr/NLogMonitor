@@ -1,0 +1,57 @@
+#!/bin/bash
+set -e
+
+echo "========================================"
+echo "nLogMonitor Desktop Build Script"
+echo "========================================"
+echo ""
+
+PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$PROJECT_ROOT"
+
+# Detect OS (only Linux is supported)
+OS="unknown"
+RID="unknown"
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    OS="linux"
+    RID="linux-x64"
+else
+    echo "ERROR: Unsupported OS. Only Linux is supported for Desktop build."
+    echo "For Windows, use build-desktop.bat"
+    exit 1
+fi
+
+# Step 1: Build Frontend
+echo "[1/4] Building frontend..."
+cd client
+npm run build
+cd ..
+echo "Frontend built successfully."
+echo ""
+
+# Step 2: Copy frontend to Desktop wwwroot
+echo "[2/4] Copying frontend to Desktop wwwroot..."
+rm -rf "src/nLogMonitor.Desktop/wwwroot"
+mkdir -p "src/nLogMonitor.Desktop/wwwroot"
+cp -r client/dist/* "src/nLogMonitor.Desktop/wwwroot/"
+echo "Frontend copied successfully."
+echo ""
+
+# Step 3: Build Desktop project
+echo "[3/4] Building Desktop project..."
+dotnet build "src/nLogMonitor.Desktop/nLogMonitor.Desktop.csproj" -c Release
+echo "Desktop built successfully."
+echo ""
+
+# Step 4: Publish Desktop (self-contained)
+echo "[4/4] Publishing Desktop for $OS ($RID)..."
+dotnet publish "src/nLogMonitor.Desktop/nLogMonitor.Desktop.csproj" -c Release -r "$RID" --self-contained -o "publish/desktop/$RID"
+echo "Desktop published successfully."
+echo ""
+
+echo "========================================"
+echo "Build completed!"
+echo "Output: publish/desktop/$RID"
+echo "========================================"
+echo ""
+echo "Run: ./publish/desktop/$RID/nLogMonitor.Desktop"

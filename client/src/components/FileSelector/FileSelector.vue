@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Upload, FileText, Loader2, AlertCircle, X } from 'lucide-vue-next'
+import { Upload, FileText, Loader2, AlertCircle, X, FolderOpen } from 'lucide-vue-next'
 import { useLogStore } from '@/stores'
+import { usePhotinoBridge } from '@/composables'
 import { Button } from '@/components/ui/button'
 
 const logStore = useLogStore()
+const { isDesktop, showOpenFileDialog, showOpenFolderDialog } = usePhotinoBridge()
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragOver = ref(false)
 
@@ -84,6 +86,30 @@ function clearError() {
   logStore.clearError()
 }
 
+// Desktop: Handle native file dialog
+async function handleDesktopOpenFile() {
+  try {
+    const filePath = await showOpenFileDialog()
+    if (filePath) {
+      await logStore.openFile(filePath)
+    }
+  } catch (error) {
+    logStore.error = error instanceof Error ? error.message : 'Failed to open file'
+  }
+}
+
+// Desktop: Handle native folder dialog
+async function handleDesktopOpenFolder() {
+  try {
+    const folderPath = await showOpenFolderDialog()
+    if (folderPath) {
+      await logStore.openDirectory(folderPath)
+    }
+  } catch (error) {
+    logStore.error = error instanceof Error ? error.message : 'Failed to open folder'
+  }
+}
+
 const isDisabled = computed(() => logStore.isLoading)
 </script>
 
@@ -159,8 +185,10 @@ const isDisabled = computed(() => logStore.isLoading)
           </p>
         </div>
 
-        <!-- Upload button -->
+        <!-- Upload button(s) -->
+        <!-- Web mode: single upload button -->
         <Button
+          v-if="!isDesktop"
           variant="outline"
           :disabled="isDisabled"
           class="group/btn relative mt-2 overflow-hidden border-zinc-700 bg-zinc-800/50 font-mono text-sm transition-all hover:border-emerald-700 hover:bg-emerald-950/30"
@@ -172,9 +200,40 @@ const isDisabled = computed(() => logStore.isLoading)
           </span>
         </Button>
 
+        <!-- Desktop mode: open file and open folder buttons -->
+        <div v-else class="mt-2 flex gap-2">
+          <Button
+            variant="outline"
+            :disabled="isDisabled"
+            class="group/btn relative overflow-hidden border-zinc-700 bg-zinc-800/50 font-mono text-sm transition-all hover:border-emerald-700 hover:bg-emerald-950/30"
+            @click="handleDesktopOpenFile"
+          >
+            <span class="relative z-10 flex items-center gap-2">
+              <FileText class="h-4 w-4" />
+              <span>Открыть файл</span>
+            </span>
+          </Button>
+          <Button
+            variant="outline"
+            :disabled="isDisabled"
+            class="group/btn relative overflow-hidden border-zinc-700 bg-zinc-800/50 font-mono text-sm transition-all hover:border-sky-700 hover:bg-sky-950/30"
+            @click="handleDesktopOpenFolder"
+          >
+            <span class="relative z-10 flex items-center gap-2">
+              <FolderOpen class="h-4 w-4" />
+              <span>Открыть директорию</span>
+            </span>
+          </Button>
+        </div>
+
         <!-- Allowed formats hint -->
         <p class="font-mono text-xs text-zinc-600">
-          Поддерживаемые форматы: .log, .txt • Максимум {{ MAX_FILE_SIZE_MB }}MB
+          <template v-if="!isDesktop">
+            Поддерживаемые форматы: .log, .txt • Максимум {{ MAX_FILE_SIZE_MB }}MB
+          </template>
+          <template v-else>
+            Поддерживаемые форматы: .log, .txt
+          </template>
         </p>
       </div>
     </div>

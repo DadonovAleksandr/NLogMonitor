@@ -1,5 +1,6 @@
 import * as signalR from '@microsoft/signalr'
 import { BASE_URL } from './client'
+import { logger } from '@/services/logger'
 import type { JoinSessionResult, NewLogsEvent, ConnectionState } from '@/types'
 
 /**
@@ -57,23 +58,30 @@ class SignalRManager {
 
     // Отслеживание состояния подключения
     connection.onclose((error) => {
-      console.warn('SignalR connection closed', error)
+      logger.warn('SignalR connection closed', {
+        error: error instanceof Error ? error.message : String(error)
+      })
       this.notifyConnectionState('Disconnected')
     })
 
     connection.onreconnecting((error) => {
-      console.warn('SignalR reconnecting...', error)
+      logger.warn('SignalR reconnecting...', {
+        error: error instanceof Error ? error.message : String(error)
+      })
       this.notifyConnectionState('Reconnecting')
     })
 
     connection.onreconnected((connectionId) => {
-      console.info('SignalR reconnected', connectionId)
+      logger.info('SignalR reconnected', { connectionId })
       this.notifyConnectionState('Connected')
 
       // При переподключении нужно заново присоединиться к сессии
       if (this.currentSessionId) {
         this.joinSession(this.currentSessionId).catch((err) => {
-          console.error('Failed to rejoin session after reconnect', err)
+          logger.error('Failed to rejoin session after reconnect', {
+            sessionId: this.currentSessionId,
+            error: err instanceof Error ? err.message : String(err)
+          })
         })
       }
     })
@@ -106,12 +114,14 @@ class SignalRManager {
     this.connectionPromise = this.connection
       .start()
       .then(() => {
-        console.info('SignalR connected')
+        logger.info('SignalR connected')
         this.notifyConnectionState('Connected')
         this.connectionPromise = null
       })
       .catch((err) => {
-        console.error('SignalR connection failed', err)
+        logger.error('SignalR connection failed', {
+          error: err instanceof Error ? err.message : String(err)
+        })
         this.notifyConnectionState('Disconnected')
         this.connectionPromise = null
         throw err
@@ -138,9 +148,11 @@ class SignalRManager {
       }
 
       await this.connection.stop()
-      console.info('SignalR disconnected')
+      logger.info('SignalR disconnected')
     } catch (err) {
-      console.error('Error during disconnect', err)
+      logger.error('Error during disconnect', {
+        error: err instanceof Error ? err.message : String(err)
+      })
     } finally {
       this.connection = null
       this.connectionPromise = null
@@ -167,14 +179,17 @@ class SignalRManager {
 
       if (result.success) {
         this.currentSessionId = sessionId
-        console.info(`Joined session ${sessionId}`)
+        logger.info(`Joined session ${sessionId}`)
       } else {
-        console.error(`Failed to join session: ${result.error}`)
+        logger.error('Failed to join session', { sessionId, error: result.error })
       }
 
       return result
     } catch (err) {
-      console.error('Error joining session', err)
+      logger.error('Error joining session', {
+        sessionId,
+        error: err instanceof Error ? err.message : String(err)
+      })
       throw err
     }
   }
@@ -192,13 +207,16 @@ class SignalRManager {
 
     try {
       await this.connection.invoke('LeaveSession', sessionId)
-      console.info(`Left session ${sessionId}`)
+      logger.info(`Left session ${sessionId}`)
 
       if (this.currentSessionId === sessionId) {
         this.currentSessionId = null
       }
     } catch (err) {
-      console.error('Error leaving session', err)
+      logger.error('Error leaving session', {
+        sessionId,
+        error: err instanceof Error ? err.message : String(err)
+      })
       throw err
     }
   }
@@ -277,7 +295,10 @@ class SignalRManager {
       try {
         callback(logs)
       } catch (err) {
-        console.error('Error in NewLogs callback', err)
+        logger.error('Error in NewLogs callback', {
+          error: err instanceof Error ? err.message : String(err),
+          logsCount: logs.length
+        })
       }
     })
   }
@@ -290,7 +311,10 @@ class SignalRManager {
       try {
         callback(state)
       } catch (err) {
-        console.error('Error in ConnectionState callback', err)
+        logger.error('Error in ConnectionState callback', {
+          state,
+          error: err instanceof Error ? err.message : String(err)
+        })
       }
     })
   }

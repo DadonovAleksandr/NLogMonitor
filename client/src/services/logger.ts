@@ -238,11 +238,16 @@ class ClientLogger {
       await this.sendWithRetry(logsToSend)
     } catch (error) {
       // После всех неудачных попыток - записать в console.error и очистить
+      // Используем console.error здесь намеренно, т.к. logger сам не может отправить
       console.error('[ClientLogger] Failed to send logs after all retries:', error, {
         logsCount: logsToSend.length
       })
     } finally {
       this.isFlushing = false
+      // Если за время отправки накопились новые логи - планируем следующий flush
+      if (this.buffer.length > 0) {
+        this.scheduleFlush()
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { exportApi } from '@/api'
 import { useLogStore } from '@/stores/logStore'
 import { useFilterStore } from '@/stores/filterStore'
+import { logger } from '@/services/logger'
 import type { ExportFormat } from '@/types'
 
 // Stores
@@ -39,7 +40,11 @@ async function handleExport(format: ExportFormat) {
       filterStore.filterOptions
     )
   } catch (error) {
-    console.error('Export failed:', error)
+    logger.error('Export failed', {
+      format,
+      sessionId: logStore.sessionId,
+      error: error instanceof Error ? error.message : String(error)
+    })
   } finally {
     // Даём браузеру время на старт загрузки
     setTimeout(() => {

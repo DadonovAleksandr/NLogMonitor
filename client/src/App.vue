@@ -11,6 +11,7 @@ import { Toast } from '@/components/Toast'
 import { LiveIndicator } from '@/components/LiveIndicator'
 import { useLogStore, useFilterStore } from '@/stores'
 import { useFileWatcher } from '@/composables/useFileWatcher'
+import { logger } from '@/services/logger'
 
 const logStore = useLogStore()
 const filterStore = useFilterStore()
@@ -64,7 +65,10 @@ watch(
           logStore.appendLogs(newLogs)
         })
       } catch (err) {
-        console.error('Failed to start watching session:', err)
+        logger.error('Failed to start watching session', {
+          sessionId: newSessionId,
+          error: err instanceof Error ? err.message : String(err)
+        })
       }
     }
   }
