@@ -112,11 +112,11 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
         <div
           v-for="i in 12"
           :key="i"
-          class="flex items-center gap-4 border-b border-slate-100 px-4 py-2.5"
+          class="flex items-center gap-4 border-b border-slate-100 px-4 py-2"
           :style="{ animationDelay: `${i * 50}ms` }"
         >
           <div class="h-3.5 w-20 animate-pulse rounded bg-slate-200/60" />
-          <div class="h-5 w-12 animate-pulse rounded bg-slate-200/60" />
+          <div class="h-4 w-12 animate-pulse rounded bg-slate-200/60" />
           <div
             class="h-3.5 flex-1 animate-pulse rounded bg-slate-200/60"
             :style="{ maxWidth: `${60 + Math.random() * 35}%` }"
@@ -169,7 +169,7 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
             <TableHead
               v-for="header in headerGroup.headers"
               :key="header.id"
-              class="h-10 px-3 py-2 font-mono text-sm font-semibold text-slate-700"
+              class="h-8 px-3.5 py-1 text-sm font-semibold text-slate-700"
               :class="{ 'text-center': header.column.id !== 'message' }"
               :style="header.column.getSize() ? { width: `${header.column.getSize()}px` } : {}"
             >
@@ -198,7 +198,7 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
             <TableCell
               v-for="cell in row.getVisibleCells()"
               :key="cell.id"
-              class="px-3 py-1 align-middle font-mono text-sm leading-tight"
+              class="px-3.5 py-0.5 align-middle text-sm"
               :class="{
                 'text-center': cell.column.id !== 'message' && cell.column.id !== 'logger',
                 'whitespace-nowrap': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'timestamp' || cell.column.id === 'level'

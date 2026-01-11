@@ -7,11 +7,12 @@ import { LogLevel } from '@/types'
 const filterStore = useFilterStore()
 const logStore = useLogStore()
 
-// Конфигурация уровней с цветами из LogLevelBadge
+// Конфигурация уровней с цветами и иконками из LogLevelBadge
 interface LevelConfig {
   level: LogLevel
   name: string
   label: string
+  icon: string
   bg: string
   text: string
   border: string
@@ -24,6 +25,7 @@ const levels: LevelConfig[] = [
     level: LogLevel.Trace,
     name: 'Trace',
     label: 'TRC',
+    icon: '/images/levels/Trace.png',
     bg: 'bg-[#f8f8f8]',
     text: 'text-zinc-600',
     border: 'border-slate-300',
@@ -34,6 +36,7 @@ const levels: LevelConfig[] = [
     level: LogLevel.Debug,
     name: 'Debug',
     label: 'DBG',
+    icon: '/images/levels/Debug.png',
     bg: 'bg-[#e0f7fa]',
     text: 'text-[#0e4f5c]',
     border: 'border-cyan-300',
@@ -44,6 +47,7 @@ const levels: LevelConfig[] = [
     level: LogLevel.Info,
     name: 'Info',
     label: 'INF',
+    icon: '/images/levels/Info.png',
     bg: 'bg-white',
     text: 'text-slate-700',
     border: 'border-slate-200',
@@ -54,6 +58,7 @@ const levels: LevelConfig[] = [
     level: LogLevel.Warn,
     name: 'Warn',
     label: 'WRN',
+    icon: '/images/levels/Warning.png',
     bg: 'bg-[#fef3c7]',
     text: 'text-[#92400e]',
     border: 'border-amber-300',
@@ -64,6 +69,7 @@ const levels: LevelConfig[] = [
     level: LogLevel.Error,
     name: 'Error',
     label: 'ERR',
+    icon: '/images/levels/Error.png',
     bg: 'bg-[#fee2e2]',
     text: 'text-[#991b1b]',
     border: 'border-red-300',
@@ -74,6 +80,7 @@ const levels: LevelConfig[] = [
     level: LogLevel.Fatal,
     name: 'Fatal',
     label: 'FTL',
+    icon: '/images/levels/Fatal.png',
     bg: 'bg-[#fca5a5]',
     text: 'text-[#7f1d1d]',
     border: 'border-rose-400',
@@ -148,6 +155,16 @@ const disableAll = () => {
             : ['bg-white border-slate-200 opacity-50 hover:opacity-75 hover:border-slate-300', config.glow]
         ]"
       >
+        <!-- Icon -->
+        <img
+          :src="config.icon"
+          :alt="config.name"
+          :class="[
+            'w-4 h-4 transition-opacity',
+            isActive(config.level) ? 'opacity-90' : 'opacity-40'
+          ]"
+        />
+
         <!-- Label -->
         <span class="font-bold">
           {{ config.label }}
