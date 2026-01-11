@@ -282,7 +282,6 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
   @apply border-yellow-300;
   background-color: #FFFF00;
   color: #000000;
-  font-weight: 500;
 }
 .log-row-warn:hover {
   background-color: #f5f500;
@@ -294,7 +293,6 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
   @apply border-red-400;
   background-color: #FF0000;
   color: #ffffff;
-  font-weight: 600;
 }
 .log-row-error:hover {
   background-color: #eb0000;
@@ -306,7 +304,6 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
   @apply border-red-600;
   background-color: #8B0000;
   color: #ffffff;
-  font-weight: 700;
   position: relative;
 }
 .log-row-fatal:hover {
