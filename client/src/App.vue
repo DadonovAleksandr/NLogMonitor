@@ -6,14 +6,18 @@ import { TableControls } from '@/components/TableControls'
 import { LogTable } from '@/components/LogTable'
 import { Pagination } from '@/components/Pagination'
 import { Toast } from '@/components/Toast'
-import { useTabsStore, useLogStore, useSettingsStore } from '@/stores'
-import { usePhotinoBridge, useSettings } from '@/composables'
+import { useTabsStore, useLogStore, useFilterStore, useSettingsStore } from '@/stores'
+import { usePhotinoBridge, useSettings, useFileWatcher } from '@/composables'
 import { logger } from '@/services/logger'
 
 const tabsStore = useTabsStore()
 const logStore = useLogStore()
+const filterStore = useFilterStore()
 const settingsStore = useSettingsStore()
 const photinoBridge = usePhotinoBridge()
+
+// SignalR file watcher для real-time обновлений
+const { startWatching, stopWatching } = useFileWatcher()
 
 const isDesktop = ref(false)
 const isRestoring = ref(false)
@@ -36,6 +40,9 @@ watch(
       logStore.sessionId = activeTab.sessionId
       logStore.isLoading = activeTab.isLoading
       logStore.error = activeTab.error
+
+      // ВАЖНО: filterStore автоматически обновится через computed properties
+      // Не требуется явная синхронизация, так как filterStore читает из activeTab
     } else {
       // Нет активной вкладки - очищаем logStore
       logStore.logs = []
@@ -47,6 +54,8 @@ watch(
       logStore.sessionId = null
       logStore.isLoading = false
       logStore.error = null
+
+      // filterStore тоже автоматически "очистится" (вернёт дефолтные значения)
     }
   },
   { immediate: true, deep: true }
@@ -70,6 +79,43 @@ watch(
       syncTabWithLogStore(activeTab.id)
     } catch (error) {
       logger.error('Failed to fetch logs after page change', { error })
+    }
+  }
+)
+
+// Отслеживание изменений sessionId активной вкладки для управления SignalR подпиской
+watch(
+  () => tabsStore.activeTab?.sessionId,
+  async (newSessionId, oldSessionId) => {
+    // Если была старая сессия, останавливаем отслеживание
+    if (oldSessionId && oldSessionId !== newSessionId) {
+      await stopWatching()
+    }
+
+    // Если появилась новая сессия, начинаем отслеживание
+    if (newSessionId) {
+      try {
+        await startWatching(newSessionId, (newLogs) => {
+          const activeTab = tabsStore.activeTab
+          // Проверяем, что событие для текущей активной вкладки
+          if (!activeTab || activeTab.sessionId !== logStore.sessionId) {
+            logger.warn('Received logs for inactive tab, skipping UI update')
+            return
+          }
+
+          // Передаём фильтры и activeLevels активной вкладки в appendLogs
+          logStore.appendLogs(newLogs, activeTab.filters, activeTab.activeLevels)
+
+          // Обновляем levelCounts в активной вкладке
+          activeTab.levelCounts = { ...logStore.levelCounts }
+        })
+        logger.info(`Started watching session ${newSessionId}`)
+      } catch (err) {
+        logger.error('Failed to start watching session', {
+          sessionId: newSessionId,
+          error: err instanceof Error ? err.message : String(err)
+        })
+      }
     }
   }
 )
@@ -243,17 +289,51 @@ function syncTabWithLogStore(tabId: string) {
   })
 }
 
-function handleSearch(searchText: string) {
-  if (tabsStore.activeTab) {
-    tabsStore.activeTab.searchText = searchText
-    // TODO: Trigger log filtering
+/**
+ * Обработчик изменения поискового запроса
+ * Обновляет searchText в активной вкладке через filterStore и перезагружает логи
+ */
+async function handleSearch(searchText: string) {
+  const activeTab = tabsStore.activeTab
+  if (!activeTab || !activeTab.sessionId) return
+
+  // Обновляем searchText в активной вкладке через filterStore
+  filterStore.setSearchText(searchText)
+
+  // Сбрасываем на первую страницу при изменении фильтра
+  activeTab.page = 1
+
+  // Загружаем логи с новыми фильтрами
+  try {
+    await logStore.fetchLogs(activeTab.filters)
+    syncTabWithLogStore(activeTab.id)
+  } catch (error) {
+    logger.error('Failed to fetch logs after search change', { error })
   }
 }
 
-function handleFilterLevels(levels: Set<string>) {
-  if (tabsStore.activeTab) {
-    // TODO: Update tab filters and trigger log filtering
-    console.log('Filter levels:', levels)
+/**
+ * Обработчик изменения фильтров по уровням логирования
+ * Фильтры уже обновлены в filterStore через FilterPanel (вызывает filterStore.toggleLevel)
+ * Здесь мы только перезагружаем логи с новыми фильтрами
+ */
+async function handleFilterLevels() {
+  const activeTab = tabsStore.activeTab
+  if (!activeTab || !activeTab.sessionId) return
+
+  // Фильтры уже обновлены в filterStore через FilterPanel
+  // (FilterPanel вызывает filterStore.toggleLevel напрямую)
+  // Здесь мы только перезагружаем логи
+
+  // Сбрасываем на первую страницу при изменении фильтра
+  activeTab.page = 1
+
+  // Загружаем логи с новыми фильтрами
+  try {
+    await logStore.fetchLogs(activeTab.filters)
+    syncTabWithLogStore(activeTab.id)
+  } catch (error) {
+    logger.error('Failed to fetch logs after filter change', { error })
   }
 }
 

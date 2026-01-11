@@ -4,7 +4,6 @@ import type { LogEntry, OpenFileResult, FilterOptions, LevelCounts } from '@/typ
 import { LogLevel } from '@/types'
 import { logsApi, filesApi } from '@/api'
 import { useToast } from '@/composables/useToast'
-import { useFilterStore } from './filterStore'
 
 export const useLogStore = defineStore('logs', () => {
   const { showToast } = useToast()
@@ -175,13 +174,17 @@ export const useLogStore = defineStore('logs', () => {
    * - Размер logs[] ограничен pageSize для предотвращения переполнения страницы
    *
    * @param newLogs - Массив новых LogEntry для добавления
+   * @param filters - Фильтры активной вкладки для клиентской фильтрации
+   * @param activeLevels - Активные уровни логирования (для быстрой проверки)
    */
-  function appendLogs(newLogs: LogEntry[]) {
+  function appendLogs(
+    newLogs: LogEntry[],
+    filters: FilterOptions,
+    activeLevels: Set<LogLevel>
+  ) {
     if (!sessionId.value || newLogs.length === 0) {
       return
     }
-
-    const filterStore = useFilterStore()
 
     // 1. Обновляем счётчики по уровням (для badge'ей в FilterPanel)
     // Это глобальные счётчики файла, не зависящие от фильтров
@@ -202,43 +205,43 @@ export const useLogStore = defineStore('logs', () => {
       return
     }
 
-    // 4. Фильтруем логи по текущим фильтрам
+    // 4. Фильтруем логи по переданным фильтрам
     const filteredLogs = newLogs.filter((log) => {
-      // Проверяем уровень
+      // Проверяем уровень через activeLevels
       const levelNumeric = stringLevelToNumeric(log.level)
-      if (levelNumeric !== null && !filterStore.activeLevels.has(levelNumeric)) {
+      if (levelNumeric !== null && !activeLevels.has(levelNumeric)) {
         return false
       }
 
       // Проверяем searchText (поиск в message, без учёта регистра)
-      if (filterStore.searchText) {
-        const searchLower = filterStore.searchText.toLowerCase()
+      if (filters.searchText) {
+        const searchLower = filters.searchText.toLowerCase()
         if (!log.message.toLowerCase().includes(searchLower)) {
           return false
         }
       }
 
       // Проверяем logger (если задан)
-      if (filterStore.logger) {
-        const loggerLower = filterStore.logger.toLowerCase()
+      if (filters.logger) {
+        const loggerLower = filters.logger.toLowerCase()
         if (!log.logger.toLowerCase().includes(loggerLower)) {
           return false
         }
       }
 
       // Проверяем fromDate
-      if (filterStore.fromDate) {
+      if (filters.fromDate) {
         const logDate = new Date(log.timestamp)
-        const fromDateObj = new Date(filterStore.fromDate)
+        const fromDateObj = new Date(filters.fromDate)
         if (logDate < fromDateObj) {
           return false
         }
       }
 
       // Проверяем toDate
-      if (filterStore.toDate) {
+      if (filters.toDate) {
         const logDate = new Date(log.timestamp)
-        const toDateObj = new Date(filterStore.toDate)
+        const toDateObj = new Date(filters.toDate)
         if (logDate > toDateObj) {
           return false
         }

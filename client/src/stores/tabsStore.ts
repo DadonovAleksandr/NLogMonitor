@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { LogEntry, LevelCounts, FilterOptions, TabSetting, UserSettings } from '@/types'
+import { LogLevel } from '@/types'
+
+// Маппинг числовых значений в строковые названия уровней (для API)
+const LogLevelNames: Record<LogLevel, string> = {
+  [LogLevel.Trace]: 'Trace',
+  [LogLevel.Debug]: 'Debug',
+  [LogLevel.Info]: 'Info',
+  [LogLevel.Warn]: 'Warn',
+  [LogLevel.Error]: 'Error',
+  [LogLevel.Fatal]: 'Fatal'
+}
 
 export interface Tab {
   id: string
@@ -19,6 +30,8 @@ export interface Tab {
   // Filters specific to this tab
   filters: FilterOptions
   searchText: string
+  // NEW: activeLevels для UI FilterPanel (числовые значения LogLevel)
+  activeLevels: Set<LogLevel>
   // Controls
   autoscroll: boolean
   isPaused: boolean
@@ -61,6 +74,15 @@ export const useTabsStore = defineStore('tabs', () => {
       error: null,
       filters: {},
       searchText: '',
+      // Инициализируем activeLevels со всеми 6 уровнями (все включены по умолчанию)
+      activeLevels: new Set([
+        LogLevel.Trace,
+        LogLevel.Debug,
+        LogLevel.Info,
+        LogLevel.Warn,
+        LogLevel.Error,
+        LogLevel.Fatal
+      ]),
       autoscroll: true,
       isPaused: false
     }
@@ -176,6 +198,93 @@ export const useTabsStore = defineStore('tabs', () => {
     return settings.openedTabs || []
   }
 
+  /**
+   * Обновить фильтры активной вкладки и пересчитать filters.levels для API
+   *
+   * @param updates - Объект с обновлениями для фильтров активной вкладки
+   */
+  function updateTabFilters(updates: {
+    searchText?: string
+    activeLevels?: Set<LogLevel>
+    fromDate?: string | undefined
+    toDate?: string | undefined
+    logger?: string | undefined
+  }) {
+    if (!activeTab.value) return
+
+    // Обновляем поля
+    if (updates.searchText !== undefined) {
+      activeTab.value.searchText = updates.searchText
+    }
+    if (updates.activeLevels !== undefined) {
+      activeTab.value.activeLevels = updates.activeLevels
+    }
+    if (updates.fromDate !== undefined) {
+      activeTab.value.filters.fromDate = updates.fromDate
+    }
+    if (updates.toDate !== undefined) {
+      activeTab.value.filters.toDate = updates.toDate
+    }
+    if (updates.logger !== undefined) {
+      activeTab.value.filters.logger = updates.logger
+    }
+
+    // Пересчитываем filters для API
+    rebuildActiveTabFilters()
+  }
+
+  /**
+   * Пересчитать filters.levels и filters.searchText из activeLevels и searchText
+   */
+  function rebuildActiveTabFilters() {
+    if (!activeTab.value) return
+
+    const filters: FilterOptions = {}
+
+    // Добавить searchText
+    if (activeTab.value.searchText) {
+      filters.searchText = activeTab.value.searchText
+    }
+
+    // Добавить levels (если не все 6 уровней выбраны)
+    if (activeTab.value.activeLevels.size < 6) {
+      filters.levels = Array.from(activeTab.value.activeLevels)
+        .sort((a, b) => a - b)
+        .map(level => LogLevelNames[level])
+    }
+
+    // Копируем остальные поля из текущих filters
+    if (activeTab.value.filters.fromDate) {
+      filters.fromDate = activeTab.value.filters.fromDate
+    }
+    if (activeTab.value.filters.toDate) {
+      filters.toDate = activeTab.value.filters.toDate
+    }
+    if (activeTab.value.filters.logger) {
+      filters.logger = activeTab.value.filters.logger
+    }
+
+    activeTab.value.filters = filters
+  }
+
+  /**
+   * Очистить фильтры активной вкладки (сбросить к дефолтным значениям)
+   */
+  function clearTabFilters() {
+    if (!activeTab.value) return
+
+    activeTab.value.searchText = ''
+    activeTab.value.activeLevels = new Set([
+      LogLevel.Trace,
+      LogLevel.Debug,
+      LogLevel.Info,
+      LogLevel.Warn,
+      LogLevel.Error,
+      LogLevel.Fatal
+    ])
+    activeTab.value.filters = {}
+  }
+
   return {
     // State
     tabs,
@@ -194,6 +303,9 @@ export const useTabsStore = defineStore('tabs', () => {
     toggleAutoscroll,
     togglePause,
     clearLogs,
+    // Filter management
+    updateTabFilters,
+    clearTabFilters,
     // Settings sync
     exportToSettings,
     importFromSettings

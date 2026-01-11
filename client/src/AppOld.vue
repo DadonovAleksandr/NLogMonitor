@@ -62,7 +62,8 @@ watch(
       try {
         await startWatching(newSessionId, (newLogs) => {
           // Callback для обработки новых логов
-          logStore.appendLogs(newLogs)
+          // Передаём текущие фильтры и activeLevels
+          logStore.appendLogs(newLogs, filterStore.filterOptions, filterStore.activeLevels)
         })
       } catch (err) {
         logger.error('Failed to start watching session', {

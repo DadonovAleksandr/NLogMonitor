@@ -2,10 +2,15 @@
 import { computed } from 'vue'
 import { useFilterStore } from '@/stores/filterStore'
 import { useLogStore } from '@/stores/logStore'
+import { useTabsStore } from '@/stores/tabsStore'
 import { LogLevel } from '@/types'
 
 const filterStore = useFilterStore()
 const logStore = useLogStore()
+const tabsStore = useTabsStore()
+
+// Проверка наличия активной вкладки
+const hasActiveTab = computed(() => tabsStore.activeTab !== null)
 
 // Конфигурация уровней с цветами и иконками из LogLevelBadge
 interface LevelConfig {
@@ -141,16 +146,17 @@ const disableAll = () => {
       <button
         v-for="config in levels"
         :key="config.level"
+        :disabled="!hasActiveTab"
         @click="handleToggle(config.level)"
         :class="[
           'group relative',
           'flex items-center gap-2',
           'px-3 py-1.5',
           'border-2 transition-all duration-150',
-          'hover:scale-[1.02] active:scale-[0.98]',
+          !hasActiveTab ? 'opacity-30 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]',
           'font-mono text-[11px] tracking-wider uppercase font-semibold',
           config.text,
-          isActive(config.level)
+          hasActiveTab && isActive(config.level)
             ? [config.bg, config.border, config.glowActive]
             : ['bg-white border-slate-200 opacity-50 hover:opacity-75 hover:border-slate-300', config.glow]
         ]"
@@ -205,14 +211,26 @@ const disableAll = () => {
     <!-- Быстрые действия -->
     <div class="flex items-center gap-1 pl-3 ml-auto border-l border-slate-300">
       <button
+        :disabled="!hasActiveTab"
         @click="clearAll"
-        class="px-2.5 py-1 border-2 border-slate-300 bg-white hover:bg-slate-100 hover:border-slate-400 font-mono text-[10px] text-slate-700 hover:text-slate-900 tracking-wider uppercase font-semibold transition-all active:scale-95 shadow-sm hover:shadow"
+        :class="[
+          'px-2.5 py-1 border-2 border-slate-300 bg-white font-mono text-[10px] text-slate-700 tracking-wider uppercase font-semibold transition-all shadow-sm',
+          hasActiveTab
+            ? 'hover:bg-slate-100 hover:border-slate-400 hover:text-slate-900 active:scale-95 hover:shadow'
+            : 'opacity-30 cursor-not-allowed'
+        ]"
       >
         ALL
       </button>
       <button
+        :disabled="!hasActiveTab"
         @click="disableAll"
-        class="px-2.5 py-1 border-2 border-slate-300 bg-white hover:bg-slate-100 hover:border-slate-400 font-mono text-[10px] text-slate-700 hover:text-slate-900 tracking-wider uppercase font-semibold transition-all active:scale-95 shadow-sm hover:shadow"
+        :class="[
+          'px-2.5 py-1 border-2 border-slate-300 bg-white font-mono text-[10px] text-slate-700 tracking-wider uppercase font-semibold transition-all shadow-sm',
+          hasActiveTab
+            ? 'hover:bg-slate-100 hover:border-slate-400 hover:text-slate-900 active:scale-95 hover:shadow'
+            : 'opacity-30 cursor-not-allowed'
+        ]"
       >
         NONE
       </button>
