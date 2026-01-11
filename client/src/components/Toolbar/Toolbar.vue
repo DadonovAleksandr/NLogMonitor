@@ -8,6 +8,7 @@ import type { LevelCounts } from '@/types'
 interface LevelFilterButton {
   level: keyof LevelCounts
   label: string
+  icon: string
   colorClass: string
   activeClass: string
 }
@@ -26,36 +27,42 @@ const levelButtons: LevelFilterButton[] = [
   {
     level: 'Trace',
     label: 'Trace',
+    icon: '/images/levels/Trace.png',
     colorClass: 'bg-cyan-950/50 text-cyan-400 border-cyan-800',
     activeClass: 'bg-cyan-600 text-white border-cyan-500 shadow-lg shadow-cyan-900/50'
   },
   {
     level: 'Debug',
     label: 'Debug',
+    icon: '/images/levels/Debug.png',
     colorClass: 'bg-blue-950/50 text-blue-400 border-blue-800',
     activeClass: 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/50'
   },
   {
     level: 'Info',
     label: 'Info',
+    icon: '/images/levels/Info.png',
     colorClass: 'bg-emerald-950/50 text-emerald-400 border-emerald-800',
     activeClass: 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/50'
   },
   {
     level: 'Warn',
     label: 'Warn',
+    icon: '/images/levels/Warning.png',
     colorClass: 'bg-yellow-950/50 text-yellow-400 border-yellow-800',
     activeClass: 'bg-yellow-600 text-white border-yellow-500 shadow-lg shadow-yellow-900/50'
   },
   {
     level: 'Error',
     label: 'Error',
+    icon: '/images/levels/Error.png',
     colorClass: 'bg-orange-950/50 text-orange-400 border-orange-800',
     activeClass: 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/50'
   },
   {
     level: 'Fatal',
     label: 'Fatal',
+    icon: '/images/levels/Fatal.png',
     colorClass: 'bg-red-950/50 text-red-400 border-red-800',
     activeClass: 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-900/50'
   }
@@ -142,12 +149,18 @@ watch(activeLevels, (newValue) => {
         <button
           v-for="btn in levelButtons"
           :key="btn.level"
-          class="group relative border px-3 py-1.5 font-mono text-xs font-medium transition-all duration-150"
+          class="group relative flex items-center gap-2 border px-3 py-1.5 font-mono text-xs font-medium transition-all duration-150"
           :class="[
             isLevelActive(btn.level) ? btn.activeClass : btn.colorClass
           ]"
           @click="toggleLevel(btn.level)"
         >
+          <img
+            :src="btn.icon"
+            :alt="btn.label"
+            class="h-4 w-4 transition-opacity"
+            :class="[isLevelActive(btn.level) ? 'opacity-90' : 'opacity-60']"
+          />
           <span>{{ btn.label }}</span>
           <span class="ml-2 opacity-70">{{ (levelCounts[btn.level] ?? 0).toLocaleString() }}</span>
 
