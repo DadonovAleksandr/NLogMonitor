@@ -127,113 +127,289 @@ const disableAll = () => {
 </script>
 
 <template>
-  <div class="flex items-center gap-1.5 p-3 bg-slate-50 border border-slate-200 shadow-sm">
+  <div class="filter-panel">
     <!-- Заголовок панели -->
-    <div class="flex items-center gap-2 pr-3 border-r border-slate-300">
-      <div class="font-mono text-[10px] tracking-widest text-slate-600 uppercase font-bold">
-        LEVEL
+    <div class="panel-header">
+      <div class="header-label">
+        LOG LEVELS
       </div>
       <div
         v-if="inactiveCount > 0"
-        class="flex items-center justify-center min-w-[20px] h-4 px-1.5 bg-amber-100 border border-amber-400 font-mono text-[10px] text-amber-800 font-semibold"
+        class="inactive-badge"
       >
-        -{{ inactiveCount }}
+        {{ inactiveCount }} hidden
       </div>
     </div>
 
     <!-- Кнопки фильтров -->
-    <div class="flex items-center gap-1">
+    <div class="filters-group">
       <button
         v-for="config in levels"
         :key="config.level"
         :disabled="!hasActiveTab"
         @click="handleToggle(config.level)"
         :class="[
-          'group relative',
-          'flex items-center gap-2',
-          'px-3 py-1.5',
-          'border-2 transition-all duration-150',
-          !hasActiveTab ? 'opacity-30 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]',
-          'font-mono text-[11px] tracking-wider uppercase font-semibold',
-          config.text,
-          hasActiveTab && isActive(config.level)
-            ? [config.bg, config.border, config.glowActive]
-            : ['bg-white border-slate-200 opacity-50 hover:opacity-75 hover:border-slate-300', config.glow]
+          'filter-btn',
+          !hasActiveTab && 'filter-btn-disabled',
+          hasActiveTab && isActive(config.level) && 'filter-btn-active'
         ]"
+        :data-level="config.name.toLowerCase()"
       >
         <!-- Icon -->
         <img
           :src="config.icon"
           :alt="config.name"
-          :class="[
-            'w-4 h-4 transition-opacity',
-            isActive(config.level) ? 'opacity-90' : 'opacity-40'
-          ]"
+          class="filter-icon"
         />
 
         <!-- Label -->
-        <span class="font-bold">
-          {{ config.label }}
+        <span class="filter-label">
+          {{ config.name }}
         </span>
-
-        <!-- Разделитель -->
-        <span
-          :class="[
-            'w-px h-3 transition-opacity',
-            isActive(config.level) ? 'opacity-30' : 'opacity-20'
-          ]"
-          :style="{ backgroundColor: 'currentColor' }"
-        />
 
         <!-- Счетчик -->
-        <span
-          :class="[
-            'tabular-nums text-[10px] tracking-wide min-w-[3ch] text-right inline-block',
-            isActive(config.level) ? 'opacity-90' : 'opacity-50'
-          ]"
-        >
+        <span class="filter-count">
           {{ formatCount(getCount(config.name)) }}
         </span>
-
-        <!-- Индикатор активности (subtle underline) -->
-        <div
-          v-if="isActive(config.level)"
-          :class="[
-            'absolute bottom-0 left-0 right-0 h-[2px]',
-            'transition-all duration-200',
-            config.text.replace('text-', 'bg-'),
-            'opacity-60'
-          ]"
-        />
       </button>
     </div>
 
     <!-- Быстрые действия -->
-    <div class="flex items-center gap-1 pl-3 ml-auto border-l border-slate-300">
+    <div class="actions-group">
       <button
         :disabled="!hasActiveTab"
         @click="clearAll"
-        :class="[
-          'px-2.5 py-1 border-2 border-slate-300 bg-white font-mono text-[10px] text-slate-700 tracking-wider uppercase font-semibold transition-all shadow-sm',
-          hasActiveTab
-            ? 'hover:bg-slate-100 hover:border-slate-400 hover:text-slate-900 active:scale-95 hover:shadow'
-            : 'opacity-30 cursor-not-allowed'
-        ]"
+        :class="['action-btn', !hasActiveTab && 'action-btn-disabled']"
       >
-        ALL
+        Select All
       </button>
       <button
         :disabled="!hasActiveTab"
         @click="disableAll"
-        :class="[
-          'px-2.5 py-1 border-2 border-slate-300 bg-white font-mono text-[10px] text-slate-700 tracking-wider uppercase font-semibold transition-all shadow-sm',
-          hasActiveTab
-            ? 'hover:bg-slate-100 hover:border-slate-400 hover:text-slate-900 active:scale-95 hover:shadow'
-            : 'opacity-30 cursor-not-allowed'
-        ]"
+        :class="['action-btn', !hasActiveTab && 'action-btn-disabled']"
       >
-        NONE
+        Clear All
       </button>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Import IBM Plex Mono for technical data */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.filter-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 16px;
+  border-right: 1px solid #d4d4d4;
+}
+
+.header-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #737373;
+  text-transform: uppercase;
+}
+
+.inactive-badge {
+  padding: 2px 8px;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: #92400e;
+}
+
+.filters-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.filter-btn:hover:not(.filter-btn-disabled) {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.filter-btn:active:not(.filter-btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.filter-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Active states for each level - using existing colors */
+.filter-btn-active[data-level="trace"] {
+  background: #f8f8f8;
+  border-color: #cbd5e1;
+  color: #52525b;
+  box-shadow: 0 0 0 2px #f8f8f8;
+}
+
+.filter-btn-active[data-level="debug"] {
+  background: #e0f7fa;
+  border-color: #67e8f9;
+  color: #0e4f5c;
+  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.2);
+}
+
+.filter-btn-active[data-level="info"] {
+  background: #ffffff;
+  border-color: #94a3b8;
+  color: #334155;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
+}
+
+.filter-btn-active[data-level="warn"] {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.filter-btn-active[data-level="error"] {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+  box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.2);
+}
+
+.filter-btn-active[data-level="fatal"] {
+  background: #fca5a5;
+  border-color: #f87171;
+  color: #7f1d1d;
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.3);
+}
+
+.filter-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.8;
+}
+
+.filter-btn-active .filter-icon {
+  opacity: 1;
+}
+
+.filter-label {
+  font-weight: 500;
+}
+
+.filter-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  color: #737373;
+  min-width: 28px;
+  text-align: center;
+  tabular-nums: tabular-nums;
+}
+
+.filter-btn-active .filter-count {
+  background: rgba(0, 0, 0, 0.08);
+  color: currentColor;
+  font-weight: 600;
+}
+
+.actions-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 16px;
+  border-left: 1px solid #d4d4d4;
+  margin-left: auto;
+}
+
+.action-btn {
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.action-btn:hover:not(.action-btn-disabled) {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  color: #171717;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.06);
+}
+
+.action-btn:active:not(.action-btn-disabled) {
+  transform: scale(0.98);
+}
+
+.action-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Smooth animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-btn {
+  animation: fadeIn 0.2s ease-out backwards;
+}
+
+.filter-btn:nth-child(1) { animation-delay: 0ms; }
+.filter-btn:nth-child(2) { animation-delay: 30ms; }
+.filter-btn:nth-child(3) { animation-delay: 60ms; }
+.filter-btn:nth-child(4) { animation-delay: 90ms; }
+.filter-btn:nth-child(5) { animation-delay: 120ms; }
+.filter-btn:nth-child(6) { animation-delay: 150ms; }
+</style>

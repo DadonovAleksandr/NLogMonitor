@@ -139,76 +139,315 @@ watch(() => filterStore.activeLevels, () => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 border-b border-zinc-800 bg-zinc-950 p-3">
+  <div class="toolbar">
     <!-- Search Bar -->
-    <div class="relative">
-      <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-      <Input
+    <div class="search-wrapper">
+      <Search class="search-icon" />
+      <input
         v-model="searchText"
         type="text"
-        placeholder="Поиск по сообщениям..."
-        class="border-zinc-800 bg-zinc-900 pl-10 pr-10 font-mono text-sm placeholder:text-zinc-600 focus-visible:border-emerald-700 focus-visible:ring-emerald-900/50"
+        placeholder="Search in messages..."
+        class="search-input"
       />
       <button
         v-if="searchText"
-        class="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded transition-colors hover:bg-zinc-700"
+        class="search-clear"
         @click="clearSearch"
       >
-        <X class="h-3.5 w-3.5 text-zinc-500" />
+        <X class="h-3.5 w-3.5" />
       </button>
     </div>
 
-    <!-- Level Filters -->
-    <div class="flex items-center gap-2">
-      <span class="font-mono text-xs text-zinc-500">Фильтры:</span>
+    <!-- Separator -->
+    <div class="toolbar-separator" />
 
-      <div class="flex flex-wrap gap-2">
+    <!-- Level Filters -->
+    <div class="filters-wrapper">
+      <span class="filters-label">Filters:</span>
+
+      <div class="filters-buttons">
         <button
           v-for="btn in levelButtons"
           :key="btn.level"
-          class="group relative flex items-center gap-2 border px-3 py-1.5 font-mono text-xs font-medium transition-all duration-150"
-          :class="[
-            isLevelActive(btn.level) ? btn.activeClass : btn.colorClass
-          ]"
+          class="filter-pill"
+          :class="{ 'filter-pill-active': isLevelActive(btn.level) }"
+          :data-level="btn.level.toLowerCase()"
           @click="toggleLevel(btn.level)"
         >
           <img
             :src="btn.icon"
             :alt="btn.label"
-            class="h-4 w-4 transition-opacity"
-            :class="[isLevelActive(btn.level) ? 'opacity-90' : 'opacity-60']"
+            class="filter-pill-icon"
           />
-          <span>{{ btn.label }}</span>
-          <span class="ml-2 opacity-70">{{ (levelCounts[btn.level] ?? 0).toLocaleString() }}</span>
-
-          <!-- Glowing effect on active -->
-          <div
-            v-if="isLevelActive(btn.level)"
-            class="absolute inset-0 -z-10 blur-md transition-opacity duration-150"
-            :class="btn.activeClass"
-          />
+          <span class="filter-pill-label">{{ btn.label }}</span>
+          <span class="filter-pill-count">{{ (levelCounts[btn.level] ?? 0).toLocaleString() }}</span>
         </button>
       </div>
 
-      <!-- Divider -->
-      <div class="mx-2 h-6 w-px bg-zinc-700" />
-
       <!-- Total Count -->
-      <div class="flex items-center gap-2 font-mono text-sm">
-        <span class="text-zinc-500">Показано:</span>
-        <span class="font-semibold text-emerald-400">{{ totalFiltered.toLocaleString() }}</span>
+      <div class="total-count">
+        <span class="total-count-label">Showing:</span>
+        <span class="total-count-value">{{ totalFiltered.toLocaleString() }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Smooth transitions for button states */
-button {
+/* Import IBM Plex Mono for technical data */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+.search-wrapper {
+  position: relative;
+  min-width: 280px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: #a3a3a3;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 32px 6px 32px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #171717;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+.search-input::placeholder {
+  color: #a3a3a3;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: #a3a3a3;
+  cursor: pointer;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-button:active {
-  transform: scale(0.98);
+.search-clear:hover {
+  background: #f5f5f5;
+  color: #525252;
 }
+
+.toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: #d4d4d4;
+}
+
+.filters-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.filters-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #737373;
+  text-transform: uppercase;
+}
+
+.filters-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.filter-pill:hover {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.06);
+  transform: translateY(-0.5px);
+}
+
+.filter-pill:active {
+  transform: translateY(0);
+}
+
+/* Active states using existing color scheme */
+.filter-pill-active[data-level="trace"] {
+  background: #f8f8f8;
+  border-color: #cbd5e1;
+  color: #52525b;
+  box-shadow: 0 0 0 2px #f8f8f8;
+}
+
+.filter-pill-active[data-level="debug"] {
+  background: #e0f7fa;
+  border-color: #67e8f9;
+  color: #0e4f5c;
+  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.2);
+}
+
+.filter-pill-active[data-level="info"] {
+  background: #ffffff;
+  border-color: #94a3b8;
+  color: #334155;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
+}
+
+.filter-pill-active[data-level="warn"] {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.filter-pill-active[data-level="error"] {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+  box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.2);
+}
+
+.filter-pill-active[data-level="fatal"] {
+  background: #fca5a5;
+  border-color: #f87171;
+  color: #7f1d1d;
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.3);
+}
+
+.filter-pill-icon {
+  width: 13px;
+  height: 13px;
+  opacity: 0.7;
+}
+
+.filter-pill-active .filter-pill-icon {
+  opacity: 1;
+}
+
+.filter-pill-label {
+  font-weight: 500;
+}
+
+.filter-pill-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 5px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  color: #737373;
+  min-width: 24px;
+  text-align: center;
+  tabular-nums: tabular-nums;
+}
+
+.filter-pill-active .filter-pill-count {
+  background: rgba(0, 0, 0, 0.08);
+  color: currentColor;
+  font-weight: 600;
+}
+
+.total-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 4px 12px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.total-count-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #737373;
+}
+
+.total-count-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #171717;
+  tabular-nums: tabular-nums;
+}
+
+/* Smooth staggered animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.filter-pill {
+  animation: slideIn 0.2s ease-out backwards;
+}
+
+.filter-pill:nth-child(1) { animation-delay: 0ms; }
+.filter-pill:nth-child(2) { animation-delay: 30ms; }
+.filter-pill:nth-child(3) { animation-delay: 60ms; }
+.filter-pill:nth-child(4) { animation-delay: 90ms; }
+.filter-pill:nth-child(5) { animation-delay: 120ms; }
+.filter-pill:nth-child(6) { animation-delay: 150ms; }
 </style>
