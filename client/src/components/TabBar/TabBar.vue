@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { X, FileText, FolderOpen, Plus } from 'lucide-vue-next'
 import { useTabsStore } from '@/stores'
-import { Button } from '@/components/ui/button'
 
 const tabsStore = useTabsStore()
 
@@ -23,91 +22,230 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 </script>
 
 <template>
-  <div class="flex items-center border-b-2 border-zinc-800 bg-zinc-950">
+  <div class="tab-bar">
     <!-- Tabs -->
-    <div class="flex flex-1 items-center overflow-x-auto scrollbar-hide">
+    <div class="tabs-container">
       <button
         v-for="tab in tabsStore.tabs"
         :key="tab.id"
-        class="group relative flex items-center gap-2 border-r border-zinc-800 px-4 py-1.5 transition-all hover:bg-zinc-900/50"
-        :class="{
-          'bg-zinc-900 text-zinc-100': isActive(tab.id),
-          'text-zinc-500 hover:text-zinc-300': !isActive(tab.id)
-        }"
+        class="tab-button"
+        :class="{ 'tab-button-active': isActive(tab.id) }"
         @click="selectTab(tab.id)"
       >
         <!-- Icon -->
-        <FileText v-if="tab.type === 'file'" class="h-4 w-4 flex-shrink-0" />
-        <FolderOpen v-else class="h-4 w-4 flex-shrink-0" />
+        <FileText v-if="tab.type === 'file'" class="tab-icon" />
+        <FolderOpen v-else class="tab-icon" />
 
         <!-- Tab name -->
-        <span class="max-w-[180px] truncate font-mono text-sm" :title="tab.filePath">
+        <span class="tab-name" :title="tab.filePath">
           {{ tab.fileName }}
         </span>
 
-        <!-- Close button (div instead of button to avoid nested buttons) -->
+        <!-- Close button -->
         <div
-          class="ml-2 flex h-5 w-5 flex-shrink-0 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
-          :class="{
-            'text-zinc-400 hover:text-zinc-100': isActive(tab.id),
-            'text-zinc-600 hover:text-zinc-300': !isActive(tab.id)
-          }"
+          class="tab-close"
           @click="(e) => closeTab(tab.id, e)"
         >
-          <X class="h-3.5 w-3.5" />
+          <X class="close-icon" />
         </div>
 
         <!-- Active indicator -->
-        <div
-          v-if="isActive(tab.id)"
-          class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500"
-        />
+        <div v-if="isActive(tab.id)" class="tab-active-indicator" />
 
         <!-- Loading indicator -->
-        <div
-          v-if="tab.isLoading"
-          class="absolute right-1 top-1 h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
-        />
+        <div v-if="tab.isLoading" class="tab-loading-indicator" />
       </button>
 
       <!-- Empty state -->
-      <div v-if="tabsStore.tabs.length === 0" class="flex h-9 items-center px-4 font-mono text-sm text-zinc-600">
+      <div v-if="tabsStore.tabs.length === 0" class="tabs-empty">
         Нет открытых файлов
       </div>
     </div>
 
     <!-- Add buttons -->
-    <div class="flex items-center gap-1 border-l border-zinc-800 p-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        class="gap-2 font-mono text-xs text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400"
-        @click="emit('add-file')"
-      >
-        <Plus class="h-4 w-4" />
-        Файл
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="gap-2 font-mono text-xs text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400"
-        @click="emit('add-folder')"
-      >
-        <Plus class="h-4 w-4" />
-        Папку
-      </Button>
+    <div class="add-buttons">
+      <button class="add-btn" @click="emit('add-file')">
+        <Plus class="add-icon" />
+        <span>Файл</span>
+      </button>
+      <button class="add-btn" @click="emit('add-folder')">
+        <Plus class="add-icon" />
+        <span>Папку</span>
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Hide scrollbar but keep functionality */
-.scrollbar-hide::-webkit-scrollbar {
+/* Import IBM Plex Mono for technical data */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  border-bottom: 1px solid #e5e5e5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+.tabs-container {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs-container::-webkit-scrollbar {
   display: none;
 }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.tab-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid #e5e5e5;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #737373;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-button:hover {
+  background: #ffffff;
+  color: #171717;
+}
+
+.tab-button-active {
+  background: #ffffff;
+  color: #171717;
+  font-weight: 600;
+}
+
+.tab-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.tab-button-active .tab-icon {
+  opacity: 1;
+  color: #3b82f6;
+}
+
+.tab-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.5;
+}
+
+.tab-close:hover {
+  background: #f5f5f5;
+  opacity: 1;
+}
+
+.tab-button-active .tab-close:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.close-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.tab-active-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #3b82f6;
+}
+
+.tab-loading-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.tabs-empty {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #a3a3a3;
+}
+
+.add-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-left: 1px solid #e5e5e5;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #737373;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.add-btn:hover {
+  background: #f5f5f5;
+  color: #3b82f6;
+}
+
+.add-icon {
+  width: 14px;
+  height: 14px;
 }
 </style>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
 import { useLogStore } from '@/stores'
 
 const logStore = useLogStore()
@@ -52,21 +51,21 @@ const pageInfo = computed(() => {
 </script>
 
 <template>
-  <div class="pagination-container flex items-center justify-between gap-4 border-t border-zinc-800 bg-zinc-950 px-4 py-1.5 font-mono text-sm">
+  <div class="pagination-container">
     <!-- Left side: Page size selector -->
-    <div class="flex items-center gap-3">
-      <span class="text-zinc-500">Показать:</span>
-      <div class="relative">
+    <div class="pagination-left">
+      <span class="pagination-label">Показать:</span>
+      <div class="page-size-selector">
         <button
           type="button"
-          class="flex h-7 min-w-[70px] items-center justify-between gap-2 rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-zinc-300 transition-colors hover:border-zinc-600 hover:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          class="page-size-btn"
           @click="toggleDropdown"
           @blur="closeDropdown"
         >
           <span>{{ logStore.pageSize }}</span>
           <svg
-            class="h-3 w-3 transition-transform"
-            :class="{ 'rotate-180': isDropdownOpen }"
+            class="dropdown-icon"
+            :class="{ 'dropdown-icon-open': isDropdownOpen }"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -76,19 +75,13 @@ const pageInfo = computed(() => {
         </button>
 
         <!-- Dropdown menu -->
-        <div
-          v-if="isDropdownOpen"
-          class="absolute bottom-full left-0 z-50 mb-1 min-w-[70px] overflow-hidden rounded border border-zinc-700 bg-zinc-900 shadow-xl"
-        >
+        <div v-if="isDropdownOpen" class="page-size-dropdown">
           <button
             v-for="size in pageSizeOptions"
             :key="size"
             type="button"
-            class="flex w-full items-center justify-center px-3 py-2 text-center transition-colors hover:bg-zinc-800"
-            :class="{
-              'bg-emerald-950/30 text-emerald-400': size === logStore.pageSize,
-              'text-zinc-300': size !== logStore.pageSize
-            }"
+            class="page-size-option"
+            :class="{ 'page-size-option-active': size === logStore.pageSize }"
             @mousedown.prevent="selectPageSize(size)"
           >
             {{ size }}
@@ -98,49 +91,124 @@ const pageInfo = computed(() => {
     </div>
 
     <!-- Center: Page info -->
-    <div class="flex items-center">
-      <span class="text-zinc-400">{{ pageInfo }}</span>
+    <div class="pagination-center">
+      <span class="page-info">{{ pageInfo }}</span>
     </div>
 
     <!-- Right side: Navigation buttons -->
-    <div class="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
+    <div class="pagination-right">
+      <button
+        type="button"
+        class="nav-btn"
         :disabled="!logStore.canPreviousPage"
-        class="h-7 gap-1.5 border-zinc-700 bg-zinc-900 font-mono text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
         @click="previousPage"
       >
-        <ChevronLeft class="h-3.5 w-3.5" />
+        <ChevronLeft class="nav-icon" />
         <span>Назад</span>
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
+      </button>
+      <button
+        type="button"
+        class="nav-btn"
         :disabled="!logStore.canNextPage"
-        class="h-7 gap-1.5 border-zinc-700 bg-zinc-900 font-mono text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
         @click="nextPage"
       >
         <span>Вперёд</span>
-        <ChevronRight class="h-3.5 w-3.5" />
-      </Button>
+        <ChevronRight class="nav-icon" />
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Import IBM Plex Mono for technical data */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
 .pagination-container {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 16px;
+  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  border-top: 1px solid #e5e5e5;
+  box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.04);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
 }
 
-/* Custom focus states for brutalist aesthetic */
-button:focus-visible {
+.pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #737373;
+}
+
+.page-size-selector {
+  position: relative;
+}
+
+.page-size-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 70px;
+  padding: 5px 10px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.page-size-btn:hover {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.06);
+}
+
+.page-size-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Dropdown animation */
-@keyframes slideDown {
+.dropdown-icon {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-icon-open {
+  transform: rotate(180deg);
+}
+
+.page-size-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 50;
+  margin-bottom: 4px;
+  min-width: 70px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.15s ease-out;
+}
+
+@keyframes slideUp {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -151,7 +219,85 @@ button:focus-visible {
   }
 }
 
-.absolute.bottom-full {
-  animation: slideDown 0.1s ease-out;
+.page-size-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-size-option:hover {
+  background: #f5f5f5;
+}
+
+.page-size-option-active {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.pagination-center {
+  display: flex;
+  align-items: center;
+}
+
+.page-info {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #525252;
+  tabular-nums: tabular-nums;
+}
+
+.pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.06);
+  transform: translateY(-0.5px);
+}
+
+.nav-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.nav-icon {
+  width: 14px;
+  height: 14px;
 }
 </style>

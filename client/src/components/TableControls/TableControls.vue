@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ArrowDown, Trash2, Pause, Play } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
 import { useTabsStore } from '@/stores'
 
 const tabsStore = useTabsStore()
@@ -30,63 +29,149 @@ function handleClear() {
 </script>
 
 <template>
-  <div class="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-3 py-2">
-    <div class="flex items-center gap-2">
+  <div class="table-controls">
+    <div class="controls-group">
       <!-- Autoscroll Toggle -->
-      <Button
-        variant="ghost"
-        size="sm"
-        :class="{
-          'bg-emerald-950/50 text-emerald-400 hover:bg-emerald-950 hover:text-emerald-300': isAutoscroll,
-          'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300': !isAutoscroll
-        }"
-        class="gap-2 font-mono text-xs transition-all"
+      <button
+        class="control-btn"
+        :class="{ 'control-btn-active': isAutoscroll }"
+        :data-type="isAutoscroll ? 'autoscroll-active' : 'autoscroll'"
         @click="toggleAutoscroll"
       >
         <ArrowDown
-          class="h-3.5 w-3.5 transition-transform"
+          class="control-icon"
           :class="{ 'animate-pulse': isAutoscroll }"
         />
-        Автопрокрутка
-      </Button>
+        <span class="control-label">Автопрокрутка</span>
+      </button>
 
       <!-- Pause/Resume Toggle -->
-      <Button
-        variant="ghost"
-        size="sm"
-        :class="{
-          'bg-yellow-950/50 text-yellow-400 hover:bg-yellow-950 hover:text-yellow-300': isPaused,
-          'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300': !isPaused
-        }"
-        class="gap-2 font-mono text-xs transition-all"
+      <button
+        class="control-btn"
+        :class="{ 'control-btn-active': isPaused }"
+        :data-type="isPaused ? 'pause-active' : 'pause'"
         @click="togglePause"
       >
-        <Pause v-if="!isPaused" class="h-3.5 w-3.5" />
-        <Play v-else class="h-3.5 w-3.5 animate-pulse" />
-        {{ isPaused ? 'Продолжить' : 'Пауза' }}
-      </Button>
+        <Pause v-if="!isPaused" class="control-icon" />
+        <Play v-else class="control-icon animate-pulse" />
+        <span class="control-label">{{ isPaused ? 'Продолжить' : 'Пауза' }}</span>
+      </button>
 
       <!-- Clear Button -->
-      <Button
-        variant="ghost"
-        size="sm"
-        class="gap-2 font-mono text-xs text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
+      <button
+        class="control-btn"
+        data-type="clear"
         @click="handleClear"
       >
-        <Trash2 class="h-3.5 w-3.5" />
-        Очистить
-      </Button>
+        <Trash2 class="control-icon" />
+        <span class="control-label">Очистить</span>
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Button active states */
-button[class*="bg-emerald"] {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+/* Import IBM Plex Mono for technical data */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
-button[class*="bg-yellow"] {
-  box-shadow: 0 0 20px rgba(234, 179, 8, 0.15);
+.controls-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.control-btn:hover {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-0.5px);
+}
+
+.control-btn:active {
+  transform: translateY(0);
+}
+
+/* Active state for autoscroll */
+.control-btn-active[data-type="autoscroll-active"] {
+  background: #dbeafe;
+  border-color: #60a5fa;
+  color: #1e40af;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+/* Active state for pause */
+.control-btn-active[data-type="pause-active"] {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+/* Clear button hover */
+.control-btn[data-type="clear"]:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.control-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.8;
+}
+
+.control-btn-active .control-icon {
+  opacity: 1;
+}
+
+.control-label {
+  font-weight: 500;
+}
+
+/* Smooth animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.control-btn {
+  animation: slideIn 0.2s ease-out backwards;
+}
+
+.control-btn:nth-child(1) { animation-delay: 0ms; }
+.control-btn:nth-child(2) { animation-delay: 30ms; }
+.control-btn:nth-child(3) { animation-delay: 60ms; }
 </style>

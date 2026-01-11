@@ -345,28 +345,23 @@ const hasActiveTabs = computed(() => tabsStore.hasTabs)
 </script>
 
 <template>
-  <div class="flex h-screen flex-col bg-zinc-950 text-zinc-100">
+  <div class="app-root">
     <!-- Header -->
-    <header class="border-b-2 border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 px-4 py-3 shadow-xl">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <!-- Logo with glow effect -->
-          <div class="relative">
-            <div class="absolute inset-0 animate-pulse rounded-lg bg-emerald-500/20 blur-lg" />
-            <div class="relative flex h-10 w-10 items-center justify-center rounded-lg border-2 border-emerald-600 bg-gradient-to-br from-emerald-600 to-cyan-600 shadow-lg">
-              <span class="font-mono text-lg font-bold text-white">N</span>
-            </div>
+    <header class="app-header">
+      <div class="header-content">
+        <div class="header-left">
+          <!-- Logo -->
+          <div class="app-logo">
+            <span class="logo-text">N</span>
           </div>
 
-          <div>
-            <h1 class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text font-mono text-xl font-bold tracking-tight text-transparent">
-              nLogMonitor
-            </h1>
-            <p class="font-mono text-xs text-zinc-500">Professional Log Analysis Tool</p>
+          <div class="app-title-group">
+            <h1 class="app-title">nLogMonitor</h1>
+            <p class="app-subtitle">Professional Log Analysis Tool</p>
           </div>
         </div>
 
-        <div class="font-mono text-xs text-zinc-600">v1.0.0</div>
+        <div class="app-version">v1.0.0</div>
       </div>
     </header>
 
@@ -391,66 +386,216 @@ const hasActiveTabs = computed(() => tabsStore.hasTabs)
     </div>
 
     <!-- Empty State -->
-    <div v-else class="flex flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div class="relative">
-        <!-- Animated background -->
-        <div class="absolute inset-0 -z-10 animate-pulse rounded-full bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 blur-3xl" />
-
+    <div v-else class="empty-state">
+      <div class="empty-state-icon-wrapper">
         <!-- Icon -->
-        <div class="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-zinc-700 bg-zinc-900">
-          <svg class="h-12 w-12 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="empty-state-icon">
+          <svg class="icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
       </div>
 
-      <div class="text-center">
-        <h2 class="font-mono text-2xl font-semibold text-zinc-300">Нет открытых файлов</h2>
-        <p class="mt-2 font-mono text-sm text-zinc-600">Откройте лог-файл или директорию для начала анализа</p>
+      <div class="empty-state-text">
+        <h2 class="empty-state-title">Нет открытых файлов</h2>
+        <p class="empty-state-description">Откройте лог-файл или директорию для начала анализа</p>
       </div>
 
-      <div class="flex gap-3">
-        <button
-          class="group relative overflow-hidden rounded-lg border-2 border-emerald-700 bg-emerald-950/50 px-6 py-3 font-mono text-sm font-medium text-emerald-400 transition-all hover:border-emerald-500 hover:bg-emerald-900/50 hover:text-emerald-300 hover:shadow-lg hover:shadow-emerald-900/50"
-          @click="handleAddFile"
-        >
-          <span class="relative z-10">Открыть файл</span>
-          <!-- Hover effect -->
-          <div class="absolute inset-0 -z-0 translate-y-full bg-gradient-to-t from-emerald-600/20 to-transparent transition-transform group-hover:translate-y-0" />
+      <div class="empty-state-actions">
+        <button class="action-btn action-btn-primary" @click="handleAddFile">
+          Открыть файл
         </button>
 
-        <button
-          class="group relative overflow-hidden rounded-lg border-2 border-cyan-700 bg-cyan-950/50 px-6 py-3 font-mono text-sm font-medium text-cyan-400 transition-all hover:border-cyan-500 hover:bg-cyan-900/50 hover:text-cyan-300 hover:shadow-lg hover:shadow-cyan-900/50"
-          @click="handleAddFolder"
-        >
-          <span class="relative z-10">Открыть папку</span>
-          <!-- Hover effect -->
-          <div class="absolute inset-0 -z-0 translate-y-full bg-gradient-to-t from-cyan-600/20 to-transparent transition-transform group-hover:translate-y-0" />
+        <button class="action-btn action-btn-secondary" @click="handleAddFolder">
+          Открыть папку
         </button>
       </div>
     </div>
 
     <!-- Toast Notifications -->
     <Toast />
-
-    <!-- Terminal scanline overlay -->
-    <div class="pointer-events-none fixed inset-0 z-50 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.03)_2px,rgba(0,0,0,0.03)_4px)] opacity-30" />
   </div>
 </template>
 
 <style scoped>
-/* Neo-brutalist aesthetic */
-@keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
-  }
+/* Import IBM Plex Mono for technical data */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* App Root */
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #ECF2F9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color: #171717;
 }
 
-/* Smooth transitions */
-* {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* Header */
+.app-header {
+  padding: 12px 20px;
+  background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
+  border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.logo-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.app-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: #171717;
+  letter-spacing: -0.5px;
+}
+
+.app-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: #737373;
+  letter-spacing: 0.2px;
+}
+
+.app-version {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: #a3a3a3;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px;
+}
+
+.empty-state-icon-wrapper {
+  position: relative;
+}
+
+.empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.icon-svg {
+  width: 48px;
+  height: 48px;
+  color: #a3a3a3;
+}
+
+.empty-state-text {
+  text-align: center;
+}
+
+.empty-state-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  color: #171717;
+  margin-bottom: 8px;
+}
+
+.empty-state-description {
+  font-size: 13px;
+  font-weight: 500;
+  color: #737373;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.action-btn-primary {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.action-btn-primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-btn-secondary {
+  background: #ffffff;
+  color: #525252;
+  border-color: #d4d4d4;
+}
+
+.action-btn-secondary:hover {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.action-btn:active {
+  transform: translateY(0);
 }
 </style>
