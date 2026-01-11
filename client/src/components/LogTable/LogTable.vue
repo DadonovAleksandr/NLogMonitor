@@ -171,6 +171,7 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
               v-for="header in headerGroup.headers"
               :key="header.id"
               class="h-10 px-3 font-mono text-xs font-semibold uppercase tracking-wider text-zinc-400"
+              :class="{ 'text-center': header.column.id !== 'message' }"
               :style="header.column.getSize() ? { width: `${header.column.getSize()}px` } : {}"
             >
               <FlexRender
@@ -199,7 +200,8 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
                 'font-mono text-xs text-zinc-500 whitespace-nowrap': cell.column.id === 'timestamp',
                 'font-mono text-xs text-zinc-500': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'logger',
                 'text-sm text-zinc-300': cell.column.id === 'message',
-                'text-center whitespace-nowrap': cell.column.id === 'processId' || cell.column.id === 'threadId'
+                'text-center': cell.column.id !== 'message' && cell.column.id !== 'logger',
+                'whitespace-nowrap': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'timestamp'
               }"
               :style="cell.column.getSize() ? { width: `${cell.column.getSize()}px` } : {}"
             >
