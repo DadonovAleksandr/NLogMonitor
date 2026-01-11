@@ -9,7 +9,6 @@ import {
 import { FileText, Loader2, AlertCircle } from 'lucide-vue-next'
 import type { LogEntry } from '@/types'
 import { useLogStore } from '@/stores'
-import LogLevelBadge from './LogLevelBadge.vue'
 import {
   Table,
   TableBody,
@@ -49,7 +48,7 @@ const columns = [
   }),
   columnHelper.accessor('level', {
     header: 'Важность',
-    cell: (info) => h(LogLevelBadge, { level: info.getValue() }),
+    cell: (info) => info.getValue(),
     // Автоматическая ширина по содержимому
   }),
   columnHelper.accessor('message', {
@@ -198,10 +197,10 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
               class="px-3 py-2 align-top"
               :class="{
                 'font-mono text-xs text-zinc-500 whitespace-nowrap': cell.column.id === 'timestamp',
-                'font-mono text-xs text-zinc-500': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'logger',
+                'font-mono text-xs text-zinc-500': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'logger' || cell.column.id === 'level',
                 'text-sm text-zinc-300': cell.column.id === 'message',
                 'text-center': cell.column.id !== 'message' && cell.column.id !== 'logger',
-                'whitespace-nowrap': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'timestamp'
+                'whitespace-nowrap': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'timestamp' || cell.column.id === 'level'
               }"
               :style="cell.column.getSize() ? { width: `${cell.column.getSize()}px` } : {}"
             >
