@@ -7,7 +7,7 @@ import { useLogStore } from '@/stores'
 const logStore = useLogStore()
 
 // Page size options
-const pageSizeOptions = [50, 100, 200]
+const pageSizeOptions = [100, 200, 500]
 
 // Dropdown state
 const isDropdownOpen = ref(false)
@@ -49,27 +49,17 @@ const pageInfo = computed(() => {
   }
   return `Страница ${logStore.page} из ${logStore.totalPages}`
 })
-
-// Total entries info
-const entriesInfo = computed(() => {
-  if (logStore.totalCount === 0) {
-    return '0-0 из 0'
-  }
-  const start = (logStore.page - 1) * logStore.pageSize + 1
-  const end = Math.min(logStore.page * logStore.pageSize, logStore.totalCount)
-  return `${start}-${end} из ${logStore.totalCount}`
-})
 </script>
 
 <template>
-  <div class="pagination-container flex items-center justify-between gap-4 border-t border-zinc-800 bg-zinc-950 px-4 py-3 font-mono text-sm">
+  <div class="pagination-container flex items-center justify-between gap-4 border-t border-zinc-800 bg-zinc-950 px-4 py-1.5 font-mono text-sm">
     <!-- Left side: Page size selector -->
     <div class="flex items-center gap-3">
       <span class="text-zinc-500">Показать:</span>
       <div class="relative">
         <button
           type="button"
-          class="flex h-8 min-w-[70px] items-center justify-between gap-2 rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-zinc-300 transition-colors hover:border-zinc-600 hover:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          class="flex h-7 min-w-[70px] items-center justify-between gap-2 rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-zinc-300 transition-colors hover:border-zinc-600 hover:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           @click="toggleDropdown"
           @blur="closeDropdown"
         >
@@ -108,9 +98,8 @@ const entriesInfo = computed(() => {
     </div>
 
     <!-- Center: Page info -->
-    <div class="flex flex-col items-center gap-0.5">
+    <div class="flex items-center">
       <span class="text-zinc-400">{{ pageInfo }}</span>
-      <span class="text-xs text-zinc-600">{{ entriesInfo }}</span>
     </div>
 
     <!-- Right side: Navigation buttons -->
@@ -119,7 +108,7 @@ const entriesInfo = computed(() => {
         variant="outline"
         size="sm"
         :disabled="!logStore.canPreviousPage"
-        class="h-8 gap-1.5 border-zinc-700 bg-zinc-900 font-mono text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
+        class="h-7 gap-1.5 border-zinc-700 bg-zinc-900 font-mono text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
         @click="previousPage"
       >
         <ChevronLeft class="h-3.5 w-3.5" />
@@ -129,7 +118,7 @@ const entriesInfo = computed(() => {
         variant="outline"
         size="sm"
         :disabled="!logStore.canNextPage"
-        class="h-8 gap-1.5 border-zinc-700 bg-zinc-900 font-mono text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
+        class="h-7 gap-1.5 border-zinc-700 bg-zinc-900 font-mono text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
         @click="nextPage"
       >
         <span>Вперёд</span>

@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { TabBar } from '@/components/TabBar'
 import { Toolbar } from '@/components/Toolbar'
 import { TableControls } from '@/components/TableControls'
 import { LogTable } from '@/components/LogTable'
-import { Pagination } from '@/components/Pagination'
 import { Toast } from '@/components/Toast'
 import { useTabsStore, useLogStore, useSettingsStore } from '@/stores'
 import { usePhotinoBridge, useSettings } from '@/composables'
@@ -20,59 +19,6 @@ const isRestoring = ref(false)
 
 // Подключаем автосохранение настроек при изменении вкладок
 useSettings()
-
-// Синхронизация activeTab → logStore для работы LogTable и Pagination
-watch(
-  () => tabsStore.activeTab,
-  (activeTab) => {
-    if (activeTab) {
-      // Копируем данные из активной вкладки в logStore
-      logStore.logs = activeTab.logs
-      logStore.totalCount = activeTab.totalCount
-      logStore.page = activeTab.page
-      logStore.pageSize = activeTab.pageSize
-      logStore.totalPages = activeTab.totalPages
-      logStore.levelCounts = activeTab.levelCounts
-      logStore.sessionId = activeTab.sessionId
-      logStore.isLoading = activeTab.isLoading
-      logStore.error = activeTab.error
-    } else {
-      // Нет активной вкладки - очищаем logStore
-      logStore.logs = []
-      logStore.totalCount = 0
-      logStore.page = 1
-      logStore.pageSize = 50
-      logStore.totalPages = 0
-      logStore.levelCounts = { Trace: 0, Debug: 0, Info: 0, Warn: 0, Error: 0, Fatal: 0 }
-      logStore.sessionId = null
-      logStore.isLoading = false
-      logStore.error = null
-    }
-  },
-  { immediate: true, deep: true }
-)
-
-// Обратная синхронизация: logStore → activeTab при изменении страницы/размера
-watch(
-  [() => logStore.page, () => logStore.pageSize],
-  async ([newPage, newPageSize]) => {
-    const activeTab = tabsStore.activeTab
-    if (!activeTab || !activeTab.sessionId) return
-
-    // Обновляем поля в activeTab
-    activeTab.page = newPage
-    activeTab.pageSize = newPageSize
-
-    // Загружаем новые данные с сервера
-    try {
-      await logStore.fetchLogs(activeTab.filters)
-      // Синхронизируем загруженные данные обратно в activeTab
-      syncTabWithLogStore(activeTab.id)
-    } catch (error) {
-      logger.error('Failed to fetch logs after page change', { error })
-    }
-  }
-)
 
 onMounted(async () => {
   // Check if running in Desktop mode
@@ -301,12 +247,9 @@ const hasActiveTabs = computed(() => tabsStore.hasTabs)
       <!-- Table Controls -->
       <TableControls @clear="handleClear" />
 
-      <!-- Log Table with Pagination -->
-      <div class="flex flex-1 flex-col overflow-hidden p-2">
-        <div class="flex flex-1 flex-col overflow-hidden rounded-lg">
-          <LogTable />
-          <Pagination />
-        </div>
+      <!-- Log Table -->
+      <div class="flex-1 overflow-hidden p-2">
+        <LogTable />
       </div>
     </div>
 

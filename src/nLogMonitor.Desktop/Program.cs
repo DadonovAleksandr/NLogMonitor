@@ -19,6 +19,7 @@ using nLogMonitor.Desktop.Validators;
 using nLogMonitor.Infrastructure.Export;
 using nLogMonitor.Infrastructure.FileSystem;
 using nLogMonitor.Infrastructure.Parsing;
+using nLogMonitor.Infrastructure.Services;
 using nLogMonitor.Infrastructure.Storage;
 using NLog;
 using NLog.Web;
@@ -188,6 +189,9 @@ public class Program
 
             // Background service for FileWatcher -> SignalR integration
             builder.Services.AddHostedService<FileWatcherBackgroundService>();
+
+            // User Settings Service
+            builder.Services.AddSingleton<IUserSettingsService, UserSettingsService>();
 
             _webApp = builder.Build();
 

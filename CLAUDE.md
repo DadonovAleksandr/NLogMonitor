@@ -101,6 +101,20 @@ nLogMonitor — кроссплатформенное приложение для
 - ✅ Скрипты сборки: build-desktop.bat (Windows), build-desktop.sh (Linux)
 - ✅ Self-contained exe ~50 MB (< 100 MB DoD)
 
+### Дополнительно: Система сохранения настроек (User Settings)
+- ✅ IUserSettingsService интерфейс в Application слое
+- ✅ UserSettingsService в Infrastructure слое с thread-safe операциями
+- ✅ Хранение в стандартных директориях ОС (Windows: %LOCALAPPDATA%\nLogMonitor\config.json, Linux: ~/.config/nlogmonitor/config.json)
+- ✅ UserSettingsDto и TabSettingDto для структуры настроек (openedTabs, lastActiveTabIndex)
+- ✅ SettingsController с эндпоинтами GET /api/settings и PUT /api/settings
+- ✅ Валидация настроек (тип вкладки: file/directory, обязательные поля, диапазон индексов)
+- ✅ Атомарная запись настроек через временный файл
+- ✅ Автоматическое создание конфигурационных директорий
+- ✅ Обработка поврежденных JSON файлов с возвратом настроек по умолчанию
+- ✅ 9 unit тестов для UserSettingsService (включая concurrent access)
+- ✅ 15 integration тестов для SettingsController
+- ✅ Регистрация в DI контейнере (Api и Desktop проектов)
+
 ## Build & Run Commands
 
 Все скрипты находятся в папке `scripts/`.
@@ -133,11 +147,11 @@ dotnet build                              # Сборка solution
 dotnet run --project src/nLogMonitor.Api  # Запуск API (http://localhost:5000)
 dotnet watch run --project src/nLogMonitor.Api  # Hot reload
 
-# Tests (NUnit) — 306 тестов
-dotnet test                               # Все тесты (306)
-dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта, FileWatcher (134 теста)
+# Tests (NUnit) — 330 тестов
+dotnet test                               # Все тесты (330)
+dotnet test tests/nLogMonitor.Infrastructure.Tests  # Тесты парсера, хранилища, экспорта, FileWatcher, UserSettingsService (143 теста)
 dotnet test tests/nLogMonitor.Application.Tests  # Тесты сервисов (28 тестов)
-dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров + SignalR Hub + нагрузочные (144 теста)
+dotnet test tests/nLogMonitor.Api.Tests           # Unit + Integration тесты контроллеров + SignalR Hub + нагрузочные (159 тестов)
 dotnet test --filter "FullyQualifiedName~TestMethodName"  # Один тест
 
 # Lint / Format
@@ -171,13 +185,13 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 
 ### Текущая структура src/
 - **nLogMonitor.Domain** — сущности: LogEntry, LogSession, LogLevel enum, RecentLogEntry
-- **nLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository, IDirectoryScanner; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto; Services/LogService.cs; Configuration/SessionSettings.cs; Exceptions/NoLogFilesFoundException.cs
-- **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий), FileSystem/FileWatcherService.cs (отслеживание изменений с debounce)
+- **nLogMonitor.Application** — интерфейсы: ILogParser, ISessionStorage, ILogService, IFileWatcherService, ILogExporter, IRecentLogsRepository, IDirectoryScanner, IUserSettingsService; DTOs: LogEntryDto, FilterOptionsDto, PagedResultDto, OpenFileResultDto, RecentLogDto, ClientLogDto, UserSettingsDto, TabSettingDto; Services/LogService.cs; Configuration/SessionSettings.cs; Exceptions/NoLogFilesFoundException.cs
+- **nLogMonitor.Infrastructure** — Parsing/NLogParser.cs (парсер с IAsyncEnumerable), Storage/InMemorySessionStorage.cs (хранилище сессий), FileSystem/DirectoryScanner.cs (сканер директорий), FileSystem/FileWatcherService.cs (отслеживание изменений с debounce), Services/UserSettingsService.cs (сохранение настроек с thread-safe операциями)
 - **nLogMonitor.Api** — Program.cs с настройкой DI, CORS, Swagger, SignalR, NLog
 - **nLogMonitor.Desktop** — Photino Desktop приложение: Program.cs (embedded ASP.NET Core + PhotinoWindow), BridgeRequest/BridgeResponse (IPC), нативные диалоги, Controllers/Hubs/Services (скопированы из Api)
 
-### Новые файлы (Фаза 3 + 3.1 + 6 + 6.1 + 7 + 9)
-- **nLogMonitor.Api/Controllers/** — FilesController (с cleanup callbacks), UploadController, LogsController, ExportController, RecentController, MetricsController
+### Новые файлы (Фаза 3 + 3.1 + 6 + 6.1 + 7 + 9 + User Settings)
+- **nLogMonitor.Api/Controllers/** — FilesController (с cleanup callbacks), UploadController, LogsController, ExportController, RecentController, MetricsController, SettingsController
 - **nLogMonitor.Api/Hubs/** — LogWatcherHub (SignalR Hub для real-time обновлений)
 - **nLogMonitor.Api/Services/** — FileWatcherBackgroundService (инкрементальное чтение с LastReadPosition)
 - **nLogMonitor.Api/Middleware/** — ExceptionHandlingMiddleware
@@ -188,13 +202,15 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
 - **nLogMonitor.Infrastructure/Storage/** — RecentLogsFileRepository, InMemorySessionStorage (1:N маппинг, AppendEntriesAsync)
 - **nLogMonitor.Infrastructure/FileSystem/** — FileWatcherService (debounce 200ms, NotifyFilters.FileName, race condition fix)
 - **nLogMonitor.Infrastructure/Parsing/** — NLogParser (ParseFromPositionAsync для инкрементального чтения)
+- **nLogMonitor.Infrastructure/Services/** — UserSettingsService (thread-safe операции, атомарная запись через temp файл)
 - **nLogMonitor.Application/Configuration/** — FileSettings, RecentLogsSettings, AppSettings (режим Web/Desktop)
-- **nLogMonitor.Application/DTOs/** — MetricsDto (метрики сервера)
+- **nLogMonitor.Application/DTOs/** — MetricsDto (метрики сервера), UserSettingsDto, TabSettingDto
 - **nLogMonitor.Application/Interfaces/ISessionStorage** — методы BindConnectionAsync, UnbindConnectionAsync, GetSessionByConnectionAsync, AppendEntriesAsync, GetActiveSessionCountAsync, GetTotalLogsCountAsync, GetActiveConnectionsCountAsync
 - **nLogMonitor.Application/Interfaces/ILogParser** — метод ParseFromPositionAsync
+- **nLogMonitor.Application/Interfaces/IUserSettingsService** — GetSettingsAsync, SaveSettingsAsync
 - **nLogMonitor.Domain/Entities/LogSession** — поле LastReadPosition
 - **nLogMonitor.Desktop/Program.cs** — embedded ASP.NET Core + PhotinoWindow, BridgeRequest/BridgeResponse, message handlers
-- **nLogMonitor.Desktop/Controllers/** — скопированы из Api (FilesController, LogsController, ExportController, etc.)
+- **nLogMonitor.Desktop/Controllers/** — скопированы из Api (FilesController, LogsController, ExportController, SettingsController, etc.)
 - **nLogMonitor.Desktop/Hubs/** — LogWatcherHub (SignalR Hub)
 - **nLogMonitor.Desktop/Services/** — FileWatcherBackgroundService
 - **scripts/** — папка со скриптами запуска и сборки:
@@ -206,9 +222,9 @@ Infrastructure (Parser, Storage, Export) — реализует интерфей
   - `stop-desktop-dev.bat` — остановка Desktop dev процессов
 
 ### Структура tests/
-- **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests, FileWatcherServiceTests (debounce, множественные сессии)
+- **nLogMonitor.Infrastructure.Tests** — NLogParserTests, InMemorySessionStorageTests (+ cleanup callbacks), DirectoryScannerTests, JsonExporterTests, CsvExporterTests, RecentLogsFileRepositoryTests, FileWatcherServiceTests (debounce, множественные сессии), UserSettingsServiceTests (9 тестов: CRUD, concurrent access, corrupted files)
 - **nLogMonitor.Application.Tests** — LogServiceTests (фильтрация, пагинация, поиск, статистика)
-- **nLogMonitor.Api.Tests** — Unit тесты контроллеров + Integration тесты с WebApplicationFactory (Files, Upload, Export, Health, Logs, Recent, LogWatcherHub, ClientLogs) + нагрузочные тесты (500 файлов, 100 обновлений, debounce)
+- **nLogMonitor.Api.Tests** — Unit тесты контроллеров + Integration тесты с WebApplicationFactory (Files, Upload, Export, Health, Logs, Recent, Settings, LogWatcherHub, ClientLogs) + нагрузочные тесты (500 файлов, 100 обновлений, debounce)
 
 ### Структура client/
 - **src/types/** — TypeScript типы (LogEntry, PagedResult, FilterOptions, etc.)
@@ -259,6 +275,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - **Virtual scrolling** — для таблицы с миллионами записей (Frontend, Фаза 4-5)
 - **Photino Bridge** — JS ↔ .NET IPC через window.external.sendMessage/receiveMessage, Promise-based async API
 - **Embedded ASP.NET Core** — Kestrel сервер в фоновом потоке Desktop приложения, динамический выбор порта
+- **User Settings Persistence** — атомарная запись настроек через временный файл с последующим File.Move, SemaphoreSlim для thread-safe операций, автоматическое создание конфигурационных директорий по стандартам ОС
 
 ## Configuration
 
@@ -279,6 +296,8 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 - `GET /api/export/{sessionId}?format=json|csv` — потоковый экспорт
 - `GET /api/recent` — недавние файлы
 - `DELETE /api/recent` — очистка недавних
+- `GET /api/settings` — получить пользовательские настройки (openedTabs, lastActiveTabIndex)
+- `PUT /api/settings` — сохранить пользовательские настройки
 - `GET /api/metrics` — метрики сервера (sessions, logs, memory, uptime, connections)
 - `POST /api/client-logs` — приём batch логов с фронтенда (rate limiting 100 req/min per IP)
 - `GET /health` — health check

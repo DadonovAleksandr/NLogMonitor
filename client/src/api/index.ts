@@ -6,6 +6,7 @@ export { healthApi } from './health'
 export { signalRManager } from './signalr'
 export { clientLogsApi } from './client-logs'
 export type { ClientLog } from './client-logs'
+export { settingsApi } from './settings'
 export {
   getBaseUrl,
   setBaseUrl,

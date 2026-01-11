@@ -107,3 +107,18 @@ export type ConnectionState =
   | 'Connected'
   | 'Disconnecting'
   | 'Reconnecting'
+
+// User Settings types
+
+// Настройка вкладки (открытый файл или директория)
+export interface TabSetting {
+  type: 'file' | 'directory'
+  path: string
+  displayName: string
+}
+
+// Пользовательские настройки приложения
+export interface UserSettings {
+  openedTabs: TabSetting[]
+  lastActiveTabIndex: number
+}

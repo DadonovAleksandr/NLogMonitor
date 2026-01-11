@@ -16,7 +16,7 @@ export const useLogStore = defineStore('logs', () => {
   const logs = ref<LogEntry[]>([])
   const totalCount = ref(0)
   const page = ref(1)
-  const pageSize = ref(50)
+  const pageSize = ref(100)
   const totalPages = ref(0)
   const levelCounts = ref<LevelCounts>({
     Trace: 0,
