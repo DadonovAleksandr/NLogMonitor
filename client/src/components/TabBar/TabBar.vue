@@ -30,7 +30,7 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
       <button
         v-for="tab in tabsStore.tabs"
         :key="tab.id"
-        class="group relative flex items-center gap-2 border-r border-zinc-800 px-4 py-3 transition-all hover:bg-zinc-900/50"
+        class="group relative flex items-center gap-2 border-r border-zinc-800 px-4 py-1.5 transition-all hover:bg-zinc-900/50"
         :class="{
           'bg-zinc-900 text-zinc-100': isActive(tab.id),
           'text-zinc-500 hover:text-zinc-300': !isActive(tab.id)
@@ -42,7 +42,7 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
         <FolderOpen v-else class="h-4 w-4 flex-shrink-0" />
 
         <!-- Tab name -->
-        <span class="max-w-[180px] truncate font-mono text-sm" :title="tab.fileName">
+        <span class="max-w-[180px] truncate font-mono text-sm" :title="tab.filePath">
           {{ tab.fileName }}
         </span>
 
@@ -72,7 +72,7 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
       </button>
 
       <!-- Empty state -->
-      <div v-if="tabsStore.tabs.length === 0" class="flex h-12 items-center px-4 font-mono text-sm text-zinc-600">
+      <div v-if="tabsStore.tabs.length === 0" class="flex h-9 items-center px-4 font-mono text-sm text-zinc-600">
         Нет открытых файлов
       </div>
     </div>
