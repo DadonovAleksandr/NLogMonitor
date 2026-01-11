@@ -1,17 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { LogEntry, LevelCounts, FilterOptions, TabSetting, UserSettings } from '@/types'
-import { LogLevel } from '@/types'
-
-// Маппинг числовых значений в строковые названия уровней (для API)
-const LogLevelNames: Record<LogLevel, string> = {
-  [LogLevel.Trace]: 'Trace',
-  [LogLevel.Debug]: 'Debug',
-  [LogLevel.Info]: 'Info',
-  [LogLevel.Warn]: 'Warn',
-  [LogLevel.Error]: 'Error',
-  [LogLevel.Fatal]: 'Fatal'
-}
+import { LogLevel, LogLevelNames } from '@/types'
 
 export interface Tab {
   id: string

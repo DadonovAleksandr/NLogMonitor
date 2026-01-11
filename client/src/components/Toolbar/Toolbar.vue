@@ -2,8 +2,9 @@
 import { ref, computed, watch } from 'vue'
 import { Search, X } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
-import { useTabsStore } from '@/stores'
+import { useTabsStore, useFilterStore } from '@/stores'
 import type { LevelCounts } from '@/types'
+import { LogLevel, LogLevelNames } from '@/types'
 
 interface LevelFilterButton {
   level: keyof LevelCounts
@@ -14,9 +15,9 @@ interface LevelFilterButton {
 }
 
 const tabsStore = useTabsStore()
+const filterStore = useFilterStore()
 
 const searchText = ref('')
-const activeLevels = ref<Set<string>>(new Set(['Trace', 'Debug', 'Info', 'Warn', 'Error', 'Fatal']))
 
 const emit = defineEmits<{
   (e: 'search', value: string): void
@@ -79,27 +80,38 @@ const levelCounts = computed(() => activeTab.value?.levelCounts || {
   Fatal: 0
 })
 
+// Конвертация названия уровня в LogLevel enum
+const levelNameToEnum: Record<keyof LevelCounts, LogLevel> = {
+  'Trace': LogLevel.Trace,
+  'Debug': LogLevel.Debug,
+  'Info': LogLevel.Info,
+  'Warn': LogLevel.Warn,
+  'Error': LogLevel.Error,
+  'Fatal': LogLevel.Fatal
+}
+
 const totalFiltered = computed(() => {
   let total = 0
-  activeLevels.value.forEach(level => {
-    const count = levelCounts.value[level as keyof LevelCounts]
-    if (count) total += count
+  const activeLevelsSet = filterStore.activeLevels
+  Object.entries(levelCounts.value).forEach(([levelName, count]) => {
+    const levelEnum = levelNameToEnum[levelName as keyof LevelCounts]
+    if (activeLevelsSet.has(levelEnum) && count) {
+      total += count
+    }
   })
   return total
 })
 
 function toggleLevel(level: string) {
-  if (activeLevels.value.has(level)) {
-    activeLevels.value.delete(level)
-  } else {
-    activeLevels.value.add(level)
+  const levelEnum = levelNameToEnum[level as keyof LevelCounts]
+  if (levelEnum !== undefined) {
+    filterStore.toggleLevel(levelEnum)
   }
-  // Force reactivity
-  activeLevels.value = new Set(activeLevels.value)
 }
 
 function isLevelActive(level: string) {
-  return activeLevels.value.has(level)
+  const levelEnum = levelNameToEnum[level as keyof LevelCounts]
+  return levelEnum !== undefined && filterStore.isLevelActive(levelEnum)
 }
 
 function clearSearch() {
@@ -116,8 +128,13 @@ watch(searchText, (newValue) => {
   }, 300)
 })
 
-watch(activeLevels, (newValue) => {
-  emit('filter-levels', newValue)
+// Следим за изменениями activeLevels в filterStore и испускаем событие
+watch(() => filterStore.activeLevels, () => {
+  // Преобразуем Set<LogLevel> в Set<string> для совместимости с событием
+  const levelNames = new Set(
+    Array.from(filterStore.activeLevels).map(level => LogLevelNames[level])
+  )
+  emit('filter-levels', levelNames)
 }, { deep: true })
 </script>
 

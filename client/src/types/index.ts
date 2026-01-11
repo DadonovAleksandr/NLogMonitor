@@ -10,6 +10,16 @@ export const LogLevel = {
 
 export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
 
+// Маппинг числовых значений LogLevel в строковые названия
+export const LogLevelNames: Record<LogLevel, string> = {
+  [LogLevel.Trace]: 'Trace',
+  [LogLevel.Debug]: 'Debug',
+  [LogLevel.Info]: 'Info',
+  [LogLevel.Warn]: 'Warn',
+  [LogLevel.Error]: 'Error',
+  [LogLevel.Fatal]: 'Fatal'
+}
+
 // Запись лога
 export interface LogEntry {
   id: number
