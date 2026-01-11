@@ -21,15 +21,18 @@ import {
 
 const logStore = useLogStore()
 
-// Format timestamp to HH:mm:ss.fff
-function formatTime(isoString: string): string {
+// Format timestamp to DD.MM.YY HH:mm:ss.fff
+function formatTimestamp(isoString: string): string {
   try {
     const date = new Date(isoString)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear().toString().slice(-2)
     const hours = date.getHours().toString().padStart(2, '0')
     const minutes = date.getMinutes().toString().padStart(2, '0')
     const seconds = date.getSeconds().toString().padStart(2, '0')
     const ms = date.getMilliseconds().toString().padStart(3, '0')
-    return `${hours}:${minutes}:${seconds}.${ms}`
+    return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}.${ms}`
   } catch {
     return isoString
   }
@@ -40,22 +43,32 @@ const columnHelper = createColumnHelper<LogEntry>()
 
 const columns = [
   columnHelper.accessor('timestamp', {
-    header: 'Time',
-    cell: (info) => formatTime(info.getValue()),
-    size: 120
+    header: 'Дата и время',
+    cell: (info) => formatTimestamp(info.getValue()),
+    // Автоматическая ширина по содержимому
   }),
   columnHelper.accessor('level', {
-    header: 'Level',
+    header: 'Важность',
     cell: (info) => h(LogLevelBadge, { level: info.getValue() }),
-    size: 70
+    // Автоматическая ширина по содержимому
   }),
   columnHelper.accessor('message', {
-    header: 'Message',
+    header: 'Описание',
     cell: (info) => info.getValue(),
-    size: undefined // flex
+    size: 9999 // Большое значение - займет все свободное пространство
+  }),
+  columnHelper.accessor('processId', {
+    header: 'Процесс',
+    cell: (info) => info.getValue(),
+    // Автоматическая ширина по содержимому
+  }),
+  columnHelper.accessor('threadId', {
+    header: 'Поток',
+    cell: (info) => info.getValue(),
+    // Автоматическая ширина по содержимому
   }),
   columnHelper.accessor('logger', {
-    header: 'Logger',
+    header: 'Источник',
     cell: (info) => {
       const logger = info.getValue()
       // Shorten logger name: MyApp.Services.UserService -> M.S.UserService
@@ -64,7 +77,7 @@ const columns = [
       const shortened = parts.slice(0, -1).map(p => p[0]).join('.') + '.' + parts[parts.length - 1]
       return shortened
     },
-    size: 180
+    // Автоматическая ширина по содержимому
   })
 ]
 
@@ -183,8 +196,10 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
               :key="cell.id"
               class="px-3 py-2 align-top"
               :class="{
-                'font-mono text-xs text-zinc-500': cell.column.id === 'timestamp' || cell.column.id === 'logger',
-                'text-sm text-zinc-300': cell.column.id === 'message'
+                'font-mono text-xs text-zinc-500 whitespace-nowrap': cell.column.id === 'timestamp',
+                'font-mono text-xs text-zinc-500': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'logger',
+                'text-sm text-zinc-300': cell.column.id === 'message',
+                'text-center whitespace-nowrap': cell.column.id === 'processId' || cell.column.id === 'threadId'
               }"
               :style="cell.column.getSize() ? { width: `${cell.column.getSize()}px` } : {}"
             >
@@ -220,7 +235,7 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
 }
 
 .log-table {
-  table-layout: fixed;
+  table-layout: auto;
   width: 100%;
 }
 
