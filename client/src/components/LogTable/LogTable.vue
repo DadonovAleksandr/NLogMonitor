@@ -169,7 +169,7 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
             <TableHead
               v-for="header in headerGroup.headers"
               :key="header.id"
-              class="h-10 px-3 font-mono text-xs font-semibold uppercase tracking-wider text-zinc-400"
+              class="h-8 px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-zinc-400"
               :class="{ 'text-center': header.column.id !== 'message' }"
               :style="header.column.getSize() ? { width: `${header.column.getSize()}px` } : {}"
             >
@@ -194,11 +194,11 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
             <TableCell
               v-for="cell in row.getVisibleCells()"
               :key="cell.id"
-              class="px-3 py-2 align-top"
+              class="px-3 py-1 align-middle font-mono text-xs leading-tight"
               :class="{
-                'font-mono text-xs text-zinc-500 whitespace-nowrap': cell.column.id === 'timestamp',
-                'font-mono text-xs text-zinc-500': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'logger' || cell.column.id === 'level',
-                'text-sm text-zinc-300': cell.column.id === 'message',
+                'text-zinc-500 whitespace-nowrap': cell.column.id === 'timestamp',
+                'text-zinc-500': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'logger' || cell.column.id === 'level',
+                'text-zinc-300': cell.column.id === 'message',
                 'text-center': cell.column.id !== 'message' && cell.column.id !== 'logger',
                 'whitespace-nowrap': cell.column.id === 'processId' || cell.column.id === 'threadId' || cell.column.id === 'timestamp' || cell.column.id === 'level'
               }"
@@ -206,7 +206,7 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
             >
               <div
                 v-if="cell.column.id === 'message'"
-                class="line-clamp-2 max-w-full break-all group-hover:line-clamp-none"
+                class="line-clamp-2 max-w-full break-all leading-tight group-hover:line-clamp-none"
                 :title="row.original.message"
               >
                 <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
