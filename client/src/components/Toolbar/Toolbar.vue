@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Search, X } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTabsStore } from '@/stores'
 import type { LevelCounts } from '@/types'
@@ -150,7 +149,7 @@ watch(activeLevels, (newValue) => {
           @click="toggleLevel(btn.level)"
         >
           <span>{{ btn.label }}</span>
-          <span class="ml-2 opacity-70">{{ levelCounts[btn.level].toLocaleString() }}</span>
+          <span class="ml-2 opacity-70">{{ (levelCounts[btn.level] ?? 0).toLocaleString() }}</span>
 
           <!-- Glowing effect on active -->
           <div

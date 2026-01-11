@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { X, FileText, FolderOpen, Plus } from 'lucide-vue-next'
 import { useTabsStore } from '@/stores'
 import { Button } from '@/components/ui/button'
