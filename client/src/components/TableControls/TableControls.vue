@@ -98,24 +98,17 @@ function handleClear() {
   padding: 5px 12px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  border-radius: 14px;
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
   color: #525252;
   cursor: pointer;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .control-btn:hover {
-  background: #fafafa;
+  background: #f5f5f5;
   border-color: #a3a3a3;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  transform: translateY(-0.5px);
-}
-
-.control-btn:active {
-  transform: translateY(0);
 }
 
 /* Active state for autoscroll */
@@ -123,7 +116,6 @@ function handleClear() {
   background: #dbeafe;
   border-color: #60a5fa;
   color: #1e40af;
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
 }
 
 /* Active state for pause */
@@ -131,7 +123,6 @@ function handleClear() {
   background: #fef3c7;
   border-color: #fbbf24;
   color: #92400e;
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
 /* Clear button hover */
