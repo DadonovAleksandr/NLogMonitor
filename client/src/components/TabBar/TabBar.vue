@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { X, FileText, FolderOpen, Plus } from 'lucide-vue-next'
 import { useTabsStore } from '@/stores'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 
 const tabsStore = useTabsStore()
 
@@ -24,43 +30,50 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 <template>
   <div class="tab-bar">
     <!-- Tabs -->
-    <div class="tabs-container">
-      <button
-        v-for="tab in tabsStore.tabs"
-        :key="tab.id"
-        class="tab-button"
-        :class="{ 'tab-button-active': isActive(tab.id) }"
-        @click="selectTab(tab.id)"
-      >
-        <!-- Icon -->
-        <FileText v-if="tab.type === 'file'" class="tab-icon" />
-        <FolderOpen v-else class="tab-icon" />
+    <TooltipProvider :delay-duration="400">
+      <div class="tabs-container">
+        <Tooltip v-for="tab in tabsStore.tabs" :key="tab.id">
+          <TooltipTrigger as-child>
+            <button
+              class="tab-button"
+              :class="{ 'tab-button-active': isActive(tab.id) }"
+              @click="selectTab(tab.id)"
+            >
+              <!-- Icon -->
+              <FileText v-if="tab.type === 'file'" class="tab-icon" />
+              <FolderOpen v-else class="tab-icon" />
 
-        <!-- Tab name -->
-        <span class="tab-name" :title="tab.filePath">
-          {{ tab.fileName }}
-        </span>
+              <!-- Tab name -->
+              <span class="tab-name">
+                {{ tab.fileName }}
+              </span>
 
-        <!-- Close button -->
-        <div
-          class="tab-close"
-          @click="(e) => closeTab(tab.id, e)"
-        >
-          <X class="close-icon" />
+              <!-- Close button -->
+              <div
+                class="tab-close"
+                @click="(e) => closeTab(tab.id, e)"
+              >
+                <X class="close-icon" />
+              </div>
+
+              <!-- Active indicator -->
+              <div v-if="isActive(tab.id)" class="tab-active-indicator" />
+
+              <!-- Loading indicator -->
+              <div v-if="tab.isLoading" class="tab-loading-indicator" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {{ tab.filePath }}
+          </TooltipContent>
+        </Tooltip>
+
+        <!-- Empty state -->
+        <div v-if="tabsStore.tabs.length === 0" class="tabs-empty">
+          Нет открытых файлов
         </div>
-
-        <!-- Active indicator -->
-        <div v-if="isActive(tab.id)" class="tab-active-indicator" />
-
-        <!-- Loading indicator -->
-        <div v-if="tab.isLoading" class="tab-loading-indicator" />
-      </button>
-
-      <!-- Empty state -->
-      <div v-if="tabsStore.tabs.length === 0" class="tabs-empty">
-        Нет открытых файлов
       </div>
-    </div>
+    </TooltipProvider>
 
     <!-- Add buttons -->
     <div class="add-buttons">
