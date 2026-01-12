@@ -306,67 +306,54 @@ watch(() => filterStore.activeLevels, () => {
   padding: 4px 10px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  border-radius: 14px;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
   color: #525252;
   cursor: pointer;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.filter-pill:hover {
-  background: #fafafa;
+.filter-pill:hover:not(.filter-pill-active) {
+  background: #f5f5f5;
   border-color: #a3a3a3;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.06);
-  transform: translateY(-0.5px);
 }
 
-.filter-pill:active {
-  transform: translateY(0);
-}
-
-/* Active states using existing color scheme */
+/* Active states - exact LogTable row colors */
 .filter-pill-active[data-level="trace"] {
-  background: #f8f8f8;
-  border-color: #cbd5e1;
-  color: #52525b;
-  box-shadow: 0 0 0 2px #f8f8f8;
+  background: #D3D3D3;
+  border-color: #b0b0b0;
+  color: #000000;
 }
 
 .filter-pill-active[data-level="debug"] {
-  background: #e0f7fa;
-  border-color: #67e8f9;
-  color: #0e4f5c;
-  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.2);
+  background: #ADD8E6;
+  border-color: #8ec8dc;
+  color: #000000;
 }
 
 .filter-pill-active[data-level="info"] {
   background: #ffffff;
   border-color: #94a3b8;
-  color: #334155;
-  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
+  color: #000000;
 }
 
 .filter-pill-active[data-level="warn"] {
-  background: #fef3c7;
-  border-color: #fbbf24;
-  color: #92400e;
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+  background: #FFFF00;
+  border-color: #d4d400;
+  color: #000000;
 }
 
 .filter-pill-active[data-level="error"] {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #991b1b;
-  box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.2);
+  background: #FF0000;
+  border-color: #cc0000;
+  color: #ffffff;
 }
 
 .filter-pill-active[data-level="fatal"] {
-  background: #fca5a5;
-  border-color: #f87171;
-  color: #7f1d1d;
-  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.3);
+  background: #8B0000;
+  border-color: #600000;
+  color: #ffffff;
 }
 
 .filter-pill-icon {
@@ -389,15 +376,15 @@ watch(() => filterStore.activeLevels, () => {
   font-weight: 500;
   padding: 1px 5px;
   background: rgba(0, 0, 0, 0.05);
-  border-radius: 6px;
+  border-radius: 3px;
   color: #737373;
   min-width: 24px;
   text-align: center;
-  tabular-nums: tabular-nums;
+  font-variant-numeric: tabular-nums;
 }
 
 .filter-pill-active .filter-pill-count {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.1);
   color: currentColor;
   font-weight: 600;
 }
