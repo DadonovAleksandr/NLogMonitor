@@ -3,13 +3,13 @@ import { ref, computed } from 'vue'
 import { Download, ChevronDown, FileJson, FileText } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { exportApi } from '@/api'
-import { useLogStore } from '@/stores/logStore'
+import { useTabsStore } from '@/stores'
 import { useFilterStore } from '@/stores/filterStore'
 import { logger } from '@/services/logger'
 import type { ExportFormat } from '@/types'
 
 // Stores
-const logStore = useLogStore()
+const tabsStore = useTabsStore()
 const filterStore = useFilterStore()
 
 // State
@@ -17,7 +17,7 @@ const isOpen = ref(false)
 const isExporting = ref(false)
 
 // Computed
-const isDisabled = computed(() => !logStore.hasSession || isExporting.value)
+const isDisabled = computed(() => !tabsStore.hasSession || isExporting.value)
 
 // Export options
 const exportOptions = [
@@ -27,7 +27,7 @@ const exportOptions = [
 
 // Methods
 async function handleExport(format: ExportFormat) {
-  if (!logStore.sessionId) return
+  if (!tabsStore.sessionId) return
 
   isOpen.value = false
   isExporting.value = true
@@ -35,14 +35,14 @@ async function handleExport(format: ExportFormat) {
   try {
     // Используем downloadExport из API, который создаёт <a> и кликает
     exportApi.downloadExport(
-      logStore.sessionId,
+      tabsStore.sessionId,
       format,
       filterStore.filterOptions
     )
   } catch (error) {
     logger.error('Export failed', {
       format,
-      sessionId: logStore.sessionId,
+      sessionId: tabsStore.sessionId,
       error: error instanceof Error ? error.message : String(error)
     })
   } finally {

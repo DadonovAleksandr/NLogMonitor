@@ -22,52 +22,7 @@ const isRestoring = ref(false)
 
 useSettings()
 
-watch(
-  () => tabsStore.activeTab,
-  (activeTab) => {
-    if (activeTab) {
-      logStore.logs = activeTab.logs
-      logStore.totalCount = activeTab.totalCount
-      logStore.page = activeTab.page
-      logStore.pageSize = activeTab.pageSize
-      logStore.totalPages = activeTab.totalPages
-      logStore.levelCounts = activeTab.levelCounts
-      logStore.sessionId = activeTab.sessionId
-      logStore.isLoading = activeTab.isLoading
-      logStore.error = activeTab.error
-    } else {
-      logStore.logs = []
-      logStore.totalCount = 0
-      logStore.page = 1
-      logStore.pageSize = 100
-      logStore.totalPages = 0
-      logStore.levelCounts = { Trace: 0, Debug: 0, Info: 0, Warn: 0, Error: 0, Fatal: 0 }
-      logStore.sessionId = null
-      logStore.isLoading = false
-      logStore.error = null
-    }
-  },
-  { immediate: true, deep: true }
-)
-
-watch(
-  [() => logStore.page, () => logStore.pageSize],
-  async ([newPage, newPageSize]) => {
-    const activeTab = tabsStore.activeTab
-    if (!activeTab || !activeTab.sessionId) return
-
-    activeTab.page = newPage
-    activeTab.pageSize = newPageSize
-
-    try {
-      await logStore.fetchLogs(activeTab.filters)
-      syncTabWithLogStore(activeTab.id)
-    } catch (error) {
-      logger.error('Failed to fetch logs after page change', { error })
-    }
-  }
-)
-
+// Watch для SignalR: начинаем/останавливаем мониторинг при смене сессии
 watch(
   () => tabsStore.activeTab?.sessionId,
   async (newSessionId, oldSessionId) => {
@@ -77,15 +32,17 @@ watch(
 
     if (newSessionId) {
       try {
+        const activeTab = tabsStore.activeTab
+        if (!activeTab) return
+
         await startWatching(newSessionId, (newLogs) => {
-          const activeTab = tabsStore.activeTab
-          if (!activeTab || activeTab.sessionId !== logStore.sessionId) {
+          const currentTab = tabsStore.activeTab
+          if (!currentTab || currentTab.sessionId !== newSessionId) {
             logger.warn('Received logs for inactive tab, skipping UI update')
             return
           }
 
-          logStore.appendLogs(newLogs, activeTab.filters, activeTab.activeLevels)
-          activeTab.levelCounts = { ...logStore.levelCounts }
+          logStore.appendLogs(newLogs, currentTab.filters, currentTab.activeLevels)
         })
         logger.info(`Started watching session ${newSessionId}`)
       } catch (err) {
@@ -148,10 +105,14 @@ async function restoreTabs() {
 
 async function openFileByPath(path: string, displayName: string) {
   if (isDesktop.value) {
-    await logStore.openFile(path)
-    if (logStore.sessionId) {
-      const tab = tabsStore.addTab('file', displayName, path, logStore.sessionId)
-      syncTabWithLogStore(tab.id)
+    const result = await logStore.openFile(path)
+    if (result) {
+      const tab = tabsStore.addTab('file', displayName, path, result.sessionId)
+      tabsStore.updateTab(tab.id, {
+        totalCount: result.totalEntries,
+        levelCounts: result.levelCounts
+      })
+      await logStore.fetchLogs({})
     }
   } else {
     logger.warn(`Cannot restore file in Web mode: ${path}`)
@@ -160,10 +121,14 @@ async function openFileByPath(path: string, displayName: string) {
 
 async function openDirectoryByPath(path: string, displayName: string) {
   if (isDesktop.value) {
-    await logStore.openDirectory(path)
-    if (logStore.sessionId) {
-      const tab = tabsStore.addTab('directory', displayName, path, logStore.sessionId)
-      syncTabWithLogStore(tab.id)
+    const result = await logStore.openDirectory(path)
+    if (result) {
+      const tab = tabsStore.addTab('directory', displayName, path, result.sessionId)
+      tabsStore.updateTab(tab.id, {
+        totalCount: result.totalEntries,
+        levelCounts: result.levelCounts
+      })
+      await logStore.fetchLogs({})
     }
   } else {
     logger.warn(`Cannot restore directory in Web mode: ${path}`)
@@ -175,11 +140,15 @@ async function handleAddFile() {
     const filePath = await photinoBridge.showOpenFileDialog()
     if (filePath) {
       try {
-        await logStore.openFile(filePath)
-        if (logStore.sessionId) {
-          const tab = tabsStore.addTab('file', logStore.fileName, filePath, logStore.sessionId)
-          syncTabWithLogStore(tab.id)
-          logger.info(`File opened: ${logStore.fileName}`)
+        const result = await logStore.openFile(filePath)
+        if (result) {
+          const tab = tabsStore.addTab('file', result.fileName, filePath, result.sessionId)
+          tabsStore.updateTab(tab.id, {
+            totalCount: result.totalEntries,
+            levelCounts: result.levelCounts
+          })
+          await logStore.fetchLogs({})
+          logger.info(`File opened: ${result.fileName}`)
         }
       } catch (err) {
         logger.error('Failed to open file', { error: err })
@@ -193,10 +162,14 @@ async function handleAddFile() {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
         try {
-          await logStore.uploadFile(file)
-          if (logStore.sessionId) {
-            const tab = tabsStore.addTab('file', file.name, file.name, logStore.sessionId)
-            syncTabWithLogStore(tab.id)
+          const result = await logStore.uploadFile(file)
+          if (result) {
+            const tab = tabsStore.addTab('file', file.name, file.name, result.sessionId)
+            tabsStore.updateTab(tab.id, {
+              totalCount: result.totalEntries,
+              levelCounts: result.levelCounts
+            })
+            await logStore.fetchLogs({})
             logger.info(`File uploaded: ${file.name}`)
           }
         } catch (err) {
@@ -213,11 +186,15 @@ async function handleAddFolder() {
     const folderPath = await photinoBridge.showOpenFolderDialog()
     if (folderPath) {
       try {
-        await logStore.openDirectory(folderPath)
-        if (logStore.sessionId) {
+        const result = await logStore.openDirectory(folderPath)
+        if (result) {
           const folderName = folderPath.split(/[/\\]/).pop() || folderPath
-          const tab = tabsStore.addTab('directory', folderName, folderPath, logStore.sessionId)
-          syncTabWithLogStore(tab.id)
+          const tab = tabsStore.addTab('directory', folderName, folderPath, result.sessionId)
+          tabsStore.updateTab(tab.id, {
+            totalCount: result.totalEntries,
+            levelCounts: result.levelCounts
+          })
+          await logStore.fetchLogs({})
           logger.info(`Directory opened: ${folderName}`)
         }
       } catch (err) {
@@ -227,27 +204,15 @@ async function handleAddFolder() {
   }
 }
 
-function syncTabWithLogStore(tabId: string) {
-  tabsStore.updateTab(tabId, {
-    logs: logStore.logs,
-    totalCount: logStore.totalCount,
-    page: logStore.page,
-    pageSize: logStore.pageSize,
-    totalPages: logStore.totalPages,
-    levelCounts: logStore.levelCounts
-  })
-}
-
 async function handleSearch(searchText: string) {
   const activeTab = tabsStore.activeTab
   if (!activeTab || !activeTab.sessionId) return
 
   filterStore.setSearchText(searchText)
-  activeTab.page = 1
+  tabsStore.setPage(1)
 
   try {
     await logStore.fetchLogs(activeTab.filters)
-    syncTabWithLogStore(activeTab.id)
   } catch (error) {
     logger.error('Failed to fetch logs after search change', { error })
   }
@@ -257,11 +222,10 @@ async function handleFilterLevels() {
   const activeTab = tabsStore.activeTab
   if (!activeTab || !activeTab.sessionId) return
 
-  activeTab.page = 1
+  tabsStore.setPage(1)
 
   try {
     await logStore.fetchLogs(activeTab.filters)
-    syncTabWithLogStore(activeTab.id)
   } catch (error) {
     logger.error('Failed to fetch logs after filter change', { error })
   }

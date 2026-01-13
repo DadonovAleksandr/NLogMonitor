@@ -25,23 +25,23 @@ function selectPageSize(size: number) {
 }
 
 function previousPage() {
-  if (logStore.canPreviousPage) {
-    logStore.setPage(logStore.page - 1)
+  if (tabsStore.canPreviousPage) {
+    logStore.setPage(tabsStore.page - 1)
   }
 }
 
 function nextPage() {
-  if (logStore.canNextPage) {
-    logStore.setPage(logStore.page + 1)
+  if (tabsStore.canNextPage) {
+    logStore.setPage(tabsStore.page + 1)
   }
 }
 
 const pageInfo = computed(() => {
-  if (logStore.totalPages === 0) return '0/0'
-  return `${logStore.page}/${logStore.totalPages}`
+  if (tabsStore.totalPages === 0) return '0/0'
+  return `${tabsStore.page}/${tabsStore.totalPages}`
 })
 
-const totalCount = computed(() => logStore.totalCount)
+const totalCount = computed(() => tabsStore.totalCount)
 
 const levelStats = computed(() => {
   const counts = activeTab.value?.levelCounts || {
@@ -67,7 +67,7 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
           @click="toggleDropdown"
           @blur="closeDropdown"
         >
-          <span>{{ logStore.pageSize }}</span>
+          <span>{{ tabsStore.pageSize }}</span>
           <svg
             class="dropdown-icon"
             :class="{ 'dropdown-icon-open': isDropdownOpen }"
@@ -85,7 +85,7 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
             :key="size"
             type="button"
             class="page-size-option"
-            :class="{ 'page-size-option-active': size === logStore.pageSize }"
+            :class="{ 'page-size-option-active': size === tabsStore.pageSize }"
             @mousedown.prevent="selectPageSize(size)"
           >
             {{ size }}
@@ -98,7 +98,7 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
         <button
           type="button"
           class="nav-btn"
-          :disabled="!logStore.canPreviousPage"
+          :disabled="!tabsStore.canPreviousPage"
           @click="previousPage"
         >
           <ChevronLeft class="nav-icon" />
@@ -109,7 +109,7 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
         <button
           type="button"
           class="nav-btn"
-          :disabled="!logStore.canNextPage"
+          :disabled="!tabsStore.canNextPage"
           @click="nextPage"
         >
           <ChevronRight class="nav-icon" />
@@ -309,9 +309,12 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
   font-weight: 600;
-  padding: 1px 4px;
+  padding: 2px 4px;
   border-radius: 2px;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 
 .stat-fatal {
