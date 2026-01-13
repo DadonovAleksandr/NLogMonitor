@@ -45,7 +45,6 @@ export const useLogStore = defineStore('logs', () => {
       setSessionData(result)
       // Загружаем все логи без фильтров при открытии нового файла
       await fetchLogs({})
-      showToast(`File "${file.name}" loaded successfully`, 'success')
     } catch (err: unknown) {
       const message = (err as { message?: string }).message || 'Failed to upload file'
       error.value = message
@@ -65,7 +64,6 @@ export const useLogStore = defineStore('logs', () => {
       setSessionData(result)
       // Загружаем все логи без фильтров при открытии нового файла
       await fetchLogs({})
-      showToast(`File "${result.fileName}" loaded successfully`, 'success')
     } catch (err: unknown) {
       const message = (err as { message?: string }).message || 'Failed to open file'
       error.value = message
@@ -85,7 +83,6 @@ export const useLogStore = defineStore('logs', () => {
       setSessionData(result)
       // Загружаем все логи без фильтров при открытии нового файла
       await fetchLogs({})
-      showToast(`Directory "${result.fileName}" loaded successfully`, 'success')
     } catch (err: unknown) {
       const message = (err as { message?: string }).message || 'Failed to open directory'
       error.value = message
