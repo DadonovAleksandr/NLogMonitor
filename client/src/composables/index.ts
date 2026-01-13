@@ -6,3 +6,4 @@ export {
   waitForApiReady,
   isDesktopMode
 } from './usePhotinoBridge'
+export { useSettings } from './useSettings'

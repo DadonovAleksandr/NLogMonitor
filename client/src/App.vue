@@ -1,69 +1,50 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { FileSelector } from '@/components/FileSelector'
+import { ref, computed, onMounted, watch } from 'vue'
+import { HeaderTabBar } from '@/components/HeaderTabBar'
+import { Toolbar } from '@/components/Toolbar'
 import { LogTable } from '@/components/LogTable'
-import { Pagination } from '@/components/Pagination'
-import { RecentFiles } from '@/components/RecentFiles'
-import { ExportButton } from '@/components/ExportButton'
-import { FilterPanel } from '@/components/FilterPanel'
-import { SearchBar } from '@/components/SearchBar'
+import { StatusBar } from '@/components/StatusBar'
 import { Toast } from '@/components/Toast'
-import { LiveIndicator } from '@/components/LiveIndicator'
-import { useLogStore, useFilterStore } from '@/stores'
-import { useFileWatcher } from '@/composables/useFileWatcher'
+import { useTabsStore, useLogStore, useFilterStore, useSettingsStore } from '@/stores'
+import { usePhotinoBridge, useSettings, useFileWatcher } from '@/composables'
 import { logger } from '@/services/logger'
 
+const tabsStore = useTabsStore()
 const logStore = useLogStore()
 const filterStore = useFilterStore()
+const settingsStore = useSettingsStore()
+const photinoBridge = usePhotinoBridge()
 
-// SignalR file watcher для real-time обновлений
-const { connectionState, isWatching, startWatching, stopWatching } = useFileWatcher()
+const { startWatching, stopWatching } = useFileWatcher()
 
-const showFileSelector = computed(() => !logStore.hasSession && !logStore.isLoading)
-const showLogTable = computed(() => logStore.hasSession || logStore.isLoading)
+const isDesktop = ref(false)
+const isRestoring = ref(false)
 
-// Автоматическая перезагрузка логов при изменении фильтров
+useSettings()
+
+// Watch для SignalR: начинаем/останавливаем мониторинг при смене сессии
 watch(
-  () => filterStore.filterOptions,
-  async () => {
-    if (logStore.hasSession) {
-      // Сбрасываем страницу на первую при изменении фильтров
-      logStore.setPage(1)
-      await logStore.fetchLogs(filterStore.filterOptions)
-    }
-  },
-  { deep: true }
-)
-
-// Автоматическая перезагрузка при изменении страницы или размера
-watch(
-  [() => logStore.page, () => logStore.pageSize],
-  async () => {
-    if (logStore.hasSession) {
-      await logStore.fetchLogs(filterStore.filterOptions)
-    }
-  }
-)
-
-// Отслеживание изменений sessionId для управления SignalR подпиской
-watch(
-  () => logStore.sessionId,
+  () => tabsStore.activeTab?.sessionId,
   async (newSessionId, oldSessionId) => {
-    // Если была старая сессия, останавливаем отслеживание
     if (oldSessionId && oldSessionId !== newSessionId) {
       await stopWatching()
     }
 
-    // Если появилась новая сессия, начинаем отслеживание
     if (newSessionId) {
-      // Сбрасываем фильтры при открытии нового файла
-      filterStore.clearFilters()
-
       try {
+        const activeTab = tabsStore.activeTab
+        if (!activeTab) return
+
         await startWatching(newSessionId, (newLogs) => {
-          // Callback для обработки новых логов
-          logStore.appendLogs(newLogs)
+          const currentTab = tabsStore.activeTab
+          if (!currentTab || currentTab.sessionId !== newSessionId) {
+            logger.warn('Received logs for inactive tab, skipping UI update')
+            return
+          }
+
+          logStore.appendLogs(newLogs, currentTab.filters, currentTab.activeLevels)
         })
+        logger.info(`Started watching session ${newSessionId}`)
       } catch (err) {
         logger.error('Failed to start watching session', {
           sessionId: newSessionId,
@@ -73,95 +54,360 @@ watch(
     }
   }
 )
+
+onMounted(async () => {
+  isDesktop.value = photinoBridge.isDesktop.value
+  await restoreTabs()
+})
+
+async function restoreTabs() {
+  isRestoring.value = true
+
+  try {
+    await settingsStore.loadSettings()
+
+    const savedTabs = tabsStore.importFromSettings(settingsStore.settings)
+
+    if (savedTabs.length === 0) {
+      logger.info('No saved tabs to restore')
+      return
+    }
+
+    logger.info(`Restoring ${savedTabs.length} tabs`)
+
+    for (const tabSetting of savedTabs) {
+      try {
+        if (tabSetting.type === 'file') {
+          await openFileByPath(tabSetting.path, tabSetting.displayName)
+        } else if (tabSetting.type === 'directory') {
+          await openDirectoryByPath(tabSetting.path, tabSetting.displayName)
+        }
+      } catch (error) {
+        logger.error(`Failed to restore tab: ${tabSetting.path}`, { error })
+      }
+    }
+
+    const lastActiveIndex = settingsStore.settings.lastActiveTabIndex
+    if (lastActiveIndex >= 0 && lastActiveIndex < tabsStore.tabs.length) {
+      const activeTab = tabsStore.tabs[lastActiveIndex]
+      if (activeTab) {
+        tabsStore.setActiveTab(activeTab.id)
+      }
+    }
+
+    logger.info('Tabs restored successfully')
+  } catch (error) {
+    logger.error('Failed to restore tabs', { error })
+  } finally {
+    isRestoring.value = false
+  }
+}
+
+async function openFileByPath(path: string, displayName: string) {
+  if (isDesktop.value) {
+    const result = await logStore.openFile(path)
+    if (result) {
+      const tab = tabsStore.addTab('file', displayName, path, result.sessionId)
+      tabsStore.updateTab(tab.id, {
+        totalCount: result.totalEntries,
+        levelCounts: result.levelCounts
+      })
+      await logStore.fetchLogs({})
+    }
+  } else {
+    logger.warn(`Cannot restore file in Web mode: ${path}`)
+  }
+}
+
+async function openDirectoryByPath(path: string, displayName: string) {
+  if (isDesktop.value) {
+    const result = await logStore.openDirectory(path)
+    if (result) {
+      const tab = tabsStore.addTab('directory', displayName, path, result.sessionId)
+      tabsStore.updateTab(tab.id, {
+        totalCount: result.totalEntries,
+        levelCounts: result.levelCounts
+      })
+      await logStore.fetchLogs({})
+    }
+  } else {
+    logger.warn(`Cannot restore directory in Web mode: ${path}`)
+  }
+}
+
+async function handleAddFile() {
+  if (isDesktop.value) {
+    const filePath = await photinoBridge.showOpenFileDialog()
+    if (filePath) {
+      try {
+        const result = await logStore.openFile(filePath)
+        if (result) {
+          const tab = tabsStore.addTab('file', result.fileName, filePath, result.sessionId)
+          tabsStore.updateTab(tab.id, {
+            totalCount: result.totalEntries,
+            levelCounts: result.levelCounts
+          })
+          await logStore.fetchLogs({})
+          logger.info(`File opened: ${result.fileName}`)
+        }
+      } catch (err) {
+        logger.error('Failed to open file', { error: err })
+      }
+    }
+  } else {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.log,.txt'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        try {
+          const result = await logStore.uploadFile(file)
+          if (result) {
+            const tab = tabsStore.addTab('file', file.name, file.name, result.sessionId)
+            tabsStore.updateTab(tab.id, {
+              totalCount: result.totalEntries,
+              levelCounts: result.levelCounts
+            })
+            await logStore.fetchLogs({})
+            logger.info(`File uploaded: ${file.name}`)
+          }
+        } catch (err) {
+          logger.error('Failed to upload file', { error: err })
+        }
+      }
+    }
+    input.click()
+  }
+}
+
+async function handleAddFolder() {
+  if (isDesktop.value) {
+    const folderPath = await photinoBridge.showOpenFolderDialog()
+    if (folderPath) {
+      try {
+        const result = await logStore.openDirectory(folderPath)
+        if (result) {
+          const folderName = folderPath.split(/[/\\]/).pop() || folderPath
+          const tab = tabsStore.addTab('directory', folderName, folderPath, result.sessionId)
+          tabsStore.updateTab(tab.id, {
+            totalCount: result.totalEntries,
+            levelCounts: result.levelCounts
+          })
+          await logStore.fetchLogs({})
+          logger.info(`Directory opened: ${folderName}`)
+        }
+      } catch (err) {
+        logger.error('Failed to open folder', { error: err })
+      }
+    }
+  }
+}
+
+async function handleSearch(searchText: string) {
+  const activeTab = tabsStore.activeTab
+  if (!activeTab || !activeTab.sessionId) return
+
+  filterStore.setSearchText(searchText)
+  tabsStore.setPage(1)
+
+  try {
+    await logStore.fetchLogs(activeTab.filters)
+  } catch (error) {
+    logger.error('Failed to fetch logs after search change', { error })
+  }
+}
+
+async function handleFilterLevels() {
+  const activeTab = tabsStore.activeTab
+  if (!activeTab || !activeTab.sessionId) return
+
+  tabsStore.setPage(1)
+
+  try {
+    await logStore.fetchLogs(activeTab.filters)
+  } catch (error) {
+    logger.error('Failed to fetch logs after filter change', { error })
+  }
+}
+
+function handleClear() {
+  // Clear logs handled by Toolbar -> tabsStore.clearLogs()
+}
+
+const hasActiveTabs = computed(() => tabsStore.hasTabs)
 </script>
 
 <template>
-  <div class="min-h-screen bg-zinc-950 text-zinc-100">
-    <!-- Header -->
-    <header class="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
-      <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-        <div class="flex items-center gap-3">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
-            <span class="font-mono text-sm font-bold text-white">N</span>
-          </div>
-          <h1 class="font-mono text-lg font-semibold tracking-tight">
-            nLogMonitor
-          </h1>
-        </div>
+  <div class="app-root">
+    <!-- Header + Tabs (combined) -->
+    <HeaderTabBar @add-file="handleAddFile" @add-folder="handleAddFolder" />
 
-        <!-- Session info -->
-        <div v-if="logStore.hasSession" class="flex items-center gap-4">
-          <!-- Live Indicator -->
-          <LiveIndicator :connection-state="connectionState" :is-watching="isWatching" />
+    <!-- Main Content -->
+    <div v-if="hasActiveTabs" class="main-content">
+      <!-- Toolbar with filters, search, and controls -->
+      <Toolbar @search="handleSearch" @filter-levels="handleFilterLevels" @clear="handleClear" />
 
-          <div class="h-4 w-px bg-zinc-700" />
-
-          <div class="flex items-center gap-2">
-            <span class="font-mono text-xs text-zinc-500">File:</span>
-            <span class="font-mono text-sm text-zinc-300">{{ logStore.fileName }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-mono text-xs text-zinc-500">Entries:</span>
-            <span class="font-mono text-sm text-emerald-400">{{ logStore.totalCount.toLocaleString() }}</span>
-          </div>
-          <ExportButton />
-          <button
-            class="rounded-md px-3 py-1.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-            @click="logStore.clearSession()"
-          >
-            Close
-          </button>
-        </div>
+      <!-- Log Table -->
+      <div class="table-wrapper">
+        <LogTable />
       </div>
-    </header>
 
-    <!-- Main content -->
-    <main class="mx-auto max-w-7xl px-4 py-6">
-      <!-- File Selector (when no session) -->
-      <div v-if="showFileSelector" class="flex min-h-[60vh] gap-6">
-        <!-- File Selector - Main area -->
-        <div class="flex flex-1 items-center justify-center">
-          <div class="w-full max-w-xl">
-            <FileSelector />
-          </div>
-        </div>
+      <!-- Status Bar -->
+      <StatusBar />
+    </div>
 
-        <!-- Recent Files - Sidebar -->
-        <div class="w-80 flex-shrink-0">
-          <RecentFiles />
+    <!-- Empty State -->
+    <div v-else class="empty-state">
+      <div class="empty-state-icon-wrapper">
+        <div class="empty-state-icon">
+          <svg class="icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
         </div>
       </div>
 
-      <!-- Log Table (when session active) -->
-      <div v-if="showLogTable" class="flex h-[calc(100vh-8rem)] flex-col gap-3">
-        <!-- Search and Filters -->
-        <div v-if="logStore.hasSession" class="flex flex-col gap-2">
-          <!-- Search Bar -->
-          <SearchBar />
-
-          <!-- Filter Panel -->
-          <FilterPanel />
-        </div>
-
-        <!-- Table -->
-        <div class="flex-1 min-h-0">
-          <LogTable />
-        </div>
-
-        <!-- Pagination -->
-        <Pagination v-if="logStore.hasSession" />
+      <div class="empty-state-text">
+        <h2 class="empty-state-title">Нет открытых файлов</h2>
+        <p class="empty-state-description">Откройте лог-файл или директорию для начала анализа</p>
       </div>
-    </main>
 
-    <!-- Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 border-t border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
-      <div class="mx-auto flex h-8 max-w-7xl items-center justify-between px-4">
-        <span class="font-mono text-xs text-zinc-600">nLogMonitor v0.5.0</span>
-        <span class="font-mono text-xs text-zinc-600">Phase 5 - UI Components ✓</span>
+      <div class="empty-state-actions">
+        <button class="action-btn action-btn-primary" @click="handleAddFile">
+          Открыть файл
+        </button>
+
+        <button class="action-btn action-btn-secondary" @click="handleAddFolder">
+          Открыть папку
+        </button>
       </div>
-    </footer>
+    </div>
 
-    <!-- Toast notifications -->
+    <!-- Toast Notifications -->
     <Toast />
   </div>
 </template>
+
+<style scoped>
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #ECF2F9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color: #171717;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.table-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 4px;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px;
+}
+
+.empty-state-icon-wrapper {
+  position: relative;
+}
+
+.empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.icon-svg {
+  width: 40px;
+  height: 40px;
+  color: #a3a3a3;
+}
+
+.empty-state-text {
+  text-align: center;
+}
+
+.empty-state-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: #171717;
+  margin-bottom: 6px;
+}
+
+.empty-state-description {
+  font-size: 12px;
+  font-weight: 500;
+  color: #737373;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.action-btn-primary {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.action-btn-primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-btn-secondary {
+  background: #ffffff;
+  color: #525252;
+  border-color: #d4d4d4;
+}
+
+.action-btn-secondary:hover {
+  background: #fafafa;
+  border-color: #a3a3a3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+</style>

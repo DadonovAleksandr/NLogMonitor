@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- <ApplicationIcon>icon.ico</ApplicationIcon> -->
+    <ApplicationIcon>icon.ico</ApplicationIcon>
 
     <!-- Publish properties for single-file executable -->
     <SelfContained>true</SelfContained>
@@ -43,6 +43,7 @@
 
   <!-- Copy configuration files to output -->
   <ItemGroup>
+    <Content Include="icon.ico" />
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="appsettings.*.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.*.json')" />
     <Content Include="nlog.config" CopyToOutputDirectory="PreserveNewest" />

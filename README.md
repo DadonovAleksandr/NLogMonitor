@@ -18,6 +18,13 @@
 - Экспорт в JSON/CSV (потоковая генерация)
 - История недавних файлов (до 20 записей)
 - Dark theme по умолчанию
+- Отображение версии приложения в UI
+
+## CI/CD
+
+Проект использует GitHub Actions для автоматизации:
+- **CI** (`.github/workflows/ci.yml`) — сборка и тестирование при push/PR
+- **Release** (`.github/workflows/release.yml`) — автоматическая сборка релизов при создании тега
 
 ## Requirements
 
@@ -138,6 +145,7 @@ npm run build  # Production build
 | `/api/files/open-directory` | POST | Открытие директории (Desktop-only) |
 | `/api/metrics` | GET | Метрики сервера (sessions, logs, memory, uptime, connections) |
 | `/api/client-logs` | POST | Приём логов с фронтенда (batch, rate limit: 100 req/min per IP) |
+| `/api/info` | GET | Информация о приложении (версия) |
 | `/health` | GET | Health check |
 
 **Примечание:** Эндпоинты `/api/files/open` и `/api/files/open-directory` доступны только в Desktop режиме. В Web режиме возвращают 404.
@@ -155,7 +163,7 @@ npm run build  # Production build
 | `levels` | string[] | Фильтр по уровням (Trace, Debug, Info, Warn, Error, Fatal) |
 | `search` | string | Полнотекстовый поиск по сообщению |
 | `page` | int | Номер страницы (default: 1) |
-| `pageSize` | int | Размер страницы (default: 50, max: 500) |
+| `pageSize` | int | Размер страницы (default: 100, max: 500) |
 
 ## Configuration
 
@@ -207,10 +215,10 @@ nLogMonitor/
 │   └── nLogMonitor.Infrastructure.Tests/
 ├── client/                        # Vue 3 + Vite + TypeScript frontend
 │   ├── src/
-│   │   ├── api/                   # Axios клиент + SignalR
-│   │   ├── components/            # UI компоненты
-│   │   ├── composables/           # Vue composables (useFileWatcher)
-│   │   ├── stores/                # Pinia stores
+│   │   ├── api/                   # Axios клиент, SignalR, info
+│   │   ├── components/            # UI компоненты (HeaderTabBar, StatusBar, Toolbar, LogTable, etc.)
+│   │   ├── composables/           # Vue composables (useFileWatcher, usePhotinoBridge)
+│   │   ├── stores/                # Pinia stores (logStore, tabsStore, filterStore, settingsStore)
 │   │   └── types/                 # TypeScript типы
 │   └── ...
 ├── scripts/                       # Скрипты запуска и сборки

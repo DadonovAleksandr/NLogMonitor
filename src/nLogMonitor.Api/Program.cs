@@ -12,6 +12,7 @@ using nLogMonitor.Application.Services;
 using nLogMonitor.Infrastructure.Export;
 using nLogMonitor.Infrastructure.FileSystem;
 using nLogMonitor.Infrastructure.Parsing;
+using nLogMonitor.Infrastructure.Services;
 using nLogMonitor.Infrastructure.Storage;
 using NLog;
 using NLog.Web;
@@ -117,6 +118,9 @@ try
 
     // Background service for FileWatcher -> SignalR integration
     builder.Services.AddHostedService<FileWatcherBackgroundService>();
+
+    // User Settings Service
+    builder.Services.AddSingleton<IUserSettingsService, UserSettingsService>();
 
     var app = builder.Build();
 

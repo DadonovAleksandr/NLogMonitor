@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useFilterStore } from '@/stores/filterStore'
+import { useTabsStore } from '@/stores/tabsStore'
 import { useDebounceFn } from '@vueuse/core'
 import { Search, X } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 
 const filterStore = useFilterStore()
+const tabsStore = useTabsStore()
+
+// Проверка наличия активной вкладки
+const hasActiveTab = computed(() => tabsStore.activeTab !== null)
 
 // Локальное значение для немедленного отображения
 const localSearchText = ref(filterStore.searchText)
@@ -41,7 +46,8 @@ const clearSearch = () => {
     <Input
       v-model="localSearchText"
       type="text"
-      placeholder="Поиск по сообщениям..."
+      :disabled="!hasActiveTab"
+      :placeholder="hasActiveTab ? 'Поиск по сообщениям...' : 'Откройте файл для поиска...'"
       :class="[
         'pl-10 pr-10',
         'h-10',
@@ -51,7 +57,8 @@ const clearSearch = () => {
         'text-zinc-200 placeholder:text-zinc-600',
         'focus-visible:ring-emerald-500/40 focus-visible:border-emerald-700/60',
         'transition-all duration-150',
-        localSearchText && 'border-emerald-900/40 shadow-[0_0_12px_rgba(52,211,153,0.1)]'
+        localSearchText && 'border-emerald-900/40 shadow-[0_0_12px_rgba(52,211,153,0.1)]',
+        !hasActiveTab && 'opacity-50 cursor-not-allowed'
       ]"
     />
 

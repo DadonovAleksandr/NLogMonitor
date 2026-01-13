@@ -64,5 +64,54 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* Monospace font for code/logs */
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-feature-settings: 'liga' 1, 'calt' 1; /* Enable ligatures */
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar styles */
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    @apply bg-zinc-900;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    @apply bg-zinc-700 rounded;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-600;
+  }
+
+  /* Neo-brutalist shadows */
+  .neo-shadow-sm {
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .neo-shadow {
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .neo-shadow-lg {
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  /* Glow effects for accents */
+  .glow-emerald {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
   }
 }
