@@ -8,7 +8,7 @@ import {
 } from '@tanstack/vue-table'
 import { FileText, Loader2, AlertCircle } from 'lucide-vue-next'
 import type { LogEntry } from '@/types'
-import { useLogStore } from '@/stores'
+import { useTabsStore } from '@/stores'
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 
-const logStore = useLogStore()
+const tabsStore = useTabsStore()
 
 // Format timestamp to DD.MM.YY HH:mm:ss.fff
 function formatTimestamp(isoString: string): string {
@@ -82,15 +82,15 @@ const columns = [
 
 const table = useVueTable({
   get data() {
-    return logStore.logs
+    return tabsStore.logs
   },
   columns,
   getCoreRowModel: getCoreRowModel()
 })
 
-const showEmpty = computed(() => !logStore.isLoading && !logStore.hasLogs)
-const showLoading = computed(() => logStore.isLoading)
-const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
+const showEmpty = computed(() => !tabsStore.isLoading && !tabsStore.hasLogs)
+const showLoading = computed(() => tabsStore.isLoading)
+const showData = computed(() => !tabsStore.isLoading && tabsStore.hasLogs)
 </script>
 
 <template>
@@ -143,15 +143,15 @@ const showData = computed(() => !logStore.isLoading && logStore.hasLogs)
       </div>
       <div class="text-center">
         <h3 class="font-mono text-lg font-semibold text-slate-700">
-          {{ logStore.hasSession ? 'Нет записей' : 'Загрузите файл' }}
+          {{ tabsStore.hasSession ? 'Нет записей' : 'Загрузите файл' }}
         </h3>
         <p class="mt-1 font-mono text-sm text-slate-500">
-          {{ logStore.hasSession ? 'Попробуйте изменить фильтры' : 'Выберите .log или .txt файл для анализа' }}
+          {{ tabsStore.hasSession ? 'Попробуйте изменить фильтры' : 'Выберите .log или .txt файл для анализа' }}
         </p>
       </div>
-      <div v-if="logStore.hasError" class="mt-2 flex items-center gap-2 rounded-lg border-2 border-red-400 bg-red-50 px-4 py-2">
+      <div v-if="tabsStore.hasError" class="mt-2 flex items-center gap-2 rounded-lg border-2 border-red-400 bg-red-50 px-4 py-2">
         <AlertCircle class="h-4 w-4 text-red-600" />
-        <span class="font-mono text-sm font-medium text-red-700">{{ logStore.error }}</span>
+        <span class="font-mono text-sm font-medium text-red-700">{{ tabsStore.error }}</span>
       </div>
     </div>
 

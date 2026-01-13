@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Upload, FileText, Loader2, AlertCircle, X, FolderOpen } from 'lucide-vue-next'
-import { useLogStore } from '@/stores'
+import { useLogStore, useTabsStore } from '@/stores'
 import { usePhotinoBridge } from '@/composables'
 import { Button } from '@/components/ui/button'
 
 const logStore = useLogStore()
+const tabsStore = useTabsStore()
 const { isDesktop, showOpenFileDialog, showOpenFolderDialog } = usePhotinoBridge()
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragOver = ref(false)
@@ -29,7 +30,7 @@ function validateFile(file: File): string | null {
 async function handleFileSelect(file: File) {
   const error = validateFile(file)
   if (error) {
-    logStore.error = error
+    tabsStore.setError(error)
     return
   }
 
@@ -94,7 +95,7 @@ async function handleDesktopOpenFile() {
       await logStore.openFile(filePath)
     }
   } catch (error) {
-    logStore.error = error instanceof Error ? error.message : 'Failed to open file'
+    tabsStore.setError(error instanceof Error ? error.message : 'Failed to open file')
   }
 }
 
@@ -106,11 +107,11 @@ async function handleDesktopOpenFolder() {
       await logStore.openDirectory(folderPath)
     }
   } catch (error) {
-    logStore.error = error instanceof Error ? error.message : 'Failed to open folder'
+    tabsStore.setError(error instanceof Error ? error.message : 'Failed to open folder')
   }
 }
 
-const isDisabled = computed(() => logStore.isLoading)
+const isDisabled = computed(() => tabsStore.isLoading)
 </script>
 
 <template>
@@ -129,9 +130,9 @@ const isDisabled = computed(() => logStore.isLoading)
     <div
       class="drop-zone group relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300"
       :class="{
-        'border-zinc-700 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-900': !isDragOver && !logStore.hasError,
+        'border-zinc-700 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-900': !isDragOver && !tabsStore.hasError,
         'border-emerald-500 bg-emerald-950/20': isDragOver,
-        'border-red-700 bg-red-950/20': logStore.hasError
+        'border-red-700 bg-red-950/20': tabsStore.hasError
       }"
       @dragenter="onDragEnter"
       @dragleave="onDragLeave"
@@ -152,12 +153,12 @@ const isDisabled = computed(() => logStore.isLoading)
         <div
           class="relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-300"
           :class="{
-            'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700 group-hover:text-zinc-300': !isDragOver && !logStore.isLoading,
+            'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700 group-hover:text-zinc-300': !isDragOver && !tabsStore.isLoading,
             'bg-emerald-900/50 text-emerald-400': isDragOver,
-            'bg-zinc-800 text-emerald-500': logStore.isLoading
+            'bg-zinc-800 text-emerald-500': tabsStore.isLoading
           }"
         >
-          <Loader2 v-if="logStore.isLoading" class="h-8 w-8 animate-spin" />
+          <Loader2 v-if="tabsStore.isLoading" class="h-8 w-8 animate-spin" />
           <Upload v-else-if="isDragOver" class="h-8 w-8" />
           <FileText v-else class="h-8 w-8" />
 
@@ -171,15 +172,15 @@ const isDisabled = computed(() => logStore.isLoading)
         <!-- Text -->
         <div class="text-center">
           <h3 class="font-mono text-base font-medium text-zinc-300">
-            <template v-if="logStore.isLoading">Загрузка файла...</template>
+            <template v-if="tabsStore.isLoading">Загрузка файла...</template>
             <template v-else-if="isDragOver">Отпустите для загрузки</template>
             <template v-else>Перетащите файл сюда</template>
           </h3>
           <p class="mt-1 font-mono text-sm text-zinc-500">
-            <template v-if="!logStore.isLoading && !isDragOver">
+            <template v-if="!tabsStore.isLoading && !isDragOver">
               или нажмите кнопку ниже
             </template>
-            <template v-else-if="logStore.isLoading">
+            <template v-else-if="tabsStore.isLoading">
               Пожалуйста, подождите...
             </template>
           </p>
@@ -248,12 +249,12 @@ const isDisabled = computed(() => logStore.isLoading)
       leave-to-class="opacity-0"
     >
       <div
-        v-if="logStore.hasError"
+        v-if="tabsStore.hasError"
         class="mt-3 flex items-center justify-between gap-3 rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3"
       >
         <div class="flex items-center gap-2">
           <AlertCircle class="h-4 w-4 flex-shrink-0 text-red-500" />
-          <span class="font-mono text-sm text-red-400">{{ logStore.error }}</span>
+          <span class="font-mono text-sm text-red-400">{{ tabsStore.error }}</span>
         </div>
         <button
           type="button"

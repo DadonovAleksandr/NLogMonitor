@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { File, Folder, Clock, Loader2, FileX } from 'lucide-vue-next'
-import { useRecentStore, useLogStore } from '@/stores'
+import { useRecentStore, useLogStore, useTabsStore } from '@/stores'
 import type { RecentLog } from '@/types'
 
 const recentStore = useRecentStore()
 const logStore = useLogStore()
+const tabsStore = useTabsStore()
 
 // Format timestamp
 function formatTimestamp(isoString: string): string {
@@ -123,7 +124,7 @@ onMounted(() => {
         :key="item.path"
         type="button"
         class="group relative flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2.5 text-left transition-all hover:border-zinc-700 hover:bg-zinc-900/60 active:scale-[0.99]"
-        :disabled="logStore.isLoading"
+        :disabled="tabsStore.isLoading"
         @click="handleItemClick(item)"
       >
         <!-- Hover glow effect -->
@@ -165,7 +166,7 @@ onMounted(() => {
 
         <!-- Loading indicator when item is being opened -->
         <div
-          v-if="logStore.isLoading && logStore.filePath === item.path"
+          v-if="tabsStore.isLoading && tabsStore.filePath === item.path"
           class="relative flex-shrink-0"
         >
           <Loader2 class="h-4 w-4 animate-spin text-zinc-500" />

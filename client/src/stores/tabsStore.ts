@@ -39,6 +39,28 @@ export const useTabsStore = defineStore('tabs', () => {
 
   const hasTabs = computed(() => tabs.value.length > 0)
 
+  // Computed getters для свойств activeTab (единый источник данных)
+  const logs = computed(() => activeTab.value?.logs ?? [])
+  const totalCount = computed(() => activeTab.value?.totalCount ?? 0)
+  const page = computed(() => activeTab.value?.page ?? 1)
+  const pageSize = computed(() => activeTab.value?.pageSize ?? 100)
+  const totalPages = computed(() => activeTab.value?.totalPages ?? 0)
+  const levelCounts = computed(() => activeTab.value?.levelCounts ?? {
+    Trace: 0, Debug: 0, Info: 0, Warn: 0, Error: 0, Fatal: 0
+  })
+  const sessionId = computed(() => activeTab.value?.sessionId ?? null)
+  const isLoading = computed(() => activeTab.value?.isLoading ?? false)
+  const error = computed(() => activeTab.value?.error ?? null)
+  const fileName = computed(() => activeTab.value?.fileName ?? '')
+  const filePath = computed(() => activeTab.value?.filePath ?? '')
+
+  // Computed getters для булевых проверок
+  const hasSession = computed(() => sessionId.value !== null)
+  const hasLogs = computed(() => logs.value.length > 0)
+  const hasError = computed(() => error.value !== null)
+  const canPreviousPage = computed(() => page.value > 1)
+  const canNextPage = computed(() => page.value < totalPages.value)
+
   // Actions
   function createTab(type: 'file' | 'directory', fileName: string, filePath: string): Tab {
     const newTab: Tab = {
@@ -50,7 +72,7 @@ export const useTabsStore = defineStore('tabs', () => {
       logs: [],
       totalCount: 0,
       page: 1,
-      pageSize: 50,
+      pageSize: 100,
       totalPages: 0,
       levelCounts: {
         Trace: 0,
@@ -150,6 +172,37 @@ export const useTabsStore = defineStore('tabs', () => {
       activeTab.value.totalCount = 0
       activeTab.value.page = 1
       activeTab.value.totalPages = 0
+    }
+  }
+
+  function setPage(newPage: number) {
+    if (activeTab.value) {
+      activeTab.value.page = newPage
+    }
+  }
+
+  function setPageSize(newSize: number) {
+    if (activeTab.value) {
+      activeTab.value.pageSize = newSize
+      activeTab.value.page = 1 // Reset to first page
+    }
+  }
+
+  function setLoading(loading: boolean) {
+    if (activeTab.value) {
+      activeTab.value.isLoading = loading
+    }
+  }
+
+  function setError(err: string | null) {
+    if (activeTab.value) {
+      activeTab.value.error = err
+    }
+  }
+
+  function clearError() {
+    if (activeTab.value) {
+      activeTab.value.error = null
     }
   }
 
@@ -282,6 +335,23 @@ export const useTabsStore = defineStore('tabs', () => {
     // Getters
     activeTab,
     hasTabs,
+    // Computed getters для activeTab (единый источник данных)
+    logs,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+    levelCounts,
+    sessionId,
+    isLoading,
+    error,
+    fileName,
+    filePath,
+    hasSession,
+    hasLogs,
+    hasError,
+    canPreviousPage,
+    canNextPage,
     // Actions
     createTab,
     addTab,
@@ -293,6 +363,11 @@ export const useTabsStore = defineStore('tabs', () => {
     toggleAutoscroll,
     togglePause,
     clearLogs,
+    setPage,
+    setPageSize,
+    setLoading,
+    setError,
+    clearError,
     // Filter management
     updateTabFilters,
     clearTabFilters,
