@@ -52,3 +52,21 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+# Playwright MCP screenshots
+.playwright-mcp/
+
+# Windows artifacts
+nul
+
+# JetBrains IDE
+.idea/
+
+# Log files
+*.log
+
+# Session temp files
+**/temp/
+
+# Build output
+publish/
+src/nLogMonitor.Api/wwwroot/
