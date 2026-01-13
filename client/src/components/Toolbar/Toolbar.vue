@@ -168,27 +168,6 @@ watch(() => filterStore.activeLevels, () => {
 <template>
   <div class="toolbar">
     <TooltipProvider :delay-duration="300">
-      <!-- Search Bar -->
-      <div class="search-wrapper">
-        <Search class="search-icon" />
-        <input
-          v-model="searchText"
-          type="text"
-          placeholder="Search..."
-          class="search-input"
-        />
-        <button
-          v-if="searchText"
-          class="search-clear"
-          @click="clearSearch"
-        >
-          <X class="h-3 w-3" />
-        </button>
-      </div>
-
-      <!-- Separator -->
-      <div class="toolbar-separator" />
-
       <!-- Level Filters -->
       <div class="filters-wrapper">
         <Tooltip v-for="btn in levelButtons" :key="btn.level">
@@ -211,6 +190,27 @@ watch(() => filterStore.activeLevels, () => {
             {{ btn.label }}
           </TooltipContent>
         </Tooltip>
+      </div>
+
+      <!-- Separator -->
+      <div class="toolbar-separator" />
+
+      <!-- Search Bar -->
+      <div class="search-wrapper">
+        <Search class="search-icon" />
+        <input
+          v-model="searchText"
+          type="text"
+          placeholder="Search..."
+          class="search-input"
+        />
+        <button
+          v-if="searchText"
+          class="search-clear"
+          @click="clearSearch"
+        >
+          <X class="h-3 w-3" />
+        </button>
       </div>
 
       <!-- Separator -->
@@ -288,8 +288,8 @@ watch(() => filterStore.activeLevels, () => {
 /* Search */
 .search-wrapper {
   position: relative;
-  width: 180px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 120px;
 }
 
 .search-icon {
@@ -362,7 +362,7 @@ watch(() => filterStore.activeLevels, () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 1;
+  flex-shrink: 0;
 }
 
 .filter-pill {
@@ -374,7 +374,7 @@ watch(() => filterStore.activeLevels, () => {
   background: #ffffff;
   border: 1px solid #d4d4d4;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: #525252;
   cursor: pointer;
@@ -436,7 +436,7 @@ watch(() => filterStore.activeLevels, () => {
 
 .filter-pill-count {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   min-width: 16px;
   text-align: center;

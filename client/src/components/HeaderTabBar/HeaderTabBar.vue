@@ -346,7 +346,7 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
   align-items: center;
   gap: 3px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: #171717;
   padding: 2px 6px;

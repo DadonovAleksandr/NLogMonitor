@@ -178,7 +178,7 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
   border: 1px solid #d4d4d4;
   border-radius: 3px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: #525252;
   cursor: pointer;
@@ -223,7 +223,7 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
   background: transparent;
   border: none;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: #525252;
   cursor: pointer;
@@ -278,7 +278,7 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
 
 .page-info {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: #525252;
   min-width: 40px;
@@ -337,14 +337,14 @@ const hasWarnings = computed(() => (levelStats.value.Warn || 0) > 0)
 }
 
 .total-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: #737373;
 }
 
 .total-value {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #171717;
   font-variant-numeric: tabular-nums;
