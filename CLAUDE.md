@@ -76,10 +76,10 @@ tests/
 └── nLogMonitor.Api.Tests            # Controllers, SignalR Hub (integration)
 
 client/
-├── src/api/           # Axios client, SignalR
-├── src/components/    # Vue компоненты (LogTable, FilterPanel, FileSelector, etc.)
+├── src/api/           # Axios client, SignalR, info
+├── src/components/    # Vue компоненты (LogTable, HeaderTabBar, StatusBar, Toolbar, FileSelector, etc.)
 ├── src/composables/   # useFileWatcher, usePhotinoBridge, useToast
-├── src/stores/        # Pinia (logStore, filterStore, recentStore)
+├── src/stores/        # Pinia (logStore, tabsStore, filterStore, recentStore, settingsStore)
 ├── src/services/      # ClientLogger
 └── src/types/         # TypeScript types
 ```
@@ -124,6 +124,7 @@ ${longdate}|${level:uppercase=true}|${message}|${logger}|${processid}|${threadid
 | `/api/settings` | GET/PUT | Пользовательские настройки |
 | `/api/metrics` | GET | Метрики сервера |
 | `/api/client-logs` | POST | Логи с фронтенда (rate limit 100 req/min) |
+| `/api/info` | GET | Информация о приложении (версия) |
 | `/health` | GET | Health check |
 | `/hubs/log-watcher` | SignalR | Real-time: JoinSession, LeaveSession, NewLogs |
 

@@ -223,7 +223,8 @@ nLogMonitor/
 │   │   │   ├── PagedResultDto.cs
 │   │   │   ├── OpenFileResultDto.cs
 │   │   │   ├── RecentLogDto.cs
-│   │   │   └── ClientLogDto.cs
+│   │   │   ├── ClientLogDto.cs
+│   │   │   └── AppInfoDto.cs
 │   │   ├── Services/
 │   │   │   ├── LogService.cs
 │   │   │   ├── ExportService.cs
@@ -255,6 +256,7 @@ nLogMonitor/
 │   │   │   ├── UploadController.cs
 │   │   │   ├── ExportController.cs
 │   │   │   ├── RecentController.cs
+│   │   │   ├── InfoController.cs
 │   │   │   └── ClientLogsController.cs
 │   │   ├── Hubs/
 │   │   │   └── LogWatcherHub.cs
@@ -276,27 +278,36 @@ nLogMonitor/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ui/                   # shadcn-vue components
+│   │   │   ├── HeaderTabBar/         # Заголовок + вкладки + версия
+│   │   │   ├── StatusBar/            # Статистика + пагинация
+│   │   │   ├── Toolbar/              # Панель инструментов (фильтры, поиск, контролы)
 │   │   │   ├── LogTable/
-│   │   │   ├── FilterPanel/
 │   │   │   ├── SearchBar/
 │   │   │   ├── FileSelector/
 │   │   │   ├── RecentFiles/
-│   │   │   └── ExportButton/
+│   │   │   ├── ExportButton/
+│   │   │   ├── LiveIndicator/
+│   │   │   └── Toast/
 │   │   ├── stores/
-│   │   │   ├── logStore.ts
-│   │   │   ├── filterStore.ts
-│   │   │   └── recentStore.ts
+│   │   │   ├── logStore.ts           # Управление логами
+│   │   │   ├── tabsStore.ts          # Управление вкладками
+│   │   │   ├── filterStore.ts        # Фильтры
+│   │   │   ├── recentStore.ts        # Недавние файлы
+│   │   │   └── settingsStore.ts      # Пользовательские настройки
 │   │   ├── api/
 │   │   │   ├── client.ts
 │   │   │   ├── logs.ts
 │   │   │   ├── files.ts
+│   │   │   ├── info.ts               # Информация о приложении
+│   │   │   ├── settings.ts
 │   │   │   └── signalr.ts
 │   │   ├── services/
 │   │   │   └── logger.ts             # Client-side logger
 │   │   ├── composables/
 │   │   │   ├── useLogs.ts
 │   │   │   ├── useFileWatcher.ts
-│   │   │   └── usePhotinoBridge.ts
+│   │   │   ├── usePhotinoBridge.ts
+│   │   │   └── useToast.ts
 │   │   ├── types/
 │   │   │   └── index.ts
 │   │   ├── App.vue
