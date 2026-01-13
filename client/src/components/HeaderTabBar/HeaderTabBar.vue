@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X, FileText, FolderOpen, Plus } from 'lucide-vue-next'
+import { X, FileText, FolderOpen, FilePlus, FolderPlus } from 'lucide-vue-next'
 import { useTabsStore } from '@/stores'
 import {
   Tooltip,
@@ -28,7 +28,18 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 </script>
 
 <template>
-  <div class="tab-bar">
+  <header class="header-tabbar">
+    <!-- Logo + Title -->
+    <div class="header-brand">
+      <div class="app-logo">
+        <span class="logo-text">N</span>
+      </div>
+      <span class="app-title">nLogMonitor</span>
+    </div>
+
+    <!-- Separator -->
+    <div class="header-separator" />
+
     <!-- Tabs -->
     <TooltipProvider :delay-duration="400">
       <div class="tabs-container">
@@ -44,15 +55,10 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
               <FolderOpen v-else class="tab-icon" />
 
               <!-- Tab name -->
-              <span class="tab-name">
-                {{ tab.fileName }}
-              </span>
+              <span class="tab-name">{{ tab.fileName }}</span>
 
               <!-- Close button -->
-              <div
-                class="tab-close"
-                @click="(e) => closeTab(tab.id, e)"
-              >
+              <div class="tab-close" @click="(e) => closeTab(tab.id, e)">
                 <X class="close-icon" />
               </div>
 
@@ -63,7 +69,7 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
               <div v-if="tab.isLoading" class="tab-loading-indicator" />
             </button>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent side="bottom" :side-offset="4">
             {{ tab.filePath }}
           </TooltipContent>
         </Tooltip>
@@ -77,36 +83,97 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 
     <!-- Add buttons -->
     <div class="add-buttons">
-      <button class="add-btn" @click="emit('add-file')">
-        <Plus class="add-icon" />
-        <span>Файл</span>
-      </button>
-      <button class="add-btn" @click="emit('add-folder')">
-        <Plus class="add-icon" />
-        <span>Папку</span>
-      </button>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <button class="add-btn" @click="emit('add-file')">
+            <FilePlus class="add-icon" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" :side-offset="4">
+          Открыть файл
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <button class="add-btn" @click="emit('add-folder')">
+            <FolderPlus class="add-icon" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" :side-offset="4">
+          Открыть папку
+        </TooltipContent>
+      </Tooltip>
     </div>
-  </div>
+
+    <!-- Version badge -->
+    <div class="app-version">v1.0.0</div>
+  </header>
 </template>
 
 <style scoped>
-/* Import IBM Plex Mono for technical data */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
-.tab-bar {
+.header-tabbar {
   display: flex;
   align-items: center;
-  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  height: 32px;
+  padding: 0 8px;
+  background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
   border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  gap: 8px;
 }
 
+/* Brand */
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+}
+
+.logo-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.app-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #171717;
+  letter-spacing: -0.3px;
+}
+
+/* Separator */
+.header-separator {
+  width: 1px;
+  height: 18px;
+  background: #e5e5e5;
+  flex-shrink: 0;
+}
+
+/* Tabs */
 .tabs-container {
   display: flex;
   flex: 1;
   align-items: center;
   overflow-x: auto;
   scrollbar-width: none;
+  gap: 2px;
 }
 
 .tabs-container::-webkit-scrollbar {
@@ -117,35 +184,37 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
   background: transparent;
   border: none;
-  border-right: 1px solid #e5e5e5;
+  border-radius: 4px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: #737373;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.12s ease;
+  flex-shrink: 0;
 }
 
 .tab-button:hover {
-  background: #ffffff;
-  color: #171717;
+  background: #f5f5f5;
+  color: #525252;
 }
 
 .tab-button-active {
-  background: #ffffff;
+  background: #e5e5e5;
   color: #171717;
   font-weight: 600;
 }
 
 .tab-icon {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .tab-button-active .tab-icon {
@@ -154,7 +223,7 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 }
 
 .tab-name {
-  max-width: 180px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -164,19 +233,23 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-left: 8px;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.12s ease;
+  opacity: 0;
+}
+
+.tab-button:hover .tab-close {
   opacity: 0.5;
 }
 
 .tab-close:hover {
-  background: #f5f5f5;
-  opacity: 1;
+  background: #e5e5e5;
+  opacity: 1 !important;
 }
 
 .tab-button-active .tab-close:hover {
@@ -185,71 +258,66 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 }
 
 .close-icon {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
 }
 
 .tab-active-indicator {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 4px;
+  right: 4px;
   height: 2px;
   background: #3b82f6;
+  border-radius: 1px 1px 0 0;
 }
 
 .tab-loading-indicator {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 6px;
-  height: 6px;
+  top: 3px;
+  right: 3px;
+  width: 4px;
+  height: 4px;
   background: #3b82f6;
   border-radius: 50%;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .tabs-empty {
   display: flex;
   align-items: center;
-  height: 36px;
-  padding: 0 16px;
+  padding: 0 8px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: #a3a3a3;
 }
 
+/* Add buttons */
 .add-buttons {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border-left: 1px solid #e5e5e5;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .add-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   background: transparent;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 4px;
   color: #737373;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.12s ease;
 }
 
 .add-btn:hover {
@@ -260,5 +328,18 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 .add-icon {
   width: 14px;
   height: 14px;
+}
+
+/* Version */
+.app-version {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  color: #a3a3a3;
+  padding: 2px 6px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 </style>

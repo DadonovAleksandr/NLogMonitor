@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Search, X } from 'lucide-vue-next'
-import { Input } from '@/components/ui/input'
+import { Search, X, ArrowDown, Pause, Play, Trash2 } from 'lucide-vue-next'
 import { useTabsStore, useFilterStore } from '@/stores'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import type { LevelCounts } from '@/types'
 import { LogLevel, LogLevelNames } from '@/types'
 
 interface LevelFilterButton {
   level: keyof LevelCounts
   label: string
+  shortLabel: string
   icon: string
   colorClass: string
   activeClass: string
@@ -22,12 +28,14 @@ const searchText = ref('')
 const emit = defineEmits<{
   (e: 'search', value: string): void
   (e: 'filter-levels', levels: Set<string>): void
+  (e: 'clear'): void
 }>()
 
 const levelButtons: LevelFilterButton[] = [
   {
     level: 'Trace',
     label: 'Trace',
+    shortLabel: 'TRC',
     icon: '/images/levels/Trace.png',
     colorClass: 'bg-cyan-950/50 text-cyan-400 border-cyan-800',
     activeClass: 'bg-cyan-600 text-white border-cyan-500 shadow-lg shadow-cyan-900/50'
@@ -35,6 +43,7 @@ const levelButtons: LevelFilterButton[] = [
   {
     level: 'Debug',
     label: 'Debug',
+    shortLabel: 'DBG',
     icon: '/images/levels/Debug.png',
     colorClass: 'bg-blue-950/50 text-blue-400 border-blue-800',
     activeClass: 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/50'
@@ -42,6 +51,7 @@ const levelButtons: LevelFilterButton[] = [
   {
     level: 'Info',
     label: 'Info',
+    shortLabel: 'INF',
     icon: '/images/levels/Info.png',
     colorClass: 'bg-emerald-950/50 text-emerald-400 border-emerald-800',
     activeClass: 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/50'
@@ -49,6 +59,7 @@ const levelButtons: LevelFilterButton[] = [
   {
     level: 'Warn',
     label: 'Warn',
+    shortLabel: 'WRN',
     icon: '/images/levels/Warning.png',
     colorClass: 'bg-yellow-950/50 text-yellow-400 border-yellow-800',
     activeClass: 'bg-yellow-600 text-white border-yellow-500 shadow-lg shadow-yellow-900/50'
@@ -56,6 +67,7 @@ const levelButtons: LevelFilterButton[] = [
   {
     level: 'Error',
     label: 'Error',
+    shortLabel: 'ERR',
     icon: '/images/levels/Error.png',
     colorClass: 'bg-orange-950/50 text-orange-400 border-orange-800',
     activeClass: 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/50'
@@ -63,6 +75,7 @@ const levelButtons: LevelFilterButton[] = [
   {
     level: 'Fatal',
     label: 'Fatal',
+    shortLabel: 'FTL',
     icon: '/images/levels/Fatal.png',
     colorClass: 'bg-red-950/50 text-red-400 border-red-800',
     activeClass: 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-900/50'
@@ -80,7 +93,6 @@ const levelCounts = computed(() => activeTab.value?.levelCounts || {
   Fatal: 0
 })
 
-// Конвертация названия уровня в LogLevel enum
 const levelNameToEnum: Record<keyof LevelCounts, LogLevel> = {
   'Trace': LogLevel.Trace,
   'Debug': LogLevel.Debug,
@@ -95,12 +107,16 @@ const totalFiltered = computed(() => {
   const activeLevelsSet = filterStore.activeLevels
   Object.entries(levelCounts.value).forEach(([levelName, count]) => {
     const levelEnum = levelNameToEnum[levelName as keyof LevelCounts]
-    if (activeLevelsSet.has(levelEnum) && count) {
+    if (levelEnum !== undefined && activeLevelsSet.has(levelEnum) && count) {
       total += count
     }
   })
   return total
 })
+
+// Table controls
+const isAutoscroll = computed(() => activeTab.value?.autoscroll || false)
+const isPaused = computed(() => activeTab.value?.isPaused || false)
 
 function toggleLevel(level: string) {
   const levelEnum = levelNameToEnum[level as keyof LevelCounts]
@@ -118,6 +134,19 @@ function clearSearch() {
   searchText.value = ''
 }
 
+function toggleAutoscroll() {
+  tabsStore.toggleAutoscroll()
+}
+
+function togglePause() {
+  tabsStore.togglePause()
+}
+
+function handleClear() {
+  emit('clear')
+  tabsStore.clearLogs()
+}
+
 // Debounced search
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -128,9 +157,7 @@ watch(searchText, (newValue) => {
   }, 300)
 })
 
-// Следим за изменениями activeLevels в filterStore и испускаем событие
 watch(() => filterStore.activeLevels, () => {
-  // Преобразуем Set<LogLevel> в Set<string> для совместимости с событием
   const levelNames = new Set(
     Array.from(filterStore.activeLevels).map(level => LogLevelNames[level])
   )
@@ -140,101 +167,152 @@ watch(() => filterStore.activeLevels, () => {
 
 <template>
   <div class="toolbar">
-    <!-- Search Bar -->
-    <div class="search-wrapper">
-      <Search class="search-icon" />
-      <input
-        v-model="searchText"
-        type="text"
-        placeholder="Search in messages..."
-        class="search-input"
-      />
-      <button
-        v-if="searchText"
-        class="search-clear"
-        @click="clearSearch"
-      >
-        <X class="h-3.5 w-3.5" />
-      </button>
-    </div>
-
-    <!-- Separator -->
-    <div class="toolbar-separator" />
-
-    <!-- Level Filters -->
-    <div class="filters-wrapper">
-      <span class="filters-label">Filters:</span>
-
-      <div class="filters-buttons">
+    <TooltipProvider :delay-duration="300">
+      <!-- Search Bar -->
+      <div class="search-wrapper">
+        <Search class="search-icon" />
+        <input
+          v-model="searchText"
+          type="text"
+          placeholder="Search..."
+          class="search-input"
+        />
         <button
-          v-for="btn in levelButtons"
-          :key="btn.level"
-          class="filter-pill"
-          :class="{ 'filter-pill-active': isLevelActive(btn.level) }"
-          :data-level="btn.level.toLowerCase()"
-          @click="toggleLevel(btn.level)"
+          v-if="searchText"
+          class="search-clear"
+          @click="clearSearch"
         >
-          <img
-            :src="btn.icon"
-            :alt="btn.label"
-            class="filter-pill-icon"
-          />
-          <span class="filter-pill-label">{{ btn.label }}</span>
-          <span class="filter-pill-count">{{ (levelCounts[btn.level] ?? 0).toLocaleString() }}</span>
+          <X class="h-3 w-3" />
         </button>
+      </div>
+
+      <!-- Separator -->
+      <div class="toolbar-separator" />
+
+      <!-- Level Filters -->
+      <div class="filters-wrapper">
+        <Tooltip v-for="btn in levelButtons" :key="btn.level">
+          <TooltipTrigger as-child>
+            <button
+              class="filter-pill"
+              :class="{ 'filter-pill-active': isLevelActive(btn.level) }"
+              :data-level="btn.level.toLowerCase()"
+              @click="toggleLevel(btn.level)"
+            >
+              <img
+                :src="btn.icon"
+                :alt="btn.label"
+                class="filter-pill-icon"
+              />
+              <span class="filter-pill-count">{{ (levelCounts[btn.level] ?? 0).toLocaleString() }}</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="4">
+            {{ btn.label }}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      <!-- Separator -->
+      <div class="toolbar-separator" />
+
+      <!-- Table Controls -->
+      <div class="controls-wrapper">
+        <!-- Autoscroll -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              class="control-btn"
+              :class="{ 'control-btn-active': isAutoscroll }"
+              @click="toggleAutoscroll"
+            >
+              <ArrowDown class="control-icon" :class="{ 'animate-pulse': isAutoscroll }" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="4">
+            Автопрокрутка
+          </TooltipContent>
+        </Tooltip>
+
+        <!-- Pause -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              class="control-btn"
+              :class="{ 'control-btn-paused': isPaused }"
+              @click="togglePause"
+            >
+              <Pause v-if="!isPaused" class="control-icon" />
+              <Play v-else class="control-icon animate-pulse" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="4">
+            {{ isPaused ? 'Продолжить' : 'Пауза' }}
+          </TooltipContent>
+        </Tooltip>
+
+        <!-- Clear -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button class="control-btn control-btn-clear" @click="handleClear">
+              <Trash2 class="control-icon" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="4">
+            Очистить
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <!-- Total Count -->
       <div class="total-count">
-        <span class="total-count-label">Showing:</span>
         <span class="total-count-value">{{ totalFiltered.toLocaleString() }}</span>
       </div>
-    </div>
+    </TooltipProvider>
   </div>
 </template>
 
 <style scoped>
-/* Import IBM Plex Mono for technical data */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 16px;
+  height: 32px;
+  padding: 0 8px;
   background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
   border-bottom: 1px solid #e5e5e5;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  gap: 8px;
 }
 
+/* Search */
 .search-wrapper {
   position: relative;
-  min-width: 280px;
+  width: 180px;
+  flex-shrink: 0;
 }
 
 .search-icon {
   position: absolute;
-  left: 10px;
+  left: 8px;
   top: 50%;
   transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   color: #a3a3a3;
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: 6px 32px 6px 32px;
+  height: 24px;
+  padding: 0 24px 0 26px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 4px;
+  font-size: 11px;
   color: #171717;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  transition: all 0.12s ease;
 }
 
 .search-input::placeholder {
@@ -244,26 +322,26 @@ watch(() => filterStore.activeLevels, () => {
 .search-input:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .search-clear {
   position: absolute;
-  right: 8px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   color: #a3a3a3;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.12s ease;
 }
 
 .search-clear:hover {
@@ -271,47 +349,36 @@ watch(() => filterStore.activeLevels, () => {
   color: #525252;
 }
 
+/* Separator */
 .toolbar-separator {
   width: 1px;
-  height: 24px;
-  background: #d4d4d4;
+  height: 18px;
+  background: #e5e5e5;
+  flex-shrink: 0;
 }
 
+/* Filters */
 .filters-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   flex: 1;
-}
-
-.filters-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #737373;
-  text-transform: uppercase;
-}
-
-.filters-buttons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 
 .filter-pill {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: 3px;
+  font-size: 10px;
   font-weight: 500;
   color: #525252;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.12s ease;
 }
 
 .filter-pill:hover:not(.filter-pill-active) {
@@ -319,7 +386,7 @@ watch(() => filterStore.activeLevels, () => {
   border-color: #a3a3a3;
 }
 
-/* Active states - exact LogTable row colors */
+/* Active states */
 .filter-pill-active[data-level="trace"] {
   background: #D3D3D3;
   border-color: #b0b0b0;
@@ -334,8 +401,9 @@ watch(() => filterStore.activeLevels, () => {
 
 .filter-pill-active[data-level="info"] {
   background: #ffffff;
-  border-color: #94a3b8;
+  border-color: #3b82f6;
   color: #000000;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
 .filter-pill-active[data-level="warn"] {
@@ -357,8 +425,8 @@ watch(() => filterStore.activeLevels, () => {
 }
 
 .filter-pill-icon {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   opacity: 0.7;
 }
 
@@ -366,75 +434,82 @@ watch(() => filterStore.activeLevels, () => {
   opacity: 1;
 }
 
-.filter-pill-label {
-  font-weight: 500;
-}
-
 .filter-pill-count {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   font-weight: 500;
-  padding: 1px 5px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 3px;
-  color: #737373;
-  min-width: 24px;
+  min-width: 16px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
-.filter-pill-active .filter-pill-count {
-  background: rgba(0, 0, 0, 0.1);
-  color: currentColor;
-  font-weight: 600;
+/* Controls */
+.controls-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.control-btn:hover {
+  background: #f5f5f5;
+  border-color: #a3a3a3;
+}
+
+.control-btn-active {
+  background: #dbeafe;
+  border-color: #60a5fa;
+  color: #1e40af;
+}
+
+.control-btn-paused {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+}
+
+.control-btn-clear:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.control-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Total count */
 .total-count {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  padding: 4px 12px;
+  height: 22px;
+  padding: 0 8px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.total-count-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: #737373;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .total-count-value {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #171717;
-  tabular-nums: tabular-nums;
+  font-variant-numeric: tabular-nums;
 }
-
-/* Smooth staggered animations */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.filter-pill {
-  animation: slideIn 0.2s ease-out backwards;
-}
-
-.filter-pill:nth-child(1) { animation-delay: 0ms; }
-.filter-pill:nth-child(2) { animation-delay: 30ms; }
-.filter-pill:nth-child(3) { animation-delay: 60ms; }
-.filter-pill:nth-child(4) { animation-delay: 90ms; }
-.filter-pill:nth-child(5) { animation-delay: 120ms; }
-.filter-pill:nth-child(6) { animation-delay: 150ms; }
 </style>
