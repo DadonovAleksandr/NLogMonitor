@@ -366,8 +366,9 @@ watch(() => filterStore.activeLevels, () => {
 }
 
 .filter-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   height: 22px;
   padding: 0 6px;
@@ -376,6 +377,7 @@ watch(() => filterStore.activeLevels, () => {
   border-radius: 3px;
   font-size: 11px;
   font-weight: 500;
+  line-height: 1;
   color: #525252;
   cursor: pointer;
   transition: all 0.12s ease;
@@ -441,6 +443,7 @@ watch(() => filterStore.activeLevels, () => {
   min-width: 16px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  line-height: 22px;
 }
 
 /* Controls */
@@ -495,8 +498,9 @@ watch(() => filterStore.activeLevels, () => {
 
 /* Total count */
 .total-count {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   height: 22px;
   padding: 0 8px;
   background: #ffffff;
@@ -511,5 +515,6 @@ watch(() => filterStore.activeLevels, () => {
   font-weight: 600;
   color: #171717;
   font-variant-numeric: tabular-nums;
+  line-height: 22px;
 }
 </style>
