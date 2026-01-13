@@ -50,7 +50,7 @@ export const useTabsStore = defineStore('tabs', () => {
       logs: [],
       totalCount: 0,
       page: 1,
-      pageSize: 50,
+      pageSize: 100,
       totalPages: 0,
       levelCounts: {
         Trace: 0,

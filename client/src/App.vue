@@ -39,7 +39,7 @@ watch(
       logStore.logs = []
       logStore.totalCount = 0
       logStore.page = 1
-      logStore.pageSize = 50
+      logStore.pageSize = 100
       logStore.totalPages = 0
       logStore.levelCounts = { Trace: 0, Debug: 0, Info: 0, Warn: 0, Error: 0, Fatal: 0 }
       logStore.sessionId = null
@@ -342,7 +342,10 @@ const hasActiveTabs = computed(() => tabsStore.hasTabs)
 }
 
 .table-wrapper {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   padding: 4px;
 }
