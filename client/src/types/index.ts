@@ -118,6 +118,11 @@ export type ConnectionState =
   | 'Disconnecting'
   | 'Reconnecting'
 
+// App Info
+export interface AppInfo {
+  version: string
+}
+
 // User Settings types
 
 // Настройка вкладки (открытый файл или директория)

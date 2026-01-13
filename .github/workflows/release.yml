@@ -6,6 +6,9 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+.[0-9]+'
 
+env:
+  VERSION: ''
+
 jobs:
   build-desktop:
     strategy:
@@ -13,16 +16,21 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
-            artifact-name: nLogMonitor-win-x64
           - os: ubuntu-latest
             rid: linux-x64
-            artifact-name: nLogMonitor-linux-x64
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -53,27 +61,27 @@ jobs:
 
       - name: Publish Desktop
         run: |
-          dotnet publish src/nLogMonitor.Desktop/nLogMonitor.Desktop.csproj -c Release -r ${{ matrix.rid }} --self-contained -o publish/${{ matrix.rid }}
+          dotnet publish src/nLogMonitor.Desktop/nLogMonitor.Desktop.csproj -c Release -r ${{ matrix.rid }} --self-contained -o publish/${{ matrix.rid }} /p:Version=${{ env.VERSION }}
 
       - name: Create archive (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath ${{ matrix.artifact-name }}.zip
+          Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath nLogMonitor-${{ env.VERSION }}-${{ matrix.rid }}.zip
 
       - name: Create archive (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd publish/${{ matrix.rid }}
-          tar -czvf ../../${{ matrix.artifact-name }}.tar.gz *
+          tar -czvf ../../nLogMonitor-${{ env.VERSION }}-${{ matrix.rid }}.tar.gz *
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact-name }}
+          name: nLogMonitor-${{ env.VERSION }}-${{ matrix.rid }}
           path: |
-            ${{ matrix.artifact-name }}.zip
-            ${{ matrix.artifact-name }}.tar.gz
+            nLogMonitor-${{ env.VERSION }}-${{ matrix.rid }}.zip
+            nLogMonitor-${{ env.VERSION }}-${{ matrix.rid }}.tar.gz
           if-no-files-found: ignore
 
   create-release:

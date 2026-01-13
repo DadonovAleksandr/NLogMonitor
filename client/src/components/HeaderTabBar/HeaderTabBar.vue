@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { X, FileText, FolderOpen, FilePlus, FolderPlus, Tag } from 'lucide-vue-next'
 import { useTabsStore } from '@/stores'
+import { infoApi } from '@/api'
 import {
   Tooltip,
   TooltipContent,
@@ -9,6 +11,16 @@ import {
 } from '@/components/ui/tooltip'
 
 const tabsStore = useTabsStore()
+const appVersion = ref('...')
+
+onMounted(async () => {
+  try {
+    const info = await infoApi.getInfo()
+    appVersion.value = info.version
+  } catch {
+    appVersion.value = '?'
+  }
+})
 
 const emit = defineEmits<{
   (e: 'add-file'): void
@@ -40,11 +52,11 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
           <TooltipTrigger as-child>
             <div class="app-version">
               <Tag class="version-icon" />
-              <span>1.0.0</span>
+              <span>{{ appVersion }}</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" :side-offset="4">
-            Version: 1.0.0
+            Version: {{ appVersion }}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
