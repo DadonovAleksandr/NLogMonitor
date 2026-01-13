@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X, FileText, FolderOpen, FilePlus, FolderPlus } from 'lucide-vue-next'
+import { X, FileText, FolderOpen, FilePlus, FolderPlus, Tag } from 'lucide-vue-next'
 import { useTabsStore } from '@/stores'
 import {
   Tooltip,
@@ -29,12 +29,25 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 
 <template>
   <header class="header-tabbar">
-    <!-- Logo + Title -->
+    <!-- Logo + Title + Version -->
     <div class="header-brand">
       <div class="app-logo">
         <span class="logo-text">N</span>
       </div>
       <span class="app-title">nLogMonitor</span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <div class="app-version">
+              <Tag class="version-icon" />
+              <span>1.0.0</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="4">
+            Version: 1.0.0
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
 
     <!-- Separator -->
@@ -105,9 +118,6 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
         </TooltipContent>
       </Tooltip>
     </div>
-
-    <!-- Version badge -->
-    <div class="app-version">v1.0.0</div>
   </header>
 </template>
 
@@ -128,7 +138,7 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -332,14 +342,29 @@ const isActive = (tabId: string) => tabsStore.activeTabId === tabId
 
 /* Version */
 .app-version {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 500;
-  color: #a3a3a3;
+  color: #171717;
   padding: 2px 6px;
   background: #f5f5f5;
   border: 1px solid #e5e5e5;
   border-radius: 3px;
   flex-shrink: 0;
+  cursor: default;
+  transition: all 0.15s ease;
+}
+
+.app-version:hover {
+  background: #ebebeb;
+  border-color: #d4d4d4;
+}
+
+.version-icon {
+  width: 9px;
+  height: 9px;
 }
 </style>
